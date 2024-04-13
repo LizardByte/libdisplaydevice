@@ -31,7 +31,7 @@ else()
 endif()
 
 # glob src
-file(GLOB_RECURSE SRC_FILES src/*.cpp)
+file(GLOB_RECURSE DD_TARGET_FILES src/*.cpp)
 
 # tests
 if(BUILD_TESTS)
@@ -39,5 +39,5 @@ if(BUILD_TESTS)
 endif()
 
 # lib
-add_library(${PROJECT_NAME} ${SRC_FILES})
+add_library(${PROJECT_NAME} ${DD_TARGET_FILES})
 target_include_directories(${PROJECT_NAME} PUBLIC include)
