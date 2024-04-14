@@ -31,20 +31,19 @@ file(GLOB_RECURSE TEST_SOURCES
         ${CMAKE_SOURCE_DIR}/tests/test_*.cpp)
 
 set(DD_SOURCES
-        ${DD_FILES})
+        ${DD_TARGET_FILES})
 
 # remove main.cpp from the list of sources
 list(REMOVE_ITEM DD_SOURCES ${CMAKE_SOURCE_DIR}/src/main.cpp)
 
 add_executable(${PROJECT_NAME}
         ${TEST_SOURCES}
-        ${DISPLAY_DEVICE_SOURCES})
+        ${DD_SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17)
 target_link_libraries(${PROJECT_NAME}
         ${DD_EXTERNAL_LIBRARIES}
         gtest
-        gtest_main  # if we use this we don't need our own main function
-        ${PLATFORM_LIBRARIES})
+        gtest_main)  # if we use this we don't need our own main function
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${DD_DEFINITIONS} ${TEST_DEFINITIONS})
 target_compile_options(${PROJECT_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${DD_COMPILE_OPTIONS}> -std=c++17)
 target_link_options(${PROJECT_NAME} PRIVATE)
