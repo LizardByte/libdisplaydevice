@@ -150,7 +150,7 @@ namespace display_device {
 
   private:
     logger_t::log_level_e m_log_level; /**< Log level to be used. */
-    std::ostringstream m_buffer; /**< Buffet to hold all the output. */
+    std::ostringstream m_buffer; /**< Buffer to hold all the output. */
   };
 }  // namespace display_device
 
