@@ -25,16 +25,42 @@ if (WIN32)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)  # cmake-lint: disable=C0103
 endif ()
 
+set(TEST_PATTERNS test_* mock_*)
 file(GLOB_RECURSE TEST_SOURCES
-        ${CMAKE_SOURCE_DIR}/tests/conftest.cpp
-        ${CMAKE_SOURCE_DIR}/tests/utils.cpp
-        ${CMAKE_SOURCE_DIR}/tests/test_*.cpp)
+        "${CMAKE_SOURCE_DIR}/tests/conftest.cpp"
+        "${CMAKE_SOURCE_DIR}/tests/utils.cpp")
+set(TEST_PLATFORM_SOURCES)
+
+foreach(pattern ${TEST_PATTERNS})
+    file(GLOB_RECURSE CURRENT_TEST_SOURCES
+            "${CMAKE_SOURCE_DIR}/tests/${pattern}.cpp")
+    list(APPEND TEST_SOURCES ${CURRENT_TEST_SOURCES})
+
+    if(WIN32)
+        file(GLOB_RECURSE CURRENT_TEST_PLATFORM_SOURCES
+                "${CMAKE_SOURCE_DIR}/tests/*/platf/windows/${pattern}.cpp")
+    elseif(__APPLE__)
+        file(GLOB_RECURSE CURRENT_TEST_PLATFORM_SOURCES
+                "${CMAKE_SOURCE_DIR}/tests/*/platf/macos/${pattern}.cpp")
+    elseif(UNIX)
+        file(GLOB_RECURSE CURRENT_TEST_PLATFORM_SOURCES
+                "${CMAKE_SOURCE_DIR}/tests/*/platf/linux/${pattern}.cpp")
+    else()
+        message(FATAL_ERROR "Unsupported platform")
+    endif()
+
+    list(APPEND TEST_PLATFORM_SOURCES ${CURRENT_TEST_PLATFORM_SOURCES})
+endforeach()
+
+list(FILTER TEST_SOURCES EXCLUDE REGEX ".*/platf/.*")
+message(STATUS "Common Test sources: ${TEST_SOURCES}")
 
 set(DD_SOURCES
         ${DD_TARGET_FILES})
 
 add_executable(${PROJECT_NAME}
         ${TEST_SOURCES}
+        ${TEST_PLATFORM_SOURCES}
         ${DD_SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
 target_link_libraries(${PROJECT_NAME}
