@@ -11,7 +11,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # set the module path, used for includes
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -31,7 +31,8 @@ else()
 endif()
 
 # glob src
-file(GLOB_RECURSE DD_TARGET_FILES src/*.cpp)
+file(GLOB_RECURSE DD_TARGET_FILES "${CMAKE_SOURCE_DIR}/src/*.cpp")
+include_directories("${CMAKE_SOURCE_DIR}")
 
 # tests
 if(BUILD_TESTS)
