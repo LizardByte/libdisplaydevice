@@ -61,25 +61,19 @@ TEST(LoggingTest, DefaultLogger) {
     logger.write(level, std::move(value));
     return this->cout_buffer.str();
   } };
-  const auto test_regex { [](const std::string &test_patten, const std::string &regex_pattern) -> bool {
+  const auto test_regex { [](const std::string &test_pattern, const std::string &regex_pattern) -> bool {
     std::regex regex(regex_pattern);
     std::smatch match;
-    return std::regex_match(test_patten, match, regex);
-  } };
-  const auto add_os_newline { [](std::string value) {
-#ifdef _WIN32
-    value += "\r\n";
-#else
-    value += "\n";
-#endif
-    return value;
+    return std::regex_match(test_pattern, match, regex);
   } };
 
   logger.set_log_level(level::verbose);
-  EXPECT_TRUE(test_regex(write_and_get_cout(level::verbose, "Hello World!"), add_os_newline(R"(\[\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\] VERBOSE: Hello World!)")));
-  EXPECT_TRUE(test_regex(write_and_get_cout(level::debug, "Hello World!"), add_os_newline(R"(\[\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\] DEBUG:   Hello World!)")));
-  EXPECT_TRUE(test_regex(write_and_get_cout(level::info, "Hello World!"), add_os_newline(R"(\[\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\] INFO:    Hello World!)")));
-  EXPECT_TRUE(test_regex(write_and_get_cout(level::error, "Hello World!"), add_os_newline(R"(\[\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\] ERROR:   Hello World!)")));
+  // clang-format off
+  EXPECT_TRUE(test_regex(write_and_get_cout(level::verbose, "Hello World!"), R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] VERBOSE: Hello World!\n)"));
+  EXPECT_TRUE(test_regex(write_and_get_cout(level::debug, "Hello World!"),   R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] DEBUG:   Hello World!\n)"));
+  EXPECT_TRUE(test_regex(write_and_get_cout(level::info, "Hello World!"),    R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] INFO:    Hello World!\n)"));
+  EXPECT_TRUE(test_regex(write_and_get_cout(level::error, "Hello World!"),   R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] ERROR:   Hello World!\n)"));
+  // clang-format on
 }
 
 TEST(LoggingTest, CustomCallback) {

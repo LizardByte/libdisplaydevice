@@ -46,7 +46,16 @@ namespace display_device {
     {
       // Time
       const auto now { std::chrono::current_zone()->to_local(std::chrono::system_clock::now()) };
-      stream << std::format("[{:%Y-%m-%d %X}] ", now);
+      const auto now_ms { std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) };
+      const auto now_s { std::chrono::duration_cast<std::chrono::seconds>(now_ms) };
+
+      // we need to ensure that the time formatter does not print decimal numbers for seconds as they as
+      // it currently has inconsistent logic between platforms...
+      // Instead we will do it manually.
+      const auto now_local_seconds { std::chrono::local_seconds(now_s) };
+      const auto now_decimal_part { now_ms - now_s };
+
+      stream << std::format("[{:%Y-%m-%d %H:%M:%S}.{:0>3%Q}] ", now_local_seconds, now_decimal_part);
 
       // Log level
       switch (log_level) {
