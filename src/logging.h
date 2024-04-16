@@ -25,6 +25,7 @@ namespace display_device {
       verbose = 0,
       debug,
       info,
+      warning,
       error
     };
 

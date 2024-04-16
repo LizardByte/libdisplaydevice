@@ -13,6 +13,7 @@ TEST(LoggingTest, LogLevelVerbose) {
   EXPECT_EQ(logger.is_log_level_enabled(level::verbose), true);
   EXPECT_EQ(logger.is_log_level_enabled(level::debug), true);
   EXPECT_EQ(logger.is_log_level_enabled(level::info), true);
+  EXPECT_EQ(logger.is_log_level_enabled(level::warning), true);
   EXPECT_EQ(logger.is_log_level_enabled(level::error), true);
 }
 
@@ -25,6 +26,7 @@ TEST(LoggingTest, LogLevelDebug) {
   EXPECT_EQ(logger.is_log_level_enabled(level::verbose), false);
   EXPECT_EQ(logger.is_log_level_enabled(level::debug), true);
   EXPECT_EQ(logger.is_log_level_enabled(level::info), true);
+  EXPECT_EQ(logger.is_log_level_enabled(level::warning), true);
   EXPECT_EQ(logger.is_log_level_enabled(level::error), true);
 }
 
@@ -37,6 +39,20 @@ TEST(LoggingTest, LogLevelInfo) {
   EXPECT_EQ(logger.is_log_level_enabled(level::verbose), false);
   EXPECT_EQ(logger.is_log_level_enabled(level::debug), false);
   EXPECT_EQ(logger.is_log_level_enabled(level::info), true);
+  EXPECT_EQ(logger.is_log_level_enabled(level::warning), true);
+  EXPECT_EQ(logger.is_log_level_enabled(level::error), true);
+}
+
+TEST(LoggingTest, LogLevelWarning) {
+  using level = display_device::logger_t::log_level_e;
+  auto &logger { display_device::logger_t::get() };
+
+  logger.set_log_level(level::warning);
+
+  EXPECT_EQ(logger.is_log_level_enabled(level::verbose), false);
+  EXPECT_EQ(logger.is_log_level_enabled(level::debug), false);
+  EXPECT_EQ(logger.is_log_level_enabled(level::info), false);
+  EXPECT_EQ(logger.is_log_level_enabled(level::warning), true);
   EXPECT_EQ(logger.is_log_level_enabled(level::error), true);
 }
 
@@ -49,6 +65,7 @@ TEST(LoggingTest, LogLevelError) {
   EXPECT_EQ(logger.is_log_level_enabled(level::verbose), false);
   EXPECT_EQ(logger.is_log_level_enabled(level::debug), false);
   EXPECT_EQ(logger.is_log_level_enabled(level::info), false);
+  EXPECT_EQ(logger.is_log_level_enabled(level::warning), false);
   EXPECT_EQ(logger.is_log_level_enabled(level::error), true);
 }
 
@@ -72,6 +89,7 @@ TEST(LoggingTest, DefaultLogger) {
   EXPECT_TRUE(test_regex(write_and_get_cout(level::verbose, "Hello World!"), R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] VERBOSE: Hello World!\n)"));
   EXPECT_TRUE(test_regex(write_and_get_cout(level::debug, "Hello World!"),   R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] DEBUG:   Hello World!\n)"));
   EXPECT_TRUE(test_regex(write_and_get_cout(level::info, "Hello World!"),    R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] INFO:    Hello World!\n)"));
+  EXPECT_TRUE(test_regex(write_and_get_cout(level::warning, "Hello World!"), R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] WARNING: Hello World!\n)"));
   EXPECT_TRUE(test_regex(write_and_get_cout(level::error, "Hello World!"),   R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] ERROR:   Hello World!\n)"));
   // clang-format on
 }
@@ -99,8 +117,12 @@ TEST(LoggingTest, CustomCallback) {
   EXPECT_EQ(output, "2 Hello World!");
   EXPECT_TRUE(this->cout_buffer.str().empty());
 
-  logger.write(level::error, "Hello World!");
+  logger.write(level::warning, "Hello World!");
   EXPECT_EQ(output, "3 Hello World!");
+  EXPECT_TRUE(this->cout_buffer.str().empty());
+
+  logger.write(level::error, "Hello World!");
+  EXPECT_EQ(output, "4 Hello World!");
   EXPECT_TRUE(this->cout_buffer.str().empty());
 }
 

@@ -68,6 +68,9 @@ namespace display_device {
         case log_level_e::info:
           stream << "INFO:    ";
           break;
+        case log_level_e::warning:
+          stream << "WARNING: ";
+          break;
         case log_level_e::error:
           stream << "ERROR:   ";
           break;
