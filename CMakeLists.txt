@@ -31,7 +31,8 @@ else()
 endif()
 
 # glob src
-file(GLOB_RECURSE DD_TARGET_FILES src/*.h src/*.cpp)
+file(GLOB_RECURSE DD_TARGET_FILES "${CMAKE_SOURCE_DIR}/src/*.cpp")
+include_directories("${CMAKE_SOURCE_DIR}")
 
 # tests
 if(BUILD_TESTS)
