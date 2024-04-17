@@ -68,15 +68,6 @@ namespace display_device {
         }
       }
 
-      // // we need to ensure that the time formatter does not print decimal numbers for seconds as
-      // // it currently has inconsistent formatting logic between platforms...
-      // // Instead we will do it manually.
-      // std::time_t time { std::chrono::system_clock::to_time_t(now) };
-      // // const auto now_local_seconds { std::chrono::local_seconds(now_s) };
-      // // const auto now_decimal_part { now_ms - now_s };
-
-      // stream << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S");
-
       // Log level
       switch (log_level) {
         case log_level_e::verbose:
