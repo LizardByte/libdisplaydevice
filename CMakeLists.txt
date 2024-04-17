@@ -18,15 +18,25 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 # options
 option(BUILD_TESTS "Build tests" ON)
+option(CODE_QL_ANALYSIS "Build is for codeql analysis" OFF)
+
+# auto-set CODE_QL_ANALYSIS based on env variable
+if(DEFINED ENV{GITHUB_CODEQL_BUILD})
+    set(CODE_QL_ANALYSIS ON)
+endif()
 
 # if windows
 if(WIN32)
     include(${CMAKE_MODULE_PATH}/windows.cmake)
 elseif(APPLE)
-    message(FATAL_ERROR "MacOS is not supported yet.")
+    if(NOT CODE_QL_ANALYSIS)
+        message(FATAL_ERROR "MacOS is not supported yet.")
+    endif()
     # include(${CMAKE_MODULE_PATH}/macos.cmake)
 else()
-    message(FATAL_ERROR "Linux is not supported yet.")
+    if(NOT CODE_QL_ANALYSIS)
+        message(FATAL_ERROR "Linux is not supported yet.")
+    endif()
     # include(${CMAKE_MODULE_PATH}/linux.cmake)
 endif()
 
