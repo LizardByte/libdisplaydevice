@@ -1,7 +1,7 @@
 # install dependencies for C++ analysis
 set -e
 
-gcc_version=13
+gcc_version=11
 
 # install dependencies
 brew install \

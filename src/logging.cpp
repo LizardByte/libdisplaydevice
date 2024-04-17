@@ -3,7 +3,6 @@
 
 // system includes
 #include <chrono>
-#include <format>
 #include <iostream>
 #include <mutex>
 
@@ -45,17 +44,37 @@ namespace display_device {
     std::stringstream stream;
     {
       // Time
-      const auto now { std::chrono::current_zone()->to_local(std::chrono::system_clock::now()) };
-      const auto now_ms { std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) };
-      const auto now_s { std::chrono::duration_cast<std::chrono::seconds>(now_ms) };
+      {
+        // The stupid std::localtime function may not be thread-safe?!
+        static std::mutex time_mutex;
+        std::lock_guard lock { time_mutex };
 
-      // we need to ensure that the time formatter does not print decimal numbers for seconds as
-      // it currently has inconsistent formatting logic between platforms...
-      // Instead we will do it manually.
-      const auto now_local_seconds { std::chrono::local_seconds(now_s) };
-      const auto now_decimal_part { now_ms - now_s };
+        const auto now { std::chrono::system_clock::now() };
+        const auto now_ms { std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) };
+        const auto now_s { std::chrono::duration_cast<std::chrono::seconds>(now_ms) };
 
-      stream << std::format("[{:%Y-%m-%d %H:%M:%S}.{:0>3%Q}] ", now_local_seconds, now_decimal_part);
+        std::time_t time { std::chrono::system_clock::to_time_t(now) };
+        const auto *localtime { std::localtime(&time) };
+        if (localtime) {  // It theoretically can fail for unspecified reasons...
+          const auto now_decimal_part { now_ms - now_s };
+
+          const auto old_flags { stream.flags() };  // Save formatting flags so that they can be restored...
+          stream << std::put_time(std::localtime(&time), "[%Y-%m-%d %H:%M:%S.") << std::setfill('0') << std::setw(3) << now_decimal_part.count() << "] ";
+          stream.flags(old_flags);
+        }
+        else {
+          stream << "[NULL TIME] ";
+        }
+      }
+
+      // // we need to ensure that the time formatter does not print decimal numbers for seconds as
+      // // it currently has inconsistent formatting logic between platforms...
+      // // Instead we will do it manually.
+      // std::time_t time { std::chrono::system_clock::to_time_t(now) };
+      // // const auto now_local_seconds { std::chrono::local_seconds(now_s) };
+      // // const auto now_decimal_part { now_ms - now_s };
+
+      // stream << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S");
 
       // Log level
       switch (log_level) {
