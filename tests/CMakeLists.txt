@@ -53,7 +53,8 @@ foreach(pattern ${TEST_PATTERNS})
 endforeach()
 
 list(FILTER TEST_SOURCES EXCLUDE REGEX ".*/platf/.*")
-message(STATUS "Common Test sources: ${TEST_SOURCES}")
+message(STATUS "Common Test source files: ${TEST_SOURCES}")
+message(STATUS "Platform Test source files: ${TEST_PLATFORM_SOURCES}")
 
 set(DD_SOURCES
         ${DD_TARGET_FILES})

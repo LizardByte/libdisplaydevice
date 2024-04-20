@@ -25,24 +25,37 @@ if(DEFINED ENV{GITHUB_CODEQL_BUILD})
     set(CODE_QL_ANALYSIS ON)
 endif()
 
-# if windows
+# include directories (for including header files)
+include_directories("${CMAKE_SOURCE_DIR}")
+
+# glob src files, excluding platf directory
+file(GLOB_RECURSE DD_COMMON_TARGET_FILES "${CMAKE_SOURCE_DIR}/src/*.cpp")
+list(FILTER DD_COMMON_TARGET_FILES EXCLUDE REGEX ".*/platf/.*")
+
 if(WIN32)
+    file(GLOB_RECURSE DD_PLATFORM_TARGET_FILES "${CMAKE_SOURCE_DIR}/src/platf/windows/*.cpp")
     include(${CMAKE_MODULE_PATH}/windows.cmake)
 elseif(APPLE)
     if(NOT CODE_QL_ANALYSIS)
         message(FATAL_ERROR "MacOS is not supported yet.")
     endif()
-    # include(${CMAKE_MODULE_PATH}/macos.cmake)
-else()
+    file(GLOB_RECURSE DD_PLATFORM_TARGET_FILES "${CMAKE_SOURCE_DIR}/src/platf/macos/*.cpp")
+    include(${CMAKE_MODULE_PATH}/macos.cmake)
+elseif(UNIX)
     if(NOT CODE_QL_ANALYSIS)
         message(FATAL_ERROR "Linux is not supported yet.")
     endif()
-    # include(${CMAKE_MODULE_PATH}/linux.cmake)
+    file(GLOB_RECURSE DD_PLATFORM_TARGET_FILES "${CMAKE_SOURCE_DIR}/src/platf/linux/*.cpp")
+    include(${CMAKE_MODULE_PATH}/linux.cmake)
+else()
+    message(FATAL_ERROR "Unsupported platform")
 endif()
 
-# glob src
-file(GLOB_RECURSE DD_TARGET_FILES "${CMAKE_SOURCE_DIR}/src/*.cpp")
-include_directories("${CMAKE_SOURCE_DIR}")
+message(STATUS "Common source files: ${DD_COMMON_TARGET_FILES}")
+message(STATUS "Platform source files: ${DD_PLATFORM_TARGET_FILES}")
+
+# Combine common and platform-specific source files
+set(DD_TARGET_FILES ${DD_COMMON_TARGET_FILES} ${DD_PLATFORM_TARGET_FILES})
 
 # tests
 if(BUILD_TESTS)
