@@ -94,7 +94,7 @@ TEST(LoggingTest, CustomCallback) {
 
   std::string output;
   logger.set_log_level(level::verbose);
-  logger.set_custom_callback([&output](const level level, const std::string& value) {
+  logger.set_custom_callback([&output](const level level, const std::string &value) {
     output = std::to_string(static_cast<level_t>(level)) + " " + value;
   });
 
