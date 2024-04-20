@@ -4,7 +4,6 @@
 
 // local includes
 #include "src/logging.h"
-#include "tests/utils.h"
 
 // Undefine the original TEST macro
 #undef TEST

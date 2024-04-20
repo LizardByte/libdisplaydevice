@@ -1,11 +1,12 @@
-/**
- * @file utils.h
- * @brief Reusable functions for tests.
- */
-
 #pragma once
 
+// system includes
+#include <regex>
 #include <string>
 
-int
-setEnv(const std::string &name, const std::string &value);
+/**
+ * @brief Test regular expression against string.
+ * @return True if string matches the regex, false otherwise
+ */
+bool
+test_regex(const std::string &test_pattern, const std::string &regex_pattern);
