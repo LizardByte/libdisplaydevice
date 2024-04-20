@@ -23,6 +23,9 @@ TEST(LoggingTest, QueryDisplayConfigPathAndModeCount) {
 
   EXPECT_TRUE(active_devices);
   EXPECT_TRUE(all_devices);
+
+  // This test (and some others) is pointless without any paths. We should always have at least 1 active display device!
+  EXPECT_TRUE(!active_devices->paths.empty());
   EXPECT_TRUE(all_devices->paths.size() >= active_devices->paths.size());
   EXPECT_TRUE(all_devices->modes.size() == active_devices->modes.size());
 }
