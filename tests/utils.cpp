@@ -3,6 +3,7 @@
 
 // system includes
 #include <iostream>
+#include <regex>
 
 bool
 test_regex(const std::string &test_pattern, const std::string &regex_pattern) {
@@ -15,4 +16,13 @@ test_regex(const std::string &test_pattern, const std::string &regex_pattern) {
     return false;
   }
   return true;
+}
+
+int
+set_env(const std::string &name, const std::string &value) {
+#ifdef _WIN32
+  return _putenv_s(name.c_str(), value.c_str());
+#else
+  return setenv(name.c_str(), value.c_str(), 1);
+#endif
 }

@@ -1,7 +1,6 @@
 // local includes
 #include "src/platf/windows/winapilayer.h"
 #include "tests/conftest.cpp"
-#include "tests/utils.h"
 
 TEST(LoggingTest, GetErrorString) {
   const display_device::WinApiLayer layer;
