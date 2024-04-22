@@ -1,6 +1,3 @@
-// system includes
-#include <regex>
-
 // local includes
 #include "tests/conftest.cpp"
 
@@ -78,11 +75,6 @@ TEST(LoggingTest, DefaultLogger) {
     logger.write(level, std::move(value));
     return this->cout_buffer.str();
   } };
-  const auto test_regex { [](const std::string &test_pattern, const std::string &regex_pattern) -> bool {
-    std::regex regex(regex_pattern);
-    std::smatch match;
-    return std::regex_match(test_pattern, match, regex);
-  } };
 
   logger.set_log_level(level::verbose);
   // clang-format off
@@ -101,7 +93,7 @@ TEST(LoggingTest, CustomCallback) {
 
   std::string output;
   logger.set_log_level(level::verbose);
-  logger.set_custom_callback([&output](const level level, std::string value) {
+  logger.set_custom_callback([&output](const level level, const std::string &value) {
     output = std::to_string(static_cast<level_t>(level)) + " " + value;
   });
 
@@ -146,7 +138,7 @@ TEST(LoggingTest, WriteMethodRespectsLogLevelWhenUsingCustomCallback) {
   auto &logger { display_device::logger_t::get() };
 
   bool callback_invoked { false };
-  logger.set_custom_callback([&callback_invoked](const level, std::string) {
+  logger.set_custom_callback([&callback_invoked](auto, auto) {
     callback_invoked = true;
   });
 
@@ -164,7 +156,7 @@ TEST(LoggingTest, LogMacroDisablesStreamChain) {
   auto &logger { display_device::logger_t::get() };
 
   bool output_logged { false };
-  logger.set_custom_callback([&output_logged](const level, std::string) {
+  logger.set_custom_callback([&output_logged](auto, auto) {
     output_logged = true;
   });
 

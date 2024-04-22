@@ -1,18 +1,25 @@
-/**
- * @file utils.cpp
- * @brief Utility functions
- */
-
+// header include
 #include "utils.h"
 
-/**
- * @brief Set an environment variable.
- * @param name Name of the environment variable
- * @param value Value of the environment variable
- * @return 0 on success, non-zero error code on failure
- */
+// system includes
+#include <iostream>
+#include <regex>
+
+bool
+test_regex(const std::string &test_pattern, const std::string &regex_pattern) {
+  std::regex regex(regex_pattern);
+  std::smatch match;
+  if (!std::regex_match(test_pattern, match, regex)) {
+    std::cout << "Regex test failed:\n"
+              << "    Pattern: " << test_pattern << "\n"
+              << "    Regex  : " << regex_pattern << std::endl;
+    return false;
+  }
+  return true;
+}
+
 int
-setEnv(const std::string &name, const std::string &value) {
+set_env(const std::string &name, const std::string &value) {
 #ifdef _WIN32
   return _putenv_s(name.c_str(), value.c_str());
 #else

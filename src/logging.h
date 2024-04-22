@@ -56,7 +56,7 @@ namespace display_device {
      * ```
      */
     void
-    set_log_level(const log_level_e log_level);
+    set_log_level(log_level_e log_level);
 
     /**
      * @brief Check if log level is currently enabled.
@@ -69,7 +69,7 @@ namespace display_device {
      * ```
      */
     [[nodiscard]] bool
-    is_log_level_enabled(const log_level_e log_level) const;
+    is_log_level_enabled(log_level_e log_level) const;
 
     /**
      * @brief Set custom callback for writing the logs.
@@ -96,7 +96,7 @@ namespace display_device {
      * ```
      */
     void
-    write(const log_level_e log_level, std::string value);
+    write(log_level_e log_level, std::string value);
 
     /**
      * @brief A deleted copy constructor for singleton pattern.
@@ -130,7 +130,7 @@ namespace display_device {
      * @brief Constructor scoped writer utility.
      * @param log_level Level to be used when writing out the output.
      */
-    explicit log_writer_t(const logger_t::log_level_e log_level);
+    explicit log_writer_t(logger_t::log_level_e log_level);
 
     /**
      * @brief Write out the accumulated output.
