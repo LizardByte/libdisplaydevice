@@ -121,11 +121,9 @@ jobs:
       - name: Run tests
         id: test
         shell: msys2 {0}
-        working-directory: build
+        working-directory: build/tests
         run: |
-          pwd
-          ls
-          ctest
+          ctest --extra-verbose
 
       - name: Generate gcov report
         # any except canceled or skipped

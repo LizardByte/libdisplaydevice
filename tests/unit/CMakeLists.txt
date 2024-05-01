@@ -1,4 +1,4 @@
-# General platform-agnostic tests
+# General platform-agnostic tests (or without hard platform dependencies)
 add_subdirectory(general)
 
 # Platform specific tests
