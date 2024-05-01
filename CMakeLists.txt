@@ -39,6 +39,6 @@ add_subdirectory(src)
 #
 # Testing only available if this is the main project
 #
-if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTS)
     add_subdirectory(tests)
 endif()

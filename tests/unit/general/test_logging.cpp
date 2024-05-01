@@ -1,5 +1,6 @@
 // local includes
-#include "tests/conftest.cpp"
+#include "fixtures.h"
+#include "libdisplaydevice/logging.h"
 
 TEST(LoggingTest, LogLevelVerbose) {
   using level = display_device::logger_t::log_level_e;

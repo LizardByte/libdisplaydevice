@@ -11,4 +11,4 @@ add_library(${MODULE} ${HEADER_LIST} libddplaceholder.cpp)
 target_include_directories(${MODULE} PUBLIC include)
 
 # Required libraries
-target_link_libraries(${MODULE} PRIVATE libplatf libcommon)
+target_link_libraries(${MODULE} PUBLIC libcommon PRIVATE libplatf)
