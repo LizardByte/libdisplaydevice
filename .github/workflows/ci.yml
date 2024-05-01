@@ -123,6 +123,7 @@ jobs:
         shell: msys2 {0}
         working-directory: build
         run: |
+          cd build
           ctest
 
       - name: Generate gcov report
