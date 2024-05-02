@@ -8,7 +8,7 @@ add_subdirectory("${PROJECT_SOURCE_DIR}/third-party/googletest" "third-party/goo
 
 if (WIN32)
     # For Windows: Prevent overriding the parent project's compiler/linker settings
-    set(gtest_force_shared_crt ON CACHE BOOL "Always use msvcrt.dll" FORCE) # cmake-lint: disable=C0103
+    set(gtest_force_shared_crt ON CACHE BOOL "Always use msvcrt.dll" FORCE)  # cmake-lint: disable=C0103
 endif ()
 
 # A helper function to setup the dependencies for the test executable
