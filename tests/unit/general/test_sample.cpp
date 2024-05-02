@@ -1,4 +1,5 @@
-#include <tests/conftest.cpp>
+// local includes
+#include "fixtures.h"
 
 TEST(HelloWorldTest, HelloWorld) {
   EXPECT_TRUE(true);

@@ -121,9 +121,9 @@ jobs:
       - name: Run tests
         id: test
         shell: msys2 {0}
-        working-directory: build/tests
+        working-directory: build
         run: |
-          ./test_libdisplaydevice.exe --gtest_color=yes
+          ./tests/test_libdisplaydevice --gtest_color=yes
 
       - name: Generate gcov report
         # any except canceled or skipped

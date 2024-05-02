@@ -1,8 +1,8 @@
 // local includes
-#include "src/platf/windows/winapilayer.h"
-#include "tests/conftest.cpp"
+#include "displaydevice/windows/winapilayer.h"
+#include "fixtures.h"
 
-TEST(LoggingTest, GetErrorString) {
+TEST(WinApiLayer, GetErrorString) {
   const display_device::WinApiLayer layer;
 
   EXPECT_TRUE(test_regex(layer.get_error_string(ERROR_INVALID_PARAMETER), R"(\[code: ERROR_INVALID_PARAMETER, .+?\])"));
@@ -14,7 +14,7 @@ TEST(LoggingTest, GetErrorString) {
   EXPECT_TRUE(test_regex(layer.get_error_string(ERROR_ACCOUNT_DISABLED), R"(\[code: )" + std::to_string(ERROR_ACCOUNT_DISABLED) + R"(, .+?\])"));
 }
 
-TEST(LoggingTest, QueryDisplayConfigPathAndModeCount) {
+TEST(WinApiLayer, QueryDisplayConfigPathAndModeCount) {
   const display_device::WinApiLayer layer;
 
   const auto active_devices { layer.query_display_config(display_device::WinApiLayer::query_type_e::Active) };
@@ -29,7 +29,7 @@ TEST(LoggingTest, QueryDisplayConfigPathAndModeCount) {
   EXPECT_TRUE(all_devices->modes.size() == active_devices->modes.size());
 }
 
-TEST(LoggingTest, QueryDisplayConfigPathActivePaths) {
+TEST(WinApiLayer, QueryDisplayConfigPathActivePaths) {
   const display_device::WinApiLayer layer;
 
   const auto active_devices { layer.query_display_config(display_device::WinApiLayer::query_type_e::Active) };
@@ -40,7 +40,7 @@ TEST(LoggingTest, QueryDisplayConfigPathActivePaths) {
   }
 }
 
-TEST(LoggingTest, QueryDisplayConfigModeIndexValidity) {
+TEST(WinApiLayer, QueryDisplayConfigModeIndexValidity) {
   // The MS docs is not clear when to access the index union struct or not. It appears that union struct is available,
   // whenever QDC_VIRTUAL_MODE_AWARE is specified when querying (always in our case).
   //

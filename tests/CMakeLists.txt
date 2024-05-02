@@ -1,75 +1,65 @@
-cmake_minimum_required(VERSION 3.13)
-# https://github.com/google/oss-policies-info/blob/main/foundational-cxx-support-matrix.md#foundational-c-support
-
-project(test_libdisplaydevice)
-
-include_directories("${CMAKE_SOURCE_DIR}")
-
-enable_testing()
-
-# Add GoogleTest directory to the project
-set(GTEST_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third-party/googletest")
+#
+# Setup google test
+#
 set(INSTALL_GTEST OFF)
 set(INSTALL_GMOCK OFF)
-add_subdirectory("${GTEST_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/googletest")
-include_directories("${GTEST_SOURCE_DIR}/googletest/include" "${GTEST_SOURCE_DIR}")
+include(GoogleTest)
+add_subdirectory("${PROJECT_SOURCE_DIR}/third-party/googletest" "third-party/googletest")
 
-# coverage
-# https://gcovr.com/en/stable/guide/compiling.html#compiler-options
-set(CMAKE_CXX_FLAGS "-fprofile-arcs -ftest-coverage -O1")
-set(CMAKE_C_FLAGS "-fprofile-arcs -ftest-coverage -O1")
-
-# if windows
 if (WIN32)
     # For Windows: Prevent overriding the parent project's compiler/linker settings
-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)  # cmake-lint: disable=C0103
+    set(gtest_force_shared_crt ON CACHE BOOL "Always use msvcrt.dll" FORCE)  # cmake-lint: disable=C0103
 endif ()
 
-set(TEST_PATTERNS test_* mock_*)
-file(GLOB_RECURSE TEST_SOURCES
-        "${CMAKE_SOURCE_DIR}/tests/conftest.cpp"
-        "${CMAKE_SOURCE_DIR}/tests/utils.cpp")
-set(TEST_PLATFORM_SOURCES)
+# A helper function to setup the dependencies for the test executable
+function(add_dd_test_dir)
+    set(options "")
+    set(oneValueArgs "")
+    set(multiValueArgs ADDITIONAL_LIBRARIES)
+    cmake_parse_arguments(FN_VARS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-foreach(pattern ${TEST_PATTERNS})
-    file(GLOB_RECURSE CURRENT_TEST_SOURCES
-            "${CMAKE_SOURCE_DIR}/tests/${pattern}.cpp")
-    list(APPEND TEST_SOURCES ${CURRENT_TEST_SOURCES})
+    # Get the current sources and libraries
+    get_property(sources GLOBAL PROPERTY DD_TEST_SOURCES)
+    get_property(libraries GLOBAL PROPERTY DD_TEST_LIBRARIES)
 
-    if(WIN32)
-        file(GLOB_RECURSE CURRENT_TEST_PLATFORM_SOURCES
-                "${CMAKE_SOURCE_DIR}/tests/*/platf/windows/${pattern}.cpp")
-    elseif(__APPLE__)
-        file(GLOB_RECURSE CURRENT_TEST_PLATFORM_SOURCES
-                "${CMAKE_SOURCE_DIR}/tests/*/platf/macos/${pattern}.cpp")
-    elseif(UNIX)
-        file(GLOB_RECURSE CURRENT_TEST_PLATFORM_SOURCES
-                "${CMAKE_SOURCE_DIR}/tests/*/platf/linux/${pattern}.cpp")
-    else()
-        message(FATAL_ERROR "Unsupported platform")
-    endif()
+    # Gather new data
+    file(GLOB test_files CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/test_*.cpp")
 
-    list(APPEND TEST_PLATFORM_SOURCES ${CURRENT_TEST_PLATFORM_SOURCES})
-endforeach()
+    list(APPEND sources ${test_files})
+    list(APPEND libraries ${FN_VARS_ADDITIONAL_LIBRARIES})
 
-list(FILTER TEST_SOURCES EXCLUDE REGEX ".*/platf/.*")
-message(STATUS "Common Test source files: ${TEST_SOURCES}")
-message(STATUS "Platform Test source files: ${TEST_PLATFORM_SOURCES}")
+    # Update the global variables
+    set_property(GLOBAL PROPERTY DD_TEST_SOURCES "${sources}")
+    set_property(GLOBAL PROPERTY DD_TEST_LIBRARIES "${libraries}")
+endfunction()
 
-set(DD_SOURCES
-        ${DD_TARGET_FILES})
+#
+# Add subdirectories
+#
+add_subdirectory(fixtures)
+add_subdirectory(unit)
 
-add_executable(${PROJECT_NAME}
-        ${TEST_SOURCES}
-        ${TEST_PLATFORM_SOURCES}
-        ${DD_SOURCES})
-set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
-target_link_libraries(${PROJECT_NAME}
-        ${DD_EXTERNAL_LIBRARIES}
-        gtest
-        gtest_main)  # if we use this we don't need our own main function
-target_compile_definitions(${PROJECT_NAME} PUBLIC ${DD_DEFINITIONS} ${TEST_DEFINITIONS})
-target_compile_options(${PROJECT_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${DD_COMPILE_OPTIONS}> -std=c++20)
-target_link_options(${PROJECT_NAME} PRIVATE)
+#
+# Setup the final test binary
+#
+set(TEST_BINARY test_libdisplaydevice)
+get_property(sources GLOBAL PROPERTY DD_TEST_SOURCES)
+get_property(libraries GLOBAL PROPERTY DD_TEST_LIBRARIES)
 
-add_test(NAME ${PROJECT_NAME} COMMAND libdisplaydevice_test)
+add_executable(${TEST_BINARY} ${sources})
+target_link_libraries(${TEST_BINARY}
+        gtest_main  # if we use this we don't need our own main function
+        libdisplaydevice # we are always testing at least the public API so it's safe to always link this
+        libfixtures # these are our fixtures/helpers for the tests
+        ${libraries} # additional libraries if needed
+)
+
+# Add the test to CTest
+gtest_discover_tests(${TEST_BINARY})
+
+#
+# Additional setup for coverage
+# https://gcovr.com/en/stable/guide/compiling.html#compiler-options
+#
+set(CMAKE_CXX_FLAGS "-fprofile-arcs -ftest-coverage -O1")
+set(CMAKE_C_FLAGS "-fprofile-arcs -ftest-coverage -O1")
