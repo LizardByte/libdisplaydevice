@@ -10,13 +10,14 @@ pacman --noconfirm -S \
   make \
   mingw-w64-x86_64-binutils \
   mingw-w64-x86_64-cmake \
+  mingw-w64-x86_64-ninja \
   mingw-w64-x86_64-toolchain
 
 # build
 mkdir -p build
 cd build || exit 1
-cmake -G "MinGW Makefiles" ..
-mingw32-make -j"$(nproc)"
+cmake -G Ninja ..
+ninja
 
 # skip autobuild
 echo "skip_autobuild=true" >> "$GITHUB_OUTPUT"
