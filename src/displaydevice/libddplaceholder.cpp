@@ -1,7 +1,4 @@
-
-#include "libdisplaydevice/libddplaceholder.h"
-#include "libdisplaydevice/libplatfplaceholder.h"
-#include "libdisplaydevice/logging.h"
+#include "displaydevice/libddplaceholder.h"
 
 int ddplaceholder()
 {

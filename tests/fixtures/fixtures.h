@@ -59,16 +59,25 @@ class LinuxTest: public BaseTest {
 protected:
   void
   SetUp() override;
+
+  void
+  TearDown() override;
 };
 
 class MacOSTest: public BaseTest {
 protected:
   void
   SetUp() override;
+
+  void
+  TearDown() override;
 };
 
 class WindowsTest: public BaseTest {
 protected:
   void
   SetUp() override;
+
+  void
+  TearDown() override;
 };

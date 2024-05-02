@@ -1,5 +1,5 @@
 // class header include
-#include "libdisplaydevice/logging.h"
+#include "displaydevice/logging.h"
 
 // system includes
 #include <chrono>

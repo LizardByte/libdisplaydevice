@@ -1,11 +1,11 @@
 // class header include
-#include "libdisplaydevice/windows/winapilayer.h"
+#include "displaydevice/windows/winapilayer.h"
 
 // system includes
 #include <iomanip>
 
 // local includes
-#include "libdisplaydevice/logging.h"
+#include "displaydevice/logging.h"
 
 namespace display_device {
   namespace {

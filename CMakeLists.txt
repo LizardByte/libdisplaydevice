@@ -40,5 +40,6 @@ add_subdirectory(src)
 # Testing only available if this is the main project
 #
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTS)
+    enable_testing()
     add_subdirectory(tests)
 endif()

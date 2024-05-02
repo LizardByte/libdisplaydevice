@@ -2,7 +2,7 @@
 #include "fixtures.h"
 
 // local includes
-#include "libdisplaydevice/logging.h"
+#include "displaydevice/logging.h"
 
 BaseTest::BaseTest():
     sbuf { nullptr }, pipe_stdout { nullptr }, pipe_stderr { nullptr } {
@@ -99,6 +99,15 @@ LinuxTest::SetUp() {
 }
 
 void
+LinuxTest::TearDown() {
+#ifndef __linux__
+  // This a noop case to skip the teardown
+  return;
+#endif
+  BaseTest::TearDown();
+}
+
+void
 MacOSTest::SetUp() {
 #if !defined(__APPLE__) || !defined(__MACH__)
   GTEST_SKIP_("Skipping, this test is for macOS only.");
@@ -107,9 +116,27 @@ MacOSTest::SetUp() {
 }
 
 void
+MacOSTest::TearDown() {
+#if !defined(__APPLE__) || !defined(__MACH__)
+  // This a noop case to skip the teardown
+  return;
+#endif
+  BaseTest::TearDown();
+}
+
+void
 WindowsTest::SetUp() {
 #ifndef _WIN32
   GTEST_SKIP_("Skipping, this test is for Windows only.");
 #endif
   BaseTest::SetUp();
+}
+
+void
+WindowsTest::TearDown() {
+#ifndef _WIN32
+  // This a noop case to skip the teardown
+  return;
+#endif
+  BaseTest::TearDown();
 }

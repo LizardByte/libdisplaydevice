@@ -1,7 +1,2 @@
-add_dd_tests(
-        TESTS
-        test_winapilayer
-
-        LIBRARIES
-        libwindows
-)
+# Add the test files in this directory
+add_dd_test_dir(ADDITIONAL_LIBRARIES libwindows)

@@ -121,7 +121,7 @@ jobs:
       - name: Run tests
         id: test
         shell: msys2 {0}
-        working-directory: build/tests
+        working-directory: build
         run: |
           ctest --extra-verbose
 

@@ -1,5 +1,2 @@
-add_dd_tests(
-        TESTS
-        test_logging
-        test_sample
-)
+# Add the test files in this directory
+add_dd_test_dir()
