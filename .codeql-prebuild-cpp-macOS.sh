@@ -12,8 +12,8 @@ brew install \
 mkdir -p build
 cd build || exit 1
 cmake \
-  -DCMAKE_C_COMPILER="/usr/local/bin/gcc-${gcc_version}" \
-  -DCMAKE_CXX_COMPILER="/usr/local/bin/g++-${gcc_version}" \
+  -DCMAKE_C_COMPILER="/opt/homebrew/bin/gcc-${gcc_version}" \
+  -DCMAKE_CXX_COMPILER="/opt/homebrew/bin/g++-${gcc_version}" \
   -G "Unix Makefiles" ..
 make -j"$(sysctl -n hw.logicalcpu)"
 
