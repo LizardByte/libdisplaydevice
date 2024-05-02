@@ -1,6 +1,6 @@
 #include "displaydevice/libddplaceholder.h"
 
-int ddplaceholder()
-{
+int
+ddplaceholder() {
   return 0;
 }
