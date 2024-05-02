@@ -19,17 +19,6 @@ endif()
 # Project optional configuration
 #
 option(BUILD_TESTS "Build tests" ON)
-option(CODE_QL_ANALYSIS "Build is for codeql analysis" OFF)
-
-#
-# Only do these if this is the main project, and not if it is included through add_subdirectory
-#
-if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-    # auto-set CODE_QL_ANALYSIS based on env variable
-    if(DEFINED ENV{GITHUB_CODEQL_BUILD})
-        set(CODE_QL_ANALYSIS ON)
-    endif()
-endif()
 
 #
 # Library code is located here
