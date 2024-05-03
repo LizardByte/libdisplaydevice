@@ -6,7 +6,7 @@ gcc_version=11
 # install dependencies
 brew install \
   cmake \
-  gcc@${gcc_version} \
+  gcc@${gcc_version}
 
 # build
 mkdir -p build

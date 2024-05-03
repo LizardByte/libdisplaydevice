@@ -10,8 +10,8 @@ sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
 
 sudo apt-get install -y \
   build-essential \
-  gcc-${gcc_version} \
-  g++-${gcc_version} \
+  cmake \
+  ninja-build
 
 # clean apt cache
 sudo apt-get clean
@@ -20,11 +20,8 @@ sudo rm -rf /var/lib/apt/lists/*
 # build
 mkdir -p build
 cd build || exit 1
-cmake \
-  -DCMAKE_C_COMPILER="$(which gcc-${gcc_version})" \
-  -DCMAKE_CXX_COMPILER="$(which g++-${gcc_version})" \
-  -G "Unix Makefiles" ..
-make -j"$(nproc)"
+cmake -G Ninja ..
+ninja
 
 # skip autobuild
 echo "skip_autobuild=true" >> "$GITHUB_OUTPUT"
