@@ -2,10 +2,19 @@
 #include "displaydevice/windows/winapilayer.h"
 
 // system includes
+#include <boost/algorithm/string.hpp>
+#include <boost/scope/scope_exit.hpp>
+#include <boost/uuid/name_generator_sha1.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <cstdint>
 #include <iomanip>
 
 // local includes
 #include "displaydevice/logging.h"
+
+// Windows includes after "windows.h"
+#include <SetupApi.h>
 
 namespace display_device {
   namespace {
@@ -119,6 +128,159 @@ namespace display_device {
 
       return output.str();
     }
+
+    /**
+     * @see get_monitor_device_path description for more information as this
+     *      function is identical except that it returns wide-string instead
+     *      of a normal one.
+     */
+    std::wstring
+    get_monitor_device_path_wstr(const WinApiLayerInterface &w_api, const DISPLAYCONFIG_PATH_INFO &path) {
+      DISPLAYCONFIG_TARGET_DEVICE_NAME target_name = {};
+      target_name.header.adapterId = path.targetInfo.adapterId;
+      target_name.header.id = path.targetInfo.id;
+      target_name.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
+      target_name.header.size = sizeof(target_name);
+
+      LONG result { DisplayConfigGetDeviceInfo(&target_name.header) };
+      if (result != ERROR_SUCCESS) {
+        DD_LOG(error) << w_api.get_error_string(result) << " failed to get target device name!";
+        return {};
+      }
+
+      return std::wstring { target_name.monitorDevicePath };
+    }
+
+    /**
+     * @brief Helper method for dealing with SetupAPI.
+     * @returns True if device interface path was retrieved and is non-empty, false otherwise.
+     * @see get_device_id implementation for more context regarding this madness.
+     */
+    bool
+    get_device_interface_detail(const WinApiLayerInterface &w_api, HDEVINFO dev_info_handle, SP_DEVICE_INTERFACE_DATA &dev_interface_data, std::wstring &dev_interface_path, SP_DEVINFO_DATA &dev_info_data) {
+      DWORD required_size_in_bytes { 0 };
+      if (SetupDiGetDeviceInterfaceDetailW(dev_info_handle, &dev_interface_data, nullptr, 0, &required_size_in_bytes, nullptr)) {
+        DD_LOG(error) << "\"SetupDiGetDeviceInterfaceDetailW\" did not fail, what?!";
+        return false;
+      }
+      else if (required_size_in_bytes <= 0) {
+        DD_LOG(error) << w_api.get_error_string(static_cast<LONG>(GetLastError())) << " \"SetupDiGetDeviceInterfaceDetailW\" failed while getting size.";
+        return false;
+      }
+
+      std::vector<std::uint8_t> buffer;
+      buffer.resize(required_size_in_bytes);
+
+      // This part is just EVIL!
+      auto detail_data { reinterpret_cast<SP_DEVICE_INTERFACE_DETAIL_DATA_W *>(buffer.data()) };
+      detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_W);
+
+      if (!SetupDiGetDeviceInterfaceDetailW(dev_info_handle, &dev_interface_data, detail_data, required_size_in_bytes, nullptr, &dev_info_data)) {
+        DD_LOG(error) << w_api.get_error_string(static_cast<LONG>(GetLastError())) << " \"SetupDiGetDeviceInterfaceDetailW\" failed.";
+        return false;
+      }
+
+      dev_interface_path = std::wstring { detail_data->DevicePath };
+      return !dev_interface_path.empty();
+    }
+
+    /**
+     * @brief Helper method for dealing with SetupAPI.
+     * @returns True if instance id was retrieved and is non-empty, false otherwise.
+     * @see get_device_id implementation for more context regarding this madness.
+     */
+    bool
+    get_device_instance_id(const WinApiLayerInterface &w_api, HDEVINFO dev_info_handle, SP_DEVINFO_DATA &dev_info_data, std::wstring &instance_id) {
+      DWORD required_size_in_characters { 0 };
+      if (SetupDiGetDeviceInstanceIdW(dev_info_handle, &dev_info_data, nullptr, 0, &required_size_in_characters)) {
+        DD_LOG(error) << "\"SetupDiGetDeviceInstanceIdW\" did not fail, what?!";
+        return false;
+      }
+      else if (required_size_in_characters <= 0) {
+        DD_LOG(error) << w_api.get_error_string(static_cast<LONG>(GetLastError())) << " \"SetupDiGetDeviceInstanceIdW\" failed while getting size.";
+        return false;
+      }
+
+      instance_id.resize(required_size_in_characters);
+      if (!SetupDiGetDeviceInstanceIdW(dev_info_handle, &dev_info_data, instance_id.data(), instance_id.size(), nullptr)) {
+        DD_LOG(error) << w_api.get_error_string(static_cast<LONG>(GetLastError())) << " \"SetupDiGetDeviceInstanceIdW\" failed.";
+        return false;
+      }
+
+      return !instance_id.empty();
+    }
+
+    /**
+     * @brief Helper method for dealing with SetupAPI.
+     * @returns True if EDID was retrieved and is non-empty, false otherwise.
+     * @see get_device_id implementation for more context regarding this madness.
+     */
+    bool
+    get_device_edid(const WinApiLayerInterface &w_api, HDEVINFO dev_info_handle, SP_DEVINFO_DATA &dev_info_data, std::vector<BYTE> &edid) {
+      // We could just directly open the registry key as the path is known, but we can also use the this
+      HKEY reg_key { SetupDiOpenDevRegKey(dev_info_handle, &dev_info_data, DICS_FLAG_GLOBAL, 0, DIREG_DEV, KEY_READ) };
+      if (reg_key == INVALID_HANDLE_VALUE) {
+        DD_LOG(error) << w_api.get_error_string(static_cast<LONG>(GetLastError())) << " \"SetupDiOpenDevRegKey\" failed.";
+        return false;
+      }
+
+      const auto reg_key_cleanup {
+        boost::scope::scope_exit([&w_api, &reg_key]() {
+          const auto status { RegCloseKey(reg_key) };
+          if (status != ERROR_SUCCESS) {
+            DD_LOG(error) << w_api.get_error_string(status) << " \"RegCloseKey\" failed.";
+          }
+        })
+      };
+
+      DWORD required_size_in_bytes { 0 };
+      auto status { RegQueryValueExW(reg_key, L"EDID", nullptr, nullptr, nullptr, &required_size_in_bytes) };
+      if (status != ERROR_SUCCESS) {
+        DD_LOG(error) << w_api.get_error_string(status) << " \"RegQueryValueExW\" failed when getting size.";
+        return false;
+      }
+
+      edid.resize(required_size_in_bytes);
+
+      status = RegQueryValueExW(reg_key, L"EDID", nullptr, nullptr, edid.data(), &required_size_in_bytes);
+      if (status != ERROR_SUCCESS) {
+        DD_LOG(error) << w_api.get_error_string(status) << " \"RegQueryValueExW\" failed when getting size.";
+        return false;
+      }
+
+      return !edid.empty();
+    }
+
+    /**
+     * @brief Converts a UTF-16 wide string into a UTF-8 string.
+     * @param w_api Reference to the WinApiLayer.
+     * @param value The UTF-16 wide string.
+     * @return The converted UTF-8 string.
+     */
+    std::string
+    to_utf8(const WinApiLayerInterface &w_api, const std::wstring &value) {
+      // No conversion needed if the string is empty
+      if (value.empty()) {
+        return {};
+      }
+
+      // Get the output size required to store the string
+      auto output_size = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, value.data(), static_cast<int>(value.size()), nullptr, 0, nullptr, nullptr);
+      if (output_size == 0) {
+        DD_LOG(error) << w_api.get_error_string(static_cast<LONG>(GetLastError())) << " failed to get UTF-8 buffer size.";
+        return {};
+      }
+
+      // Perform the conversion
+      std::string output(output_size, '\0');
+      output_size = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, value.data(), static_cast<int>(value.size()), output.data(), static_cast<int>(output.size()), nullptr, nullptr);
+      if (output_size == 0) {
+        DD_LOG(error) << w_api.get_error_string(static_cast<LONG>(GetLastError())) << " failed to convert string to UTF-8.";
+        return {};
+      }
+
+      return output;
+    }
   }  // namespace
 
   std::string
@@ -195,4 +357,154 @@ namespace display_device {
     return path_and_mode_data_t { paths, modes };
   }
 
+  std::string
+  WinApiLayer::get_device_id(const DISPLAYCONFIG_PATH_INFO &path) const {
+    const auto device_path { get_monitor_device_path_wstr(*this, path) };
+    if (device_path.empty()) {
+      // Error already logged
+      return {};
+    }
+
+    static const GUID monitor_guid { 0xe6f07b5f, 0xee97, 0x4a90, { 0xb0, 0x76, 0x33, 0xf5, 0x7b, 0xf4, 0xea, 0xa7 } };
+    std::vector<BYTE> device_id_data;
+
+    HDEVINFO dev_info_handle { SetupDiGetClassDevsW(&monitor_guid, nullptr, nullptr, DIGCF_DEVICEINTERFACE) };
+    if (dev_info_handle) {
+      const auto dev_info_handle_cleanup {
+        boost::scope::scope_exit([this, &dev_info_handle]() {
+          if (!SetupDiDestroyDeviceInfoList(dev_info_handle)) {
+            DD_LOG(error) << get_error_string(static_cast<LONG>(GetLastError())) << " \"SetupDiDestroyDeviceInfoList\" failed.";
+          }
+        })
+      };
+
+      SP_DEVICE_INTERFACE_DATA dev_interface_data {};
+      dev_interface_data.cbSize = sizeof(dev_interface_data);
+      for (DWORD monitor_index = 0;; ++monitor_index) {
+        if (!SetupDiEnumDeviceInterfaces(dev_info_handle, nullptr, &monitor_guid, monitor_index, &dev_interface_data)) {
+          const DWORD error_code { GetLastError() };
+          if (error_code == ERROR_NO_MORE_ITEMS) {
+            break;
+          }
+
+          DD_LOG(warning) << get_error_string(static_cast<LONG>(error_code)) << " \"SetupDiEnumDeviceInterfaces\" failed.";
+          continue;
+        }
+
+        std::wstring dev_interface_path;
+        SP_DEVINFO_DATA dev_info_data {};
+        dev_info_data.cbSize = sizeof(dev_info_data);
+        if (!get_device_interface_detail(*this, dev_info_handle, dev_interface_data, dev_interface_path, dev_info_data)) {
+          // Error already logged
+          continue;
+        }
+
+        if (!boost::iequals(dev_interface_path, device_path)) {
+          continue;
+        }
+
+        // Instance ID is unique in the system and persists restarts, but not driver re-installs.
+        // It looks like this:
+        //     DISPLAY\ACI27EC\5&4FD2DE4&5&UID4352 (also used in the device path it seems)
+        //                a    b    c    d    e
+        //
+        //  a) Hardware ID - stable
+        //  b) Either a bus number or has something to do with device capabilities - stable
+        //  c) Another ID, somehow tied to adapter (not an adapter ID from path object) - stable
+        //  d) Some sort of rotating counter thing, changes after driver reinstall - unstable
+        //  e) Seems to be the same as a target ID from path, it changes based on GPU port - semi-stable
+        //
+        // The instance ID also seems to be a part of the registry key (in case some other info is needed in the future):
+        //     HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\DISPLAY\ACI27EC\5&4fd2de4&5&UID4352
+
+        std::wstring instance_id;
+        if (!get_device_instance_id(*this, dev_info_handle, dev_info_data, instance_id)) {
+          // Error already logged
+          break;
+        }
+
+        if (!get_device_edid(*this, dev_info_handle, dev_info_data, device_id_data)) {
+          // Error already logged
+          break;
+        }
+
+        // We are going to discard the unstable parts of the instance ID and merge the stable parts with the edid buffer (if available)
+        auto unstable_part_index = instance_id.find_first_of(L'&', 0);
+        if (unstable_part_index != std::wstring::npos) {
+          unstable_part_index = instance_id.find_first_of(L'&', unstable_part_index + 1);
+        }
+
+        if (unstable_part_index == std::wstring::npos) {
+          DD_LOG(error) << "Failed to split off the stable part from instance id string " << to_utf8(*this, instance_id);
+          break;
+        }
+
+        auto semi_stable_part_index = instance_id.find_first_of(L'&', unstable_part_index + 1);
+        if (semi_stable_part_index == std::wstring::npos) {
+          DD_LOG(error) << "Failed to split off the semi-stable part from instance id string " << to_utf8(*this, instance_id);
+          break;
+        }
+
+        DD_LOG(verbose) << "Creating device id for path " << to_utf8(*this, device_path) << " from EDID and instance ID: " << to_utf8(*this, { std::begin(instance_id), std::begin(instance_id) + unstable_part_index }) << to_utf8(*this, { std::begin(instance_id) + semi_stable_part_index, std::end(instance_id) });  // NOLINT(*-narrowing-conversions)
+        device_id_data.insert(std::end(device_id_data),
+          reinterpret_cast<const BYTE *>(instance_id.data()),
+          reinterpret_cast<const BYTE *>(instance_id.data() + unstable_part_index));
+        device_id_data.insert(std::end(device_id_data),
+          reinterpret_cast<const BYTE *>(instance_id.data() + semi_stable_part_index),
+          reinterpret_cast<const BYTE *>(instance_id.data() + instance_id.size()));
+        break;
+      }
+    }
+
+    if (device_id_data.empty()) {
+      // Using the device path as a fallback, which is always unique, but not as stable as the preferred one
+      DD_LOG(verbose) << "Creating device id from path " << to_utf8(*this, device_path);
+      device_id_data.insert(std::end(device_id_data),
+        reinterpret_cast<const BYTE *>(device_path.data()),
+        reinterpret_cast<const BYTE *>(device_path.data() + device_path.size()));
+    }
+
+    static constexpr boost::uuids::uuid ns_id {};  // null namespace = no salt
+    const auto boost_uuid { boost::uuids::name_generator_sha1 { ns_id }(device_id_data.data(), device_id_data.size()) };
+    return "{" + boost::uuids::to_string(boost_uuid) + "}";
+  }
+
+  std::string
+  WinApiLayer::get_monitor_device_path(const DISPLAYCONFIG_PATH_INFO &path) const {
+    return to_utf8(*this, get_monitor_device_path_wstr(*this, path));
+  }
+
+  std::string
+  WinApiLayer::get_friendly_name(const DISPLAYCONFIG_PATH_INFO &path) const {
+    DISPLAYCONFIG_TARGET_DEVICE_NAME target_name = {};
+    target_name.header.adapterId = path.targetInfo.adapterId;
+    target_name.header.id = path.targetInfo.id;
+    target_name.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
+    target_name.header.size = sizeof(target_name);
+
+    LONG result { DisplayConfigGetDeviceInfo(&target_name.header) };
+    if (result != ERROR_SUCCESS) {
+      DD_LOG(error) << get_error_string(result) << " failed to get target device name!";
+      return {};
+    }
+
+    return target_name.flags.friendlyNameFromEdid ? to_utf8(*this, target_name.monitorFriendlyDeviceName) : std::string {};
+  }
+
+  std::string
+  WinApiLayer::get_display_name(const DISPLAYCONFIG_PATH_INFO &path) const {
+    DISPLAYCONFIG_SOURCE_DEVICE_NAME source_name = {};
+    source_name.header.id = path.sourceInfo.id;
+    source_name.header.adapterId = path.sourceInfo.adapterId;
+    source_name.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME;
+    source_name.header.size = sizeof(source_name);
+
+    LONG result { DisplayConfigGetDeviceInfo(&source_name.header) };
+    if (result != ERROR_SUCCESS) {
+      DD_LOG(error) << get_error_string(result) << " failed to get display name! ";
+      return {};
+    }
+
+    return to_utf8(*this, source_name.viewGdiDeviceName);
+  }
 }  // namespace display_device
