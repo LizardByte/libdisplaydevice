@@ -445,13 +445,31 @@ namespace display_device {
           break;
         }
 
-        DD_LOG(verbose) << "Creating device id for path " << to_utf8(*this, device_path) << " from EDID and instance ID: " << to_utf8(*this, { std::begin(instance_id), std::begin(instance_id) + unstable_part_index }) << to_utf8(*this, { std::begin(instance_id) + semi_stable_part_index, std::end(instance_id) });  // NOLINT(*-narrowing-conversions)
         device_id_data.insert(std::end(device_id_data),
           reinterpret_cast<const BYTE *>(instance_id.data()),
           reinterpret_cast<const BYTE *>(instance_id.data() + unstable_part_index));
         device_id_data.insert(std::end(device_id_data),
           reinterpret_cast<const BYTE *>(instance_id.data() + semi_stable_part_index),
           reinterpret_cast<const BYTE *>(instance_id.data() + instance_id.size()));
+
+        static const auto dump_device_id_data { [](const auto &data) -> std::string {
+          if (data.empty()) {
+            return {};
+          };
+
+          std::ostringstream output;
+          output << "[";
+          for (std::size_t i = 0; i < data.size(); ++i) {
+            output << "0x" << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << static_cast<int>(data[i]);
+            if (i + 1 < data.size()) {
+              output << " ";
+            }
+          }
+          output << "]";
+
+          return output.str();
+        } };
+        DD_LOG(verbose) << "Creating device id from EDID + instance ID: " << dump_device_id_data(device_id_data);
         break;
       }
     }
@@ -466,7 +484,10 @@ namespace display_device {
 
     static constexpr boost::uuids::uuid ns_id {};  // null namespace = no salt
     const auto boost_uuid { boost::uuids::name_generator_sha1 { ns_id }(device_id_data.data(), device_id_data.size()) };
-    return "{" + boost::uuids::to_string(boost_uuid) + "}";
+    const std::string device_id { "{" + boost::uuids::to_string(boost_uuid) + "}" };
+
+    DD_LOG(verbose) << "Created device id: " << to_utf8(*this, device_path) << " -> " << device_id;
+    return device_id;
   }
 
   std::string
