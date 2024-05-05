@@ -155,15 +155,8 @@ TEST(WinApiLayer, GetFriendlyName) {
     // Testing soft persistence - ids remain the same between calls
     EXPECT_EQ(friendly_name, friendly_name_2);
 
-    if (friendly_name.empty()) {
-      EXPECT_EQ(path.targetInfo.targetAvailable, FALSE);
-    }
-    else {
-      // Here we are making an assumption that the device will always have a friendly name, however it is not mandatory information,
-      // but these days almost every device should have something in the EDID...
-    }
-
     // We don't really have anything else to compare the friendly name against without going deep into EDID data.
+    // Friendly name is also not mandatory in the EDID...
   }
 }
 
