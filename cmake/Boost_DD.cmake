@@ -9,7 +9,10 @@ if(NOT Boost_FOUND)
     message(STATUS "Boost v1.85.x package not found in system. Falling back to submodule.")
 
     # Limit boost to the required libraries only
-    set(BOOST_INCLUDE_LIBRARIES scope algorithm uuid)
+    set(BOOST_INCLUDE_LIBRARIES
+            algorithm
+            scope
+            uuid)
     add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../third-party/boost third-party/boost EXCLUDE_FROM_ALL)
 
     # Emulate the "find_package" target
