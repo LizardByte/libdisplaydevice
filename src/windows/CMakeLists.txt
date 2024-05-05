@@ -11,5 +11,8 @@ add_library(${MODULE} ${HEADER_LIST} ${SOURCE_LIST})
 # Provide the includes together with this library
 target_include_directories(${MODULE} PUBLIC include)
 
+# Additional external libraries
+include(Boost_DD)
+
 # Link the additional libraries
-target_link_libraries(${MODULE} PRIVATE libcommon)
+target_link_libraries(${MODULE} PRIVATE libcommon Boost::boost setupapi)
