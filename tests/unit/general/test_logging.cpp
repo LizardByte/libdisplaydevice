@@ -72,9 +72,9 @@ TEST(LoggingTest, DefaultLogger) {
   auto &logger { display_device::Logger::get() };
 
   const auto write_and_get_cout { [this, &logger](level level, std::string value) -> std::string {
-    this->m_cout_buffer.str(std::string {});  // reset the buffer
+    m_cout_buffer.str(std::string {});  // reset the buffer
     logger.write(level, std::move(value));
-    return this->m_cout_buffer.str();
+    return m_cout_buffer.str();
   } };
 
   logger.setLogLevel(level::verbose);
@@ -100,38 +100,38 @@ TEST(LoggingTest, CustomCallback) {
 
   logger.write(level::verbose, "Hello World!");
   EXPECT_EQ(output, "0 Hello World!");
-  EXPECT_TRUE(this->m_cout_buffer.str().empty());
+  EXPECT_TRUE(m_cout_buffer.str().empty());
 
   logger.write(level::debug, "Hello World!");
   EXPECT_EQ(output, "1 Hello World!");
-  EXPECT_TRUE(this->m_cout_buffer.str().empty());
+  EXPECT_TRUE(m_cout_buffer.str().empty());
 
   logger.write(level::info, "Hello World!");
   EXPECT_EQ(output, "2 Hello World!");
-  EXPECT_TRUE(this->m_cout_buffer.str().empty());
+  EXPECT_TRUE(m_cout_buffer.str().empty());
 
   logger.write(level::warning, "Hello World!");
   EXPECT_EQ(output, "3 Hello World!");
-  EXPECT_TRUE(this->m_cout_buffer.str().empty());
+  EXPECT_TRUE(m_cout_buffer.str().empty());
 
   logger.write(level::error, "Hello World!");
   EXPECT_EQ(output, "4 Hello World!");
-  EXPECT_TRUE(this->m_cout_buffer.str().empty());
+  EXPECT_TRUE(m_cout_buffer.str().empty());
 }
 
 TEST(LoggingTest, WriteMethodRespectsLogLevelWhenUsingDefaultLogger) {
   using level = display_device::Logger::LogLevel;
   auto &logger { display_device::Logger::get() };
 
-  EXPECT_TRUE(this->m_cout_buffer.str().empty());
+  EXPECT_TRUE(m_cout_buffer.str().empty());
 
   logger.setLogLevel(level::error);
   logger.write(level::info, "Hello World!");
-  EXPECT_TRUE(this->m_cout_buffer.str().empty());
+  EXPECT_TRUE(m_cout_buffer.str().empty());
 
   logger.setLogLevel(level::info);
   logger.write(level::info, "Hello World!");
-  EXPECT_FALSE(this->m_cout_buffer.str().empty());
+  EXPECT_FALSE(m_cout_buffer.str().empty());
 }
 
 TEST(LoggingTest, WriteMethodRespectsLogLevelWhenUsingCustomCallback) {
