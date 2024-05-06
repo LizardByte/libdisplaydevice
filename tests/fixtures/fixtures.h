@@ -44,15 +44,15 @@ protected:
   exec(const char *cmd);
 
   // functions and variables
-  std::vector<std::string> testArgs;  // CLI arguments used
-  std::filesystem::path testBinary;  // full path of this binary
-  std::filesystem::path testBinaryDir;  // full directory of this binary
-  std::stringstream cout_buffer;  // declare cout_buffer
-  std::stringstream stdout_buffer;  // declare stdout_buffer
-  std::stringstream stderr_buffer;  // declare stderr_buffer
-  std::streambuf *sbuf;
-  FILE *pipe_stdout;
-  FILE *pipe_stderr;
+  std::vector<std::string> m_test_args;  // CLI arguments used
+  std::filesystem::path m_test_binary;  // full path of this binary
+  std::filesystem::path m_test_binary_dir;  // full directory of this binary
+  std::stringstream m_cout_buffer;  // declare cout_buffer
+  std::stringstream m_stdout_buffer;  // declare stdout_buffer
+  std::stringstream m_stderr_buffer;  // declare stderr_buffer
+  std::streambuf *m_sbuf;
+  FILE *m_pipe_stdout;
+  FILE *m_pipe_stderr;
 };
 
 class LinuxTest: public BaseTest {

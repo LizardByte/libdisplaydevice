@@ -17,7 +17,7 @@ namespace display_device {
     /**
      * @brief Type of query the OS should perform while searching for display devices.
      */
-    enum class query_type_e {
+    enum class QueryType {
       Active, /**< The device path must be active. */
       All /**< The device path can be active or inactive. */
     };
@@ -25,9 +25,9 @@ namespace display_device {
     /**
      * @brief Contains currently available paths and associated modes.
      */
-    struct path_and_mode_data_t {
-      std::vector<DISPLAYCONFIG_PATH_INFO> paths; /**< Available display paths. */
-      std::vector<DISPLAYCONFIG_MODE_INFO> modes; /**< Display modes for ACTIVE displays. */
+    struct PathAndModeData {
+      std::vector<DISPLAYCONFIG_PATH_INFO> m_paths; /**< Available display paths. */
+      std::vector<DISPLAYCONFIG_MODE_INFO> m_modes; /**< Display modes for ACTIVE displays. */
     };
 
     /**
@@ -43,11 +43,11 @@ namespace display_device {
      * EXAMPLES:
      * ```cpp
      * const WinApiLayerInterface* iface = getIface(...);
-     * const std::string error_message = iface->get_error_string(ERROR_NOT_SUPPORTED);
+     * const std::string error_message = iface->getErrorString(ERROR_NOT_SUPPORTED);
      * ```
      */
     [[nodiscard]] virtual std::string
-    get_error_string(LONG error_code) const = 0;
+    getErrorString(LONG error_code) const = 0;
 
     /**
      * @brief Query Windows for the device paths and associated modes.
@@ -57,11 +57,11 @@ namespace display_device {
      * EXAMPLES:
      * ```cpp
      * const WinApiLayerInterface* iface = getIface(...);
-     * const auto display_data = iface->query_display_config(query_type_e::Active);
+     * const auto display_data = iface->queryDisplayConfig(QueryType::Active);
      * ```
      */
-    [[nodiscard]] virtual std::optional<path_and_mode_data_t>
-    query_display_config(query_type_e type) const = 0;
+    [[nodiscard]] virtual std::optional<PathAndModeData>
+    queryDisplayConfig(QueryType type) const = 0;
 
     /**
      * @brief Get a stable and persistent device id for the path.
@@ -98,23 +98,23 @@ namespace display_device {
      *
      * @param path Path to get the device id for.
      * @returns Device id, or an empty string if it could not be generated.
-     * @see query_display_config on how to get paths from the system.
+     * @see queryDisplayConfig on how to get paths from the system.
      *
      * EXAMPLES:
      * ```cpp
      * DISPLAYCONFIG_PATH_INFO path;
      * const WinApiLayerInterface* iface = getIface(...);
-     * const std::string device_path = iface->get_device_id(path);
+     * const std::string device_path = iface->getDeviceId(path);
      * ```
      */
     [[nodiscard]] virtual std::string
-    get_device_id(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
+    getDeviceId(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
 
     /**
      * @brief Get a string that represents a path from the adapter to the display target.
      * @param path Path to get the string for.
      * @returns String representation, or an empty string if it's not available.
-     * @see query_display_config on how to get paths from the system.
+     * @see queryDisplayConfig on how to get paths from the system.
      * @note In the rest of the code we refer to this string representation simply as the "device path".
      *       It is used as a simple way of grouping related path objects together and removing "bad" paths
      *       that don't have such string representation.
@@ -123,28 +123,28 @@ namespace display_device {
      * ```cpp
      * DISPLAYCONFIG_PATH_INFO path;
      * const WinApiLayerInterface* iface = getIface(...);
-     * const std::string device_path = iface->get_monitor_device_path(path);
+     * const std::string device_path = iface->getMonitorDevicePath(path);
      * ```
      */
     [[nodiscard]] virtual std::string
-    get_monitor_device_path(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
+    getMonitorDevicePath(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
 
     /**
      * @brief Get the user friendly name for the path.
      * @param path Path to get user friendly name for.
      * @returns User friendly name for the path if available, empty string otherwise.
-     * @see query_display_config on how to get paths from the system.
+     * @see queryDisplayConfig on how to get paths from the system.
      * @note This is usually a monitor name (like "ROG PG279Q") and is most likely taken from EDID.
      *
      * EXAMPLES:
      * ```cpp
      * DISPLAYCONFIG_PATH_INFO path;
      * const WinApiLayerInterface* iface = getIface(...);
-     * const std::string friendly_name = iface->get_friendly_name(path);
+     * const std::string friendly_name = iface->getFriendlyName(path);
      * ```
      */
     [[nodiscard]] virtual std::string
-    get_friendly_name(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
+    getFriendlyName(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
 
     /**
      * @brief Get the logical display name for the path.
@@ -154,7 +154,7 @@ namespace display_device {
      *
      * @param path Path to get user display name for.
      * @returns Display name for the path if available, empty string otherwise.
-     * @see query_display_config on how to get paths from the system.
+     * @see queryDisplayConfig on how to get paths from the system.
      * @note Inactive paths can have these names already assigned to them, even
      *       though they are not even in use! There can also be duplicates.
      *
@@ -162,10 +162,10 @@ namespace display_device {
      * ```cpp
      * DISPLAYCONFIG_PATH_INFO path;
      * const WinApiLayerInterface* iface = getIface(...);
-     * const std::string display_name = iface->get_display_name(path);
+     * const std::string display_name = iface->getDisplayName(path);
      * ```
      */
     [[nodiscard]] virtual std::string
-    get_display_name(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
+    getDisplayName(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
   };
 }  // namespace display_device

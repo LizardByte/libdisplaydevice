@@ -14,14 +14,14 @@ namespace display_device {
    *
    * @note A lazy-evaluated, correctly-destroyed, thread-safe singleton pattern is used here (https://stackoverflow.com/a/1008289).
    */
-  class logger_t {
+  class Logger {
   public:
     /**
      * @brief Defines the possible log levels.
      * @note Level implicitly includes all other levels below it.
      * @note All levels are in lower-case on purpose to fit the "BOOST_LOG(info)" style.
      */
-    enum class log_level_e {
+    enum class LogLevel {
       verbose = 0,
       debug,
       info,
@@ -32,7 +32,7 @@ namespace display_device {
     /**
      * @brief Defines the callback type for log data re-routing.
      */
-    using callback_t = std::function<void(const log_level_e, std::string)>;
+    using Callback = std::function<void(LogLevel, std::string)>;
 
     /**
      * @brief Get the singleton instance.
@@ -40,10 +40,10 @@ namespace display_device {
      *
      * EXAMPLES:
      * ```cpp
-     * logger_t& logger { logger_t::get() };
+     * Logger& logger { Logger::get() };
      * ```
      */
-    static logger_t &
+    static Logger &
     get();
 
     /**
@@ -52,11 +52,11 @@ namespace display_device {
      *
      * EXAMPLES:
      * ```cpp
-     * logger_t::get().set_log_level(logger_t::log_level_e::Info);
+     * Logger::get().setLogLevel(Logger::LogLevel::Info);
      * ```
      */
     void
-    set_log_level(log_level_e log_level);
+    setLogLevel(LogLevel log_level);
 
     /**
      * @brief Check if log level is currently enabled.
@@ -65,11 +65,11 @@ namespace display_device {
      *
      * EXAMPLES:
      * ```cpp
-     * const bool is_enabled { logger_t::get().is_log_level_enabled(logger_t::log_level_e::Info) };
+     * const bool is_enabled { Logger::get().isLogLevelEnabled(Logger::LogLevel::Info) };
      * ```
      */
     [[nodiscard]] bool
-    is_log_level_enabled(log_level_e log_level) const;
+    isLogLevelEnabled(LogLevel log_level) const;
 
     /**
      * @brief Set custom callback for writing the logs.
@@ -77,13 +77,13 @@ namespace display_device {
      *
      * EXAMPLES:
      * ```cpp
-     * logger_t::get().set_custom_callback([](const log_level_e level, std::string value){
+     * Logger::get().setCustomCallback([](const LogLevel level, std::string value){
      *    // write to file or something
      * });
      * ```
      */
     void
-    set_custom_callback(callback_t callback);
+    setCustomCallback(Callback callback);
 
     /**
      * @brief Write the string to the output (via callback) if the log level is enabled.
@@ -92,50 +92,50 @@ namespace display_device {
      *
      * EXAMPLES:
      * ```cpp
-     * logger_t::get().write(logger_t::log_level_e::Info, "Hello World!");
+     * Logger::get().write(Logger::LogLevel::Info, "Hello World!");
      * ```
      */
     void
-    write(log_level_e log_level, std::string value);
+    write(LogLevel log_level, std::string value);
 
     /**
      * @brief A deleted copy constructor for singleton pattern.
      * @note Public to ensure better compiler error message.
      */
-    logger_t(logger_t const &) = delete;
+    Logger(Logger const &) = delete;
 
     /**
      * @brief A deleted assignment operator for singleton pattern.
      * @note Public to ensure better compiler error message.
      */
     void
-    operator=(logger_t const &) = delete;
+    operator=(Logger const &) = delete;
 
   private:
     /**
      * @brief A private constructor to ensure the singleton pattern.
      */
-    explicit logger_t();
+    explicit Logger();
 
-    log_level_e m_enabled_log_level; /**< The currently enabled log level. */
-    callback_t m_custom_callback; /**< Custom callback to pass log data to. */
+    LogLevel m_enabled_log_level; /**< The currently enabled log level. */
+    Callback m_custom_callback; /**< Custom callback to pass log data to. */
   };
 
   /**
    * @brief A helper class for accumulating output via the stream operator and then writing it out at once.
    */
-  class log_writer_t {
+  class LogWriter {
   public:
     /**
      * @brief Constructor scoped writer utility.
      * @param log_level Level to be used when writing out the output.
      */
-    explicit log_writer_t(logger_t::log_level_e log_level);
+    explicit LogWriter(Logger::LogLevel log_level);
 
     /**
      * @brief Write out the accumulated output.
      */
-    virtual ~log_writer_t();
+    virtual ~LogWriter();
 
     /**
      * @brief Stream value to the buffer.
@@ -143,14 +143,14 @@ namespace display_device {
      * @returns Reference to the writer utility for chaining the operators.
      */
     template <class T>
-    log_writer_t &
+    LogWriter &
     operator<<(T &&value) {
       m_buffer << std::forward<T>(value);
       return *this;
     }
 
   private:
-    logger_t::log_level_e m_log_level; /**< Log level to be used. */
+    Logger::LogLevel m_log_level; /**< Log level to be used. */
     std::ostringstream m_buffer; /**< Buffer to hold all the output. */
   };
 }  // namespace display_device
@@ -164,6 +164,6 @@ namespace display_device {
  * DD_LOG(error) << "OH MY GAWD!";
  * ```
  */
-#define DD_LOG(level)                                                                                                                                          \
-  for (bool is_enabled { display_device::logger_t::get().is_log_level_enabled(display_device::logger_t::log_level_e::level) }; is_enabled; is_enabled = false) \
-  display_device::log_writer_t(display_device::logger_t::log_level_e::level)
+#define DD_LOG(level)                                                                                                                                \
+  for (bool is_enabled { display_device::Logger::get().isLogLevelEnabled(display_device::Logger::LogLevel::level) }; is_enabled; is_enabled = false) \
+  display_device::LogWriter(display_device::Logger::LogLevel::level)

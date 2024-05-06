@@ -8,32 +8,32 @@
 #include <mutex>
 
 namespace display_device {
-  logger_t &
-  logger_t::get() {
-    static logger_t instance;
+  Logger &
+  Logger::get() {
+    static Logger instance;
     return instance;
   }
 
   void
-  logger_t::set_log_level(const log_level_e log_level) {
+  Logger::setLogLevel(LogLevel log_level) {
     m_enabled_log_level = log_level;
   }
 
   bool
-  logger_t::is_log_level_enabled(const log_level_e log_level) const {
-    const auto log_level_v { static_cast<std::underlying_type_t<log_level_e>>(log_level) };
-    const auto enabled_log_level_v { static_cast<std::underlying_type_t<log_level_e>>(m_enabled_log_level) };
+  Logger::isLogLevelEnabled(LogLevel log_level) const {
+    const auto log_level_v { static_cast<std::underlying_type_t<LogLevel>>(log_level) };
+    const auto enabled_log_level_v { static_cast<std::underlying_type_t<LogLevel>>(m_enabled_log_level) };
     return log_level_v >= enabled_log_level_v;
   }
 
   void
-  logger_t::set_custom_callback(callback_t callback) {
+  Logger::setCustomCallback(Callback callback) {
     m_custom_callback = std::move(callback);
   }
 
   void
-  logger_t::write(const log_level_e log_level, std::string value) {
-    if (!is_log_level_enabled(log_level)) {
+  Logger::write(const LogLevel log_level, std::string value) {
+    if (!isLogLevelEnabled(log_level)) {
       return;
     }
 
@@ -70,19 +70,19 @@ namespace display_device {
 
       // Log level
       switch (log_level) {
-        case log_level_e::verbose:
+        case LogLevel::verbose:
           stream << "VERBOSE: ";
           break;
-        case log_level_e::debug:
+        case LogLevel::debug:
           stream << "DEBUG:   ";
           break;
-        case log_level_e::info:
+        case LogLevel::info:
           stream << "INFO:    ";
           break;
-        case log_level_e::warning:
+        case LogLevel::warning:
           stream << "WARNING: ";
           break;
-        case log_level_e::error:
+        case LogLevel::error:
           stream << "ERROR:   ";
           break;
         default:
@@ -98,14 +98,14 @@ namespace display_device {
     std::cout << stream.rdbuf() << std::endl;
   }
 
-  logger_t::logger_t():
-      m_enabled_log_level { log_level_e::info } {
+  Logger::Logger():
+      m_enabled_log_level { LogLevel::info } {
   }
 
-  log_writer_t::log_writer_t(const logger_t::log_level_e log_level):
+  LogWriter::LogWriter(const Logger::LogLevel log_level):
       m_log_level { log_level } {}
 
-  log_writer_t::~log_writer_t() {
-    logger_t::get().write(m_log_level, m_buffer.str());
+  LogWriter::~LogWriter() {
+    Logger::get().write(m_log_level, m_buffer.str());
   }
 }  // namespace display_device

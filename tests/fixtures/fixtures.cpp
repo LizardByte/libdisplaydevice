@@ -5,7 +5,7 @@
 #include "displaydevice/logging.h"
 
 BaseTest::BaseTest():
-    sbuf { nullptr }, pipe_stdout { nullptr }, pipe_stderr { nullptr } {
+    m_sbuf { nullptr }, m_pipe_stdout { nullptr }, m_pipe_stderr { nullptr } {
   // intentionally empty
 }
 
@@ -14,32 +14,32 @@ BaseTest::SetUp() {
   // todo: only run this one time, instead of every time a test is run
   // see: https://stackoverflow.com/questions/2435277/googletest-accessing-the-environment-from-a-test
   // get command line args from the test executable
-  testArgs = ::testing::internal::GetArgvs();
+  m_test_args = ::testing::internal::GetArgvs();
 
   // then get the directory of the test executable
   // std::string path = ::testing::internal::GetArgvs()[0];
-  testBinary = testArgs[0];
+  m_test_binary = m_test_args[0];
 
   // get the directory of the test executable
-  testBinaryDir = std::filesystem::path(testBinary).parent_path();
+  m_test_binary_dir = std::filesystem::path(m_test_binary).parent_path();
 
   // If testBinaryDir is empty or `.` then set it to the current directory
   // maybe some better options here: https://stackoverflow.com/questions/875249/how-to-get-current-directory
-  if (testBinaryDir.empty() || testBinaryDir.string() == ".") {
-    testBinaryDir = std::filesystem::current_path();
+  if (m_test_binary_dir.empty() || m_test_binary_dir.string() == ".") {
+    m_test_binary_dir = std::filesystem::current_path();
   }
 
-  sbuf = std::cout.rdbuf();  // save cout buffer (std::cout)
-  std::cout.rdbuf(cout_buffer.rdbuf());  // redirect cout to buffer (std::cout)
+  m_sbuf = std::cout.rdbuf();  // save cout buffer (std::cout)
+  std::cout.rdbuf(m_cout_buffer.rdbuf());  // redirect cout to buffer (std::cout)
 
   // Default to the verbose level in case some test fails
-  display_device::logger_t::get().set_log_level(display_device::logger_t::log_level_e::verbose);
+  display_device::Logger::get().setLogLevel(display_device::Logger::LogLevel::verbose);
 }
 
 void
 BaseTest::TearDown() {
-  display_device::logger_t::get().set_custom_callback(nullptr);  // restore the default callback to avoid potential leaks
-  std::cout.rdbuf(sbuf);  // restore cout buffer
+  display_device::Logger::get().setCustomCallback(nullptr);  // restore the default callback to avoid potential leaks
+  std::cout.rdbuf(m_sbuf);  // restore cout buffer
 
   // get test info
   const ::testing::TestInfo *const test_info = ::testing::UnitTest::GetInstance()->current_test_info();
@@ -49,42 +49,42 @@ BaseTest::TearDown() {
               << "Test failed: " << test_info->name() << std::endl
               << std::endl
               << "Captured cout:" << std::endl
-              << cout_buffer.str() << std::endl
+              << m_cout_buffer.str() << std::endl
               << "Captured stdout:" << std::endl
-              << stdout_buffer.str() << std::endl
+              << m_stdout_buffer.str() << std::endl
               << "Captured stderr:" << std::endl
-              << stderr_buffer.str() << std::endl;
+              << m_stderr_buffer.str() << std::endl;
   }
 
-  sbuf = nullptr;  // clear sbuf
-  if (pipe_stdout) {
-    pclose(pipe_stdout);
-    pipe_stdout = nullptr;
+  m_sbuf = nullptr;  // clear sbuf
+  if (m_pipe_stdout) {
+    pclose(m_pipe_stdout);
+    m_pipe_stdout = nullptr;
   }
-  if (pipe_stderr) {
-    pclose(pipe_stderr);
-    pipe_stderr = nullptr;
+  if (m_pipe_stderr) {
+    pclose(m_pipe_stderr);
+    m_pipe_stderr = nullptr;
   }
 }
 
 int
 BaseTest::exec(const char *cmd) {
   std::array<char, 128> buffer {};
-  pipe_stdout = popen((std::string(cmd) + " 2>&1").c_str(), "r");
-  pipe_stderr = popen((std::string(cmd) + " 2>&1").c_str(), "r");
-  if (!pipe_stdout || !pipe_stderr) {
+  m_pipe_stdout = popen((std::string(cmd) + " 2>&1").c_str(), "r");
+  m_pipe_stderr = popen((std::string(cmd) + " 2>&1").c_str(), "r");
+  if (!m_pipe_stdout || !m_pipe_stderr) {
     throw std::runtime_error("popen() failed!");
   }
-  while (fgets(buffer.data(), buffer.size(), pipe_stdout) != nullptr) {
-    stdout_buffer << buffer.data();
+  while (fgets(buffer.data(), buffer.size(), m_pipe_stdout) != nullptr) {
+    m_stdout_buffer << buffer.data();
   }
-  while (fgets(buffer.data(), buffer.size(), pipe_stderr) != nullptr) {
-    stderr_buffer << buffer.data();
+  while (fgets(buffer.data(), buffer.size(), m_pipe_stderr) != nullptr) {
+    m_stderr_buffer << buffer.data();
   }
-  int returnCode = pclose(pipe_stdout);
-  pipe_stdout = nullptr;
+  int returnCode = pclose(m_pipe_stdout);
+  m_pipe_stdout = nullptr;
   if (returnCode != 0) {
-    std::cout << "Error: " << stderr_buffer.str() << std::endl
+    std::cout << "Error: " << m_stderr_buffer.str() << std::endl
               << "Return code: " << returnCode << std::endl;
   }
   return returnCode;
