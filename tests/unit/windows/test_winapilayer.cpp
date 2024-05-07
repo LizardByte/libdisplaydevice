@@ -5,37 +5,37 @@
 TEST(WinApiLayer, GetErrorString) {
   const display_device::WinApiLayer layer;
 
-  EXPECT_TRUE(test_regex(layer.get_error_string(ERROR_INVALID_PARAMETER), R"(\[code: ERROR_INVALID_PARAMETER, .+?\])"));
-  EXPECT_TRUE(test_regex(layer.get_error_string(ERROR_NOT_SUPPORTED), R"(\[code: ERROR_NOT_SUPPORTED, .+?\])"));
-  EXPECT_TRUE(test_regex(layer.get_error_string(ERROR_ACCESS_DENIED), R"(\[code: ERROR_ACCESS_DENIED, .+?\])"));
-  EXPECT_TRUE(test_regex(layer.get_error_string(ERROR_INSUFFICIENT_BUFFER), R"(\[code: ERROR_INSUFFICIENT_BUFFER, .+?\])"));
-  EXPECT_TRUE(test_regex(layer.get_error_string(ERROR_GEN_FAILURE), R"(\[code: ERROR_GEN_FAILURE, .+?\])"));
-  EXPECT_TRUE(test_regex(layer.get_error_string(ERROR_SUCCESS), R"(\[code: ERROR_SUCCESS, .+?\])"));
-  EXPECT_TRUE(test_regex(layer.get_error_string(ERROR_ACCOUNT_DISABLED), R"(\[code: )" + std::to_string(ERROR_ACCOUNT_DISABLED) + R"(, .+?\])"));
+  EXPECT_TRUE(testRegex(layer.getErrorString(ERROR_INVALID_PARAMETER), R"(\[code: ERROR_INVALID_PARAMETER, .+?\])"));
+  EXPECT_TRUE(testRegex(layer.getErrorString(ERROR_NOT_SUPPORTED), R"(\[code: ERROR_NOT_SUPPORTED, .+?\])"));
+  EXPECT_TRUE(testRegex(layer.getErrorString(ERROR_ACCESS_DENIED), R"(\[code: ERROR_ACCESS_DENIED, .+?\])"));
+  EXPECT_TRUE(testRegex(layer.getErrorString(ERROR_INSUFFICIENT_BUFFER), R"(\[code: ERROR_INSUFFICIENT_BUFFER, .+?\])"));
+  EXPECT_TRUE(testRegex(layer.getErrorString(ERROR_GEN_FAILURE), R"(\[code: ERROR_GEN_FAILURE, .+?\])"));
+  EXPECT_TRUE(testRegex(layer.getErrorString(ERROR_SUCCESS), R"(\[code: ERROR_SUCCESS, .+?\])"));
+  EXPECT_TRUE(testRegex(layer.getErrorString(ERROR_ACCOUNT_DISABLED), R"(\[code: )" + std::to_string(ERROR_ACCOUNT_DISABLED) + R"(, .+?\])"));
 }
 
 TEST(WinApiLayer, QueryDisplayConfigPathAndModeCount) {
   const display_device::WinApiLayer layer;
 
-  const auto active_devices { layer.query_display_config(display_device::WinApiLayer::query_type_e::Active) };
-  const auto all_devices { layer.query_display_config(display_device::WinApiLayer::query_type_e::All) };
+  const auto active_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::Active) };
+  const auto all_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::All) };
 
   ASSERT_TRUE(active_devices);
   ASSERT_TRUE(all_devices);
 
   // This test (and some others) is pointless without any paths. We should always have at least 1 active display device!
-  EXPECT_TRUE(!active_devices->paths.empty());
-  EXPECT_TRUE(all_devices->paths.size() >= active_devices->paths.size());
-  EXPECT_TRUE(all_devices->modes.size() == active_devices->modes.size());
+  EXPECT_TRUE(!active_devices->m_paths.empty());
+  EXPECT_TRUE(all_devices->m_paths.size() >= active_devices->m_paths.size());
+  EXPECT_TRUE(all_devices->m_modes.size() == active_devices->m_modes.size());
 }
 
 TEST(WinApiLayer, QueryDisplayConfigPathActivePaths) {
   const display_device::WinApiLayer layer;
 
-  const auto active_devices { layer.query_display_config(display_device::WinApiLayer::query_type_e::Active) };
+  const auto active_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::Active) };
   ASSERT_TRUE(active_devices);
 
-  for (const auto &path : active_devices->paths) {
+  for (const auto &path : active_devices->m_paths) {
     EXPECT_TRUE(static_cast<bool>(path.flags & DISPLAYCONFIG_PATH_ACTIVE));
   }
 }
@@ -49,13 +49,13 @@ TEST(WinApiLayer, QueryDisplayConfigModeIndexValidity) {
   // is still being used.
   const display_device::WinApiLayer layer;
 
-  const auto active_devices { layer.query_display_config(display_device::WinApiLayer::query_type_e::Active) };
-  const auto all_devices { layer.query_display_config(display_device::WinApiLayer::query_type_e::All) };
+  const auto active_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::Active) };
+  const auto all_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::All) };
 
   for (const auto &devices : { active_devices, all_devices }) {
     ASSERT_TRUE(devices);
 
-    for (const auto &path : devices->paths) {
+    for (const auto &path : devices->m_paths) {
       const auto clone_group_id = path.sourceInfo.cloneGroupId;
       const auto source_mode_index = path.sourceInfo.sourceModeInfoIdx;
       const auto target_mode_index = path.targetInfo.targetModeInfoIdx;
@@ -65,18 +65,18 @@ TEST(WinApiLayer, QueryDisplayConfigModeIndexValidity) {
       EXPECT_EQ(clone_group_id, DISPLAYCONFIG_PATH_CLONE_GROUP_INVALID);
 
       if (source_mode_index != DISPLAYCONFIG_PATH_SOURCE_MODE_IDX_INVALID) {
-        ASSERT_TRUE(source_mode_index < devices->modes.size());
-        EXPECT_EQ(devices->modes[source_mode_index].infoType, DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE);
+        ASSERT_TRUE(source_mode_index < devices->m_modes.size());
+        EXPECT_EQ(devices->m_modes[source_mode_index].infoType, DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE);
       }
 
       if (target_mode_index != DISPLAYCONFIG_PATH_TARGET_MODE_IDX_INVALID) {
-        ASSERT_TRUE(target_mode_index < devices->modes.size());
-        EXPECT_EQ(devices->modes[target_mode_index].infoType, DISPLAYCONFIG_MODE_INFO_TYPE_TARGET);
+        ASSERT_TRUE(target_mode_index < devices->m_modes.size());
+        EXPECT_EQ(devices->m_modes[target_mode_index].infoType, DISPLAYCONFIG_MODE_INFO_TYPE_TARGET);
       }
 
       if (desktop_mode_index != DISPLAYCONFIG_PATH_DESKTOP_IMAGE_IDX_INVALID) {
-        ASSERT_TRUE(desktop_mode_index < devices->modes.size());
-        EXPECT_EQ(devices->modes[desktop_mode_index].infoType, DISPLAYCONFIG_MODE_INFO_TYPE_DESKTOP_IMAGE);
+        ASSERT_TRUE(desktop_mode_index < devices->m_modes.size());
+        EXPECT_EQ(devices->m_modes[desktop_mode_index].infoType, DISPLAYCONFIG_MODE_INFO_TYPE_DESKTOP_IMAGE);
       }
     }
   }
@@ -85,14 +85,14 @@ TEST(WinApiLayer, QueryDisplayConfigModeIndexValidity) {
 TEST(WinApiLayer, GetDeviceId) {
   const display_device::WinApiLayer layer;
 
-  const auto all_devices { layer.query_display_config(display_device::WinApiLayer::query_type_e::All) };
+  const auto all_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::All) };
   ASSERT_TRUE(all_devices);
 
   std::map<std::string, std::string> device_id_per_device_path;
-  for (const auto &path : all_devices->paths) {
-    const auto device_id { layer.get_device_id(path) };
-    const auto device_id_2 { layer.get_device_id(path) };
-    const auto device_path { layer.get_monitor_device_path(path) };
+  for (const auto &path : all_devices->m_paths) {
+    const auto device_id { layer.getDeviceId(path) };
+    const auto device_id_2 { layer.getDeviceId(path) };
+    const auto device_path { layer.getMonitorDevicePath(path) };
 
     // Testing soft persistence - ids remain the same between calls
     EXPECT_EQ(device_id, device_id_2);
@@ -116,13 +116,13 @@ TEST(WinApiLayer, GetDeviceId) {
 TEST(WinApiLayer, GetMonitorDevicePath) {
   const display_device::WinApiLayer layer;
 
-  const auto all_devices { layer.query_display_config(display_device::WinApiLayer::query_type_e::All) };
+  const auto all_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::All) };
   ASSERT_TRUE(all_devices);
 
   std::set<std::string> current_device_paths;
-  for (const auto &path : all_devices->paths) {
-    const auto device_path { layer.get_monitor_device_path(path) };
-    const auto device_path_2 { layer.get_monitor_device_path(path) };
+  for (const auto &path : all_devices->m_paths) {
+    const auto device_path { layer.getMonitorDevicePath(path) };
+    const auto device_path_2 { layer.getMonitorDevicePath(path) };
 
     // Testing soft persistence - paths remain the same between calls
     EXPECT_EQ(device_path, device_path_2);
@@ -145,12 +145,12 @@ TEST(WinApiLayer, GetMonitorDevicePath) {
 TEST(WinApiLayer, GetFriendlyName) {
   const display_device::WinApiLayer layer;
 
-  const auto all_devices { layer.query_display_config(display_device::WinApiLayer::query_type_e::All) };
+  const auto all_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::All) };
   ASSERT_TRUE(all_devices);
 
-  for (const auto &path : all_devices->paths) {
-    const auto friendly_name { layer.get_friendly_name(path) };
-    const auto friendly_name_2 { layer.get_friendly_name(path) };
+  for (const auto &path : all_devices->m_paths) {
+    const auto friendly_name { layer.getFriendlyName(path) };
+    const auto friendly_name_2 { layer.getFriendlyName(path) };
 
     // Testing soft persistence - ids remain the same between calls
     EXPECT_EQ(friendly_name, friendly_name_2);
@@ -163,18 +163,18 @@ TEST(WinApiLayer, GetFriendlyName) {
 TEST(WinApiLayer, GetDisplayName) {
   const display_device::WinApiLayer layer;
 
-  const auto all_devices { layer.query_display_config(display_device::WinApiLayer::query_type_e::All) };
+  const auto all_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::All) };
   ASSERT_TRUE(all_devices);
 
-  for (const auto &path : all_devices->paths) {
-    const auto display_name { layer.get_display_name(path) };
-    const auto display_name_2 { layer.get_display_name(path) };
+  for (const auto &path : all_devices->m_paths) {
+    const auto display_name { layer.getDisplayName(path) };
+    const auto display_name_2 { layer.getDisplayName(path) };
 
     // Testing soft persistence - ids remain the same between calls
     EXPECT_EQ(display_name, display_name_2);
 
     // Display name is attached to the "source" mode (not a physical device) therefore a non-empty
     // value is always expected.
-    EXPECT_TRUE(test_regex(display_name, R"(^\\\\.\\DISPLAY\d+$)"));
+    EXPECT_TRUE(testRegex(display_name, R"(^\\\\.\\DISPLAY\d+$)"));
   }
 }

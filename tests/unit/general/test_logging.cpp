@@ -3,161 +3,161 @@
 #include "fixtures.h"
 
 TEST(LoggingTest, LogLevelVerbose) {
-  using level = display_device::logger_t::log_level_e;
-  auto &logger { display_device::logger_t::get() };
+  using level = display_device::Logger::LogLevel;
+  auto &logger { display_device::Logger::get() };
 
-  logger.set_log_level(level::verbose);
+  logger.setLogLevel(level::verbose);
 
-  EXPECT_EQ(logger.is_log_level_enabled(level::verbose), true);
-  EXPECT_EQ(logger.is_log_level_enabled(level::debug), true);
-  EXPECT_EQ(logger.is_log_level_enabled(level::info), true);
-  EXPECT_EQ(logger.is_log_level_enabled(level::warning), true);
-  EXPECT_EQ(logger.is_log_level_enabled(level::error), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::verbose), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::debug), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::info), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::warning), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::error), true);
 }
 
 TEST(LoggingTest, LogLevelDebug) {
-  using level = display_device::logger_t::log_level_e;
-  auto &logger { display_device::logger_t::get() };
+  using level = display_device::Logger::LogLevel;
+  auto &logger { display_device::Logger::get() };
 
-  logger.set_log_level(level::debug);
+  logger.setLogLevel(level::debug);
 
-  EXPECT_EQ(logger.is_log_level_enabled(level::verbose), false);
-  EXPECT_EQ(logger.is_log_level_enabled(level::debug), true);
-  EXPECT_EQ(logger.is_log_level_enabled(level::info), true);
-  EXPECT_EQ(logger.is_log_level_enabled(level::warning), true);
-  EXPECT_EQ(logger.is_log_level_enabled(level::error), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::verbose), false);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::debug), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::info), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::warning), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::error), true);
 }
 
 TEST(LoggingTest, LogLevelInfo) {
-  using level = display_device::logger_t::log_level_e;
-  auto &logger { display_device::logger_t::get() };
+  using level = display_device::Logger::LogLevel;
+  auto &logger { display_device::Logger::get() };
 
-  logger.set_log_level(level::info);
+  logger.setLogLevel(level::info);
 
-  EXPECT_EQ(logger.is_log_level_enabled(level::verbose), false);
-  EXPECT_EQ(logger.is_log_level_enabled(level::debug), false);
-  EXPECT_EQ(logger.is_log_level_enabled(level::info), true);
-  EXPECT_EQ(logger.is_log_level_enabled(level::warning), true);
-  EXPECT_EQ(logger.is_log_level_enabled(level::error), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::verbose), false);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::debug), false);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::info), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::warning), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::error), true);
 }
 
 TEST(LoggingTest, LogLevelWarning) {
-  using level = display_device::logger_t::log_level_e;
-  auto &logger { display_device::logger_t::get() };
+  using level = display_device::Logger::LogLevel;
+  auto &logger { display_device::Logger::get() };
 
-  logger.set_log_level(level::warning);
+  logger.setLogLevel(level::warning);
 
-  EXPECT_EQ(logger.is_log_level_enabled(level::verbose), false);
-  EXPECT_EQ(logger.is_log_level_enabled(level::debug), false);
-  EXPECT_EQ(logger.is_log_level_enabled(level::info), false);
-  EXPECT_EQ(logger.is_log_level_enabled(level::warning), true);
-  EXPECT_EQ(logger.is_log_level_enabled(level::error), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::verbose), false);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::debug), false);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::info), false);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::warning), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::error), true);
 }
 
 TEST(LoggingTest, LogLevelError) {
-  using level = display_device::logger_t::log_level_e;
-  auto &logger { display_device::logger_t::get() };
+  using level = display_device::Logger::LogLevel;
+  auto &logger { display_device::Logger::get() };
 
-  logger.set_log_level(level::error);
+  logger.setLogLevel(level::error);
 
-  EXPECT_EQ(logger.is_log_level_enabled(level::verbose), false);
-  EXPECT_EQ(logger.is_log_level_enabled(level::debug), false);
-  EXPECT_EQ(logger.is_log_level_enabled(level::info), false);
-  EXPECT_EQ(logger.is_log_level_enabled(level::warning), false);
-  EXPECT_EQ(logger.is_log_level_enabled(level::error), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::verbose), false);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::debug), false);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::info), false);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::warning), false);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::error), true);
 }
 
 TEST(LoggingTest, DefaultLogger) {
-  using level = display_device::logger_t::log_level_e;
-  auto &logger { display_device::logger_t::get() };
+  using level = display_device::Logger::LogLevel;
+  auto &logger { display_device::Logger::get() };
 
   const auto write_and_get_cout { [this, &logger](level level, std::string value) -> std::string {
-    this->cout_buffer.str(std::string {});  // reset the buffer
+    m_cout_buffer.str(std::string {});  // reset the buffer
     logger.write(level, std::move(value));
-    return this->cout_buffer.str();
+    return m_cout_buffer.str();
   } };
 
-  logger.set_log_level(level::verbose);
+  logger.setLogLevel(level::verbose);
   // clang-format off
-  EXPECT_TRUE(test_regex(write_and_get_cout(level::verbose, "Hello World!"), R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] VERBOSE: Hello World!\n)"));
-  EXPECT_TRUE(test_regex(write_and_get_cout(level::debug, "Hello World!"),   R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] DEBUG:   Hello World!\n)"));
-  EXPECT_TRUE(test_regex(write_and_get_cout(level::info, "Hello World!"),    R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] INFO:    Hello World!\n)"));
-  EXPECT_TRUE(test_regex(write_and_get_cout(level::warning, "Hello World!"), R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] WARNING: Hello World!\n)"));
-  EXPECT_TRUE(test_regex(write_and_get_cout(level::error, "Hello World!"),   R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] ERROR:   Hello World!\n)"));
+  EXPECT_TRUE(testRegex(write_and_get_cout(level::verbose, "Hello World!"), R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] VERBOSE: Hello World!\n)"));
+  EXPECT_TRUE(testRegex(write_and_get_cout(level::debug, "Hello World!"),   R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] DEBUG:   Hello World!\n)"));
+  EXPECT_TRUE(testRegex(write_and_get_cout(level::info, "Hello World!"),    R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] INFO:    Hello World!\n)"));
+  EXPECT_TRUE(testRegex(write_and_get_cout(level::warning, "Hello World!"), R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] WARNING: Hello World!\n)"));
+  EXPECT_TRUE(testRegex(write_and_get_cout(level::error, "Hello World!"),   R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] ERROR:   Hello World!\n)"));
   // clang-format on
 }
 
 TEST(LoggingTest, CustomCallback) {
-  using level = display_device::logger_t::log_level_e;
+  using level = display_device::Logger::LogLevel;
   using level_t = std::underlying_type_t<level>;
-  auto &logger { display_device::logger_t::get() };
+  auto &logger { display_device::Logger::get() };
 
   std::string output;
-  logger.set_log_level(level::verbose);
-  logger.set_custom_callback([&output](const level level, const std::string &value) {
+  logger.setLogLevel(level::verbose);
+  logger.setCustomCallback([&output](const level level, const std::string &value) {
     output = std::to_string(static_cast<level_t>(level)) + " " + value;
   });
 
   logger.write(level::verbose, "Hello World!");
   EXPECT_EQ(output, "0 Hello World!");
-  EXPECT_TRUE(this->cout_buffer.str().empty());
+  EXPECT_TRUE(m_cout_buffer.str().empty());
 
   logger.write(level::debug, "Hello World!");
   EXPECT_EQ(output, "1 Hello World!");
-  EXPECT_TRUE(this->cout_buffer.str().empty());
+  EXPECT_TRUE(m_cout_buffer.str().empty());
 
   logger.write(level::info, "Hello World!");
   EXPECT_EQ(output, "2 Hello World!");
-  EXPECT_TRUE(this->cout_buffer.str().empty());
+  EXPECT_TRUE(m_cout_buffer.str().empty());
 
   logger.write(level::warning, "Hello World!");
   EXPECT_EQ(output, "3 Hello World!");
-  EXPECT_TRUE(this->cout_buffer.str().empty());
+  EXPECT_TRUE(m_cout_buffer.str().empty());
 
   logger.write(level::error, "Hello World!");
   EXPECT_EQ(output, "4 Hello World!");
-  EXPECT_TRUE(this->cout_buffer.str().empty());
+  EXPECT_TRUE(m_cout_buffer.str().empty());
 }
 
 TEST(LoggingTest, WriteMethodRespectsLogLevelWhenUsingDefaultLogger) {
-  using level = display_device::logger_t::log_level_e;
-  auto &logger { display_device::logger_t::get() };
+  using level = display_device::Logger::LogLevel;
+  auto &logger { display_device::Logger::get() };
 
-  EXPECT_TRUE(this->cout_buffer.str().empty());
+  EXPECT_TRUE(m_cout_buffer.str().empty());
 
-  logger.set_log_level(level::error);
+  logger.setLogLevel(level::error);
   logger.write(level::info, "Hello World!");
-  EXPECT_TRUE(this->cout_buffer.str().empty());
+  EXPECT_TRUE(m_cout_buffer.str().empty());
 
-  logger.set_log_level(level::info);
+  logger.setLogLevel(level::info);
   logger.write(level::info, "Hello World!");
-  EXPECT_FALSE(this->cout_buffer.str().empty());
+  EXPECT_FALSE(m_cout_buffer.str().empty());
 }
 
 TEST(LoggingTest, WriteMethodRespectsLogLevelWhenUsingCustomCallback) {
-  using level = display_device::logger_t::log_level_e;
-  auto &logger { display_device::logger_t::get() };
+  using level = display_device::Logger::LogLevel;
+  auto &logger { display_device::Logger::get() };
 
   bool callback_invoked { false };
-  logger.set_custom_callback([&callback_invoked](auto, auto) {
+  logger.setCustomCallback([&callback_invoked](auto, auto) {
     callback_invoked = true;
   });
 
-  logger.set_log_level(level::error);
+  logger.setLogLevel(level::error);
   logger.write(level::info, "Hello World!");
   EXPECT_EQ(callback_invoked, false);
 
-  logger.set_log_level(level::info);
+  logger.setLogLevel(level::info);
   logger.write(level::info, "Hello World!");
   EXPECT_EQ(callback_invoked, true);
 }
 
 TEST(LoggingTest, LogMacroDisablesStreamChain) {
-  using level = display_device::logger_t::log_level_e;
-  auto &logger { display_device::logger_t::get() };
+  using level = display_device::Logger::LogLevel;
+  auto &logger { display_device::Logger::get() };
 
   bool output_logged { false };
-  logger.set_custom_callback([&output_logged](auto, auto) {
+  logger.setCustomCallback([&output_logged](auto, auto) {
     output_logged = true;
   });
 
@@ -167,12 +167,12 @@ TEST(LoggingTest, LogMacroDisablesStreamChain) {
     return "some string";
   } };
 
-  logger.set_log_level(level::error);
+  logger.setLogLevel(level::error);
   DD_LOG(info) << some_function();
   EXPECT_EQ(output_logged, false);
   EXPECT_EQ(some_function_invoked, false);
 
-  logger.set_log_level(level::info);
+  logger.setLogLevel(level::info);
   DD_LOG(info) << some_function();
   EXPECT_EQ(output_logged, true);
   EXPECT_EQ(some_function_invoked, true);
