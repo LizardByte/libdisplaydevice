@@ -15,7 +15,7 @@ endif ()
 function(add_dd_test_dir)
     set(options "")
     set(oneValueArgs "")
-    set(multiValueArgs ADDITIONAL_LIBRARIES)
+    set(multiValueArgs ADDITIONAL_LIBRARIES ADDITIONAL_SOURCES)
     cmake_parse_arguments(FN_VARS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     # Get the current sources and libraries
@@ -27,6 +27,13 @@ function(add_dd_test_dir)
 
     list(APPEND sources ${test_files})
     list(APPEND libraries ${FN_VARS_ADDITIONAL_LIBRARIES})
+
+    foreach (source_pattern ${FN_VARS_ADDITIONAL_SOURCES})
+        file(GLOB source_files CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${source_pattern}")
+        foreach (source_file ${source_files})
+            list(APPEND sources ${source_file})
+        endforeach ()
+    endforeach ()
 
     # Update the global variables
     set_property(GLOBAL PROPERTY DD_TEST_SOURCES "${sources}")
@@ -48,7 +55,7 @@ get_property(libraries GLOBAL PROPERTY DD_TEST_LIBRARIES)
 
 add_executable(${TEST_BINARY} ${sources})
 target_link_libraries(${TEST_BINARY}
-        gtest_main  # if we use this we don't need our own main function
+        gmock_main  # if we use this we don't need our own main function
         libdisplaydevice # we are always testing at least the public API so it's safe to always link this
         libfixtures # these are our fixtures/helpers for the tests
         ${libraries} # additional libraries if needed

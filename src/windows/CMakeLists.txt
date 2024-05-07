@@ -2,7 +2,7 @@
 set(MODULE libwindows)
 
 # Globing headers (so that they appear in some IDEs) and sources
-file(GLOB HEADER_LIST CONFIGURE_DEPENDS "include/libdisplaydevice/windows/*.h")
+file(GLOB HEADER_LIST CONFIGURE_DEPENDS "include/displaydevice/windows/*.h")
 file(GLOB SOURCE_LIST CONFIGURE_DEPENDS "*.cpp")
 
 # Automatic library - will be static or dynamic based on user setting
@@ -15,4 +15,9 @@ target_include_directories(${MODULE} PUBLIC include)
 include(Boost_DD)
 
 # Link the additional libraries
-target_link_libraries(${MODULE} PRIVATE libcommon Boost::boost setupapi)
+target_link_libraries(${MODULE} PRIVATE
+        Boost::algorithm
+        Boost::scope
+        Boost::uuid
+        libcommon
+        setupapi)

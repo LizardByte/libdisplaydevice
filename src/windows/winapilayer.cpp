@@ -314,7 +314,7 @@ namespace display_device {
     return error.str();
   }
 
-  std::optional<WinApiLayerInterface::PathAndModeData>
+  std::optional<PathAndModeData>
   WinApiLayer::queryDisplayConfig(QueryType type) const {
     std::vector<DISPLAYCONFIG_PATH_INFO> paths;
     std::vector<DISPLAYCONFIG_MODE_INFO> modes;
@@ -455,7 +455,7 @@ namespace display_device {
         static const auto dump_device_id_data { [](const auto &data) -> std::string {
           if (data.empty()) {
             return {};
-          };
+          }
 
           std::ostringstream output;
           output << "[";

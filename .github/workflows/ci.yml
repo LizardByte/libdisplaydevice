@@ -161,6 +161,7 @@ jobs:
           ${{ steps.python-path.outputs.python-path }} -m gcovr -r .. \
             --exclude '.*tests/.*' \
             --exclude '.*third-party/.*' \
+            --exclude '.*/_deps/.*' \
             --exclude-noncode-lines \
             --exclude-throw-branches \
             --exclude-unreachable-branches \

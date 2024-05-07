@@ -2,23 +2,45 @@
 #include "displaydevice/windows/winapilayer.h"
 #include "fixtures.h"
 
-TEST(WinApiLayer, GetErrorString) {
-  const display_device::WinApiLayer layer;
+namespace {
+  // Test fixture(s) for this file
+  class WinApiLayer: public BaseTest {
+  public:
+    display_device::WinApiLayer m_layer;
+  };
 
-  EXPECT_TRUE(testRegex(layer.getErrorString(ERROR_INVALID_PARAMETER), R"(\[code: ERROR_INVALID_PARAMETER, .+?\])"));
-  EXPECT_TRUE(testRegex(layer.getErrorString(ERROR_NOT_SUPPORTED), R"(\[code: ERROR_NOT_SUPPORTED, .+?\])"));
-  EXPECT_TRUE(testRegex(layer.getErrorString(ERROR_ACCESS_DENIED), R"(\[code: ERROR_ACCESS_DENIED, .+?\])"));
-  EXPECT_TRUE(testRegex(layer.getErrorString(ERROR_INSUFFICIENT_BUFFER), R"(\[code: ERROR_INSUFFICIENT_BUFFER, .+?\])"));
-  EXPECT_TRUE(testRegex(layer.getErrorString(ERROR_GEN_FAILURE), R"(\[code: ERROR_GEN_FAILURE, .+?\])"));
-  EXPECT_TRUE(testRegex(layer.getErrorString(ERROR_SUCCESS), R"(\[code: ERROR_SUCCESS, .+?\])"));
-  EXPECT_TRUE(testRegex(layer.getErrorString(ERROR_ACCOUNT_DISABLED), R"(\[code: )" + std::to_string(ERROR_ACCOUNT_DISABLED) + R"(, .+?\])"));
+  // Specialized TEST macro(s) for this test file
+#define TEST_F_S(...) DD_MAKE_TEST(TEST_F, WinApiLayer, __VA_ARGS__)
+
+  // Additional convenience global const(s)
+  DISPLAYCONFIG_PATH_INFO INVALID_PATH {
+    []() {
+      DISPLAYCONFIG_PATH_INFO path;
+
+      // This is a gamble, but no one sane uses the maximum values as their IDs
+      path.sourceInfo.adapterId = { std::numeric_limits<DWORD>::max(), std::numeric_limits<LONG>::max() };
+      path.sourceInfo.id = std::numeric_limits<UINT32>::max();
+      path.targetInfo.adapterId = { std::numeric_limits<DWORD>::max(), std::numeric_limits<LONG>::max() };
+      path.targetInfo.id = std::numeric_limits<UINT32>::max();
+
+      return path;
+    }()
+  };
+}  // namespace
+
+TEST_F_S(GetErrorString) {
+  EXPECT_TRUE(testRegex(m_layer.getErrorString(ERROR_INVALID_PARAMETER), R"(\[code: ERROR_INVALID_PARAMETER, .+?\])"));
+  EXPECT_TRUE(testRegex(m_layer.getErrorString(ERROR_NOT_SUPPORTED), R"(\[code: ERROR_NOT_SUPPORTED, .+?\])"));
+  EXPECT_TRUE(testRegex(m_layer.getErrorString(ERROR_ACCESS_DENIED), R"(\[code: ERROR_ACCESS_DENIED, .+?\])"));
+  EXPECT_TRUE(testRegex(m_layer.getErrorString(ERROR_INSUFFICIENT_BUFFER), R"(\[code: ERROR_INSUFFICIENT_BUFFER, .+?\])"));
+  EXPECT_TRUE(testRegex(m_layer.getErrorString(ERROR_GEN_FAILURE), R"(\[code: ERROR_GEN_FAILURE, .+?\])"));
+  EXPECT_TRUE(testRegex(m_layer.getErrorString(ERROR_SUCCESS), R"(\[code: ERROR_SUCCESS, .+?\])"));
+  EXPECT_TRUE(testRegex(m_layer.getErrorString(ERROR_ACCOUNT_DISABLED), R"(\[code: )" + std::to_string(ERROR_ACCOUNT_DISABLED) + R"(, .+?\])"));
 }
 
-TEST(WinApiLayer, QueryDisplayConfigPathAndModeCount) {
-  const display_device::WinApiLayer layer;
-
-  const auto active_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::Active) };
-  const auto all_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::All) };
+TEST_F_S(QueryDisplayConfig, PathAndModeCount) {
+  const auto active_devices { m_layer.queryDisplayConfig(display_device::QueryType::Active) };
+  const auto all_devices { m_layer.queryDisplayConfig(display_device::QueryType::All) };
 
   ASSERT_TRUE(active_devices);
   ASSERT_TRUE(all_devices);
@@ -29,10 +51,8 @@ TEST(WinApiLayer, QueryDisplayConfigPathAndModeCount) {
   EXPECT_TRUE(all_devices->m_modes.size() == active_devices->m_modes.size());
 }
 
-TEST(WinApiLayer, QueryDisplayConfigPathActivePaths) {
-  const display_device::WinApiLayer layer;
-
-  const auto active_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::Active) };
+TEST_F_S(QueryDisplayConfig, ActivePaths) {
+  const auto active_devices { m_layer.queryDisplayConfig(display_device::QueryType::Active) };
   ASSERT_TRUE(active_devices);
 
   for (const auto &path : active_devices->m_paths) {
@@ -40,17 +60,15 @@ TEST(WinApiLayer, QueryDisplayConfigPathActivePaths) {
   }
 }
 
-TEST(WinApiLayer, QueryDisplayConfigModeIndexValidity) {
+TEST_F_S(QueryDisplayConfig, ModeIndexValidity) {
   // The MS docs is not clear when to access the index union struct or not. It appears that union struct is available,
   // whenever QDC_VIRTUAL_MODE_AWARE is specified when querying (always in our case).
   //
   // The docs state, however, that it is only available when DISPLAYCONFIG_PATH_SUPPORT_VIRTUAL_MODE flag is set, but
   // that is just BS (maybe copy-pasta mistake), because some cases were found where the flag is not set and the union
   // is still being used.
-  const display_device::WinApiLayer layer;
-
-  const auto active_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::Active) };
-  const auto all_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::All) };
+  const auto active_devices { m_layer.queryDisplayConfig(display_device::QueryType::Active) };
+  const auto all_devices { m_layer.queryDisplayConfig(display_device::QueryType::All) };
 
   for (const auto &devices : { active_devices, all_devices }) {
     ASSERT_TRUE(devices);
@@ -82,17 +100,15 @@ TEST(WinApiLayer, QueryDisplayConfigModeIndexValidity) {
   }
 }
 
-TEST(WinApiLayer, GetDeviceId) {
-  const display_device::WinApiLayer layer;
-
-  const auto all_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::All) };
+TEST_F_S(GetDeviceId) {
+  const auto all_devices { m_layer.queryDisplayConfig(display_device::QueryType::All) };
   ASSERT_TRUE(all_devices);
 
   std::map<std::string, std::string> device_id_per_device_path;
   for (const auto &path : all_devices->m_paths) {
-    const auto device_id { layer.getDeviceId(path) };
-    const auto device_id_2 { layer.getDeviceId(path) };
-    const auto device_path { layer.getMonitorDevicePath(path) };
+    const auto device_id { m_layer.getDeviceId(path) };
+    const auto device_id_2 { m_layer.getDeviceId(path) };
+    const auto device_path { m_layer.getMonitorDevicePath(path) };
 
     // Testing soft persistence - ids remain the same between calls
     EXPECT_EQ(device_id, device_id_2);
@@ -113,16 +129,18 @@ TEST(WinApiLayer, GetDeviceId) {
   }
 }
 
-TEST(WinApiLayer, GetMonitorDevicePath) {
-  const display_device::WinApiLayer layer;
+TEST_F_S(GetDeviceId, InvalidPath) {
+  EXPECT_EQ(m_layer.getDeviceId(INVALID_PATH), std::string {});
+}
 
-  const auto all_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::All) };
+TEST_F_S(GetMonitorDevicePath) {
+  const auto all_devices { m_layer.queryDisplayConfig(display_device::QueryType::All) };
   ASSERT_TRUE(all_devices);
 
   std::set<std::string> current_device_paths;
   for (const auto &path : all_devices->m_paths) {
-    const auto device_path { layer.getMonitorDevicePath(path) };
-    const auto device_path_2 { layer.getMonitorDevicePath(path) };
+    const auto device_path { m_layer.getMonitorDevicePath(path) };
+    const auto device_path_2 { m_layer.getMonitorDevicePath(path) };
 
     // Testing soft persistence - paths remain the same between calls
     EXPECT_EQ(device_path, device_path_2);
@@ -142,15 +160,17 @@ TEST(WinApiLayer, GetMonitorDevicePath) {
   }
 }
 
-TEST(WinApiLayer, GetFriendlyName) {
-  const display_device::WinApiLayer layer;
+TEST_F_S(GetMonitorDevicePath, InvalidPath) {
+  EXPECT_EQ(m_layer.getMonitorDevicePath(INVALID_PATH), std::string {});
+}
 
-  const auto all_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::All) };
+TEST_F_S(GetFriendlyName) {
+  const auto all_devices { m_layer.queryDisplayConfig(display_device::QueryType::All) };
   ASSERT_TRUE(all_devices);
 
   for (const auto &path : all_devices->m_paths) {
-    const auto friendly_name { layer.getFriendlyName(path) };
-    const auto friendly_name_2 { layer.getFriendlyName(path) };
+    const auto friendly_name { m_layer.getFriendlyName(path) };
+    const auto friendly_name_2 { m_layer.getFriendlyName(path) };
 
     // Testing soft persistence - ids remain the same between calls
     EXPECT_EQ(friendly_name, friendly_name_2);
@@ -160,15 +180,17 @@ TEST(WinApiLayer, GetFriendlyName) {
   }
 }
 
-TEST(WinApiLayer, GetDisplayName) {
-  const display_device::WinApiLayer layer;
+TEST_F_S(GetFriendlyName, InvalidPath) {
+  EXPECT_EQ(m_layer.getFriendlyName(INVALID_PATH), std::string {});
+}
 
-  const auto all_devices { layer.queryDisplayConfig(display_device::WinApiLayer::QueryType::All) };
+TEST_F_S(GetDisplayName) {
+  const auto all_devices { m_layer.queryDisplayConfig(display_device::QueryType::All) };
   ASSERT_TRUE(all_devices);
 
   for (const auto &path : all_devices->m_paths) {
-    const auto display_name { layer.getDisplayName(path) };
-    const auto display_name_2 { layer.getDisplayName(path) };
+    const auto display_name { m_layer.getDisplayName(path) };
+    const auto display_name_2 { m_layer.getDisplayName(path) };
 
     // Testing soft persistence - ids remain the same between calls
     EXPECT_EQ(display_name, display_name_2);
@@ -177,4 +199,8 @@ TEST(WinApiLayer, GetDisplayName) {
     // value is always expected.
     EXPECT_TRUE(testRegex(display_name, R"(^\\\\.\\DISPLAY\d+$)"));
   }
+}
+
+TEST_F_S(GetDisplayName, InvalidPath) {
+  EXPECT_EQ(m_layer.getDisplayName(INVALID_PATH), std::string {});
 }

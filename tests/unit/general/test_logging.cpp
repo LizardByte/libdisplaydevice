@@ -2,7 +2,12 @@
 #include "displaydevice/logging.h"
 #include "fixtures.h"
 
-TEST(LoggingTest, LogLevelVerbose) {
+namespace {
+  // Specialized TEST macro(s) for this test file
+#define TEST_S(...) DD_MAKE_TEST(TEST, LoggingTest, __VA_ARGS__)
+}  // namespace
+
+TEST_S(LogLevelVerbose) {
   using level = display_device::Logger::LogLevel;
   auto &logger { display_device::Logger::get() };
 
@@ -15,7 +20,7 @@ TEST(LoggingTest, LogLevelVerbose) {
   EXPECT_EQ(logger.isLogLevelEnabled(level::error), true);
 }
 
-TEST(LoggingTest, LogLevelDebug) {
+TEST_S(LogLevelDebug) {
   using level = display_device::Logger::LogLevel;
   auto &logger { display_device::Logger::get() };
 
@@ -28,7 +33,7 @@ TEST(LoggingTest, LogLevelDebug) {
   EXPECT_EQ(logger.isLogLevelEnabled(level::error), true);
 }
 
-TEST(LoggingTest, LogLevelInfo) {
+TEST_S(LogLevelInfo) {
   using level = display_device::Logger::LogLevel;
   auto &logger { display_device::Logger::get() };
 
@@ -41,7 +46,7 @@ TEST(LoggingTest, LogLevelInfo) {
   EXPECT_EQ(logger.isLogLevelEnabled(level::error), true);
 }
 
-TEST(LoggingTest, LogLevelWarning) {
+TEST_S(LogLevelWarning) {
   using level = display_device::Logger::LogLevel;
   auto &logger { display_device::Logger::get() };
 
@@ -54,7 +59,7 @@ TEST(LoggingTest, LogLevelWarning) {
   EXPECT_EQ(logger.isLogLevelEnabled(level::error), true);
 }
 
-TEST(LoggingTest, LogLevelError) {
+TEST_S(LogLevelError) {
   using level = display_device::Logger::LogLevel;
   auto &logger { display_device::Logger::get() };
 
@@ -67,7 +72,7 @@ TEST(LoggingTest, LogLevelError) {
   EXPECT_EQ(logger.isLogLevelEnabled(level::error), true);
 }
 
-TEST(LoggingTest, DefaultLogger) {
+TEST_S(DefaultLogger) {
   using level = display_device::Logger::LogLevel;
   auto &logger { display_device::Logger::get() };
 
@@ -87,7 +92,7 @@ TEST(LoggingTest, DefaultLogger) {
   // clang-format on
 }
 
-TEST(LoggingTest, CustomCallback) {
+TEST_S(CustomCallback) {
   using level = display_device::Logger::LogLevel;
   using level_t = std::underlying_type_t<level>;
   auto &logger { display_device::Logger::get() };
@@ -119,7 +124,7 @@ TEST(LoggingTest, CustomCallback) {
   EXPECT_TRUE(m_cout_buffer.str().empty());
 }
 
-TEST(LoggingTest, WriteMethodRespectsLogLevelWhenUsingDefaultLogger) {
+TEST_S(WriteMethodRespectsLogLevel, DefaultLogger) {
   using level = display_device::Logger::LogLevel;
   auto &logger { display_device::Logger::get() };
 
@@ -134,7 +139,7 @@ TEST(LoggingTest, WriteMethodRespectsLogLevelWhenUsingDefaultLogger) {
   EXPECT_FALSE(m_cout_buffer.str().empty());
 }
 
-TEST(LoggingTest, WriteMethodRespectsLogLevelWhenUsingCustomCallback) {
+TEST_S(WriteMethodRespectsLogLevel, CustomCallback) {
   using level = display_device::Logger::LogLevel;
   auto &logger { display_device::Logger::get() };
 
@@ -152,7 +157,7 @@ TEST(LoggingTest, WriteMethodRespectsLogLevelWhenUsingCustomCallback) {
   EXPECT_EQ(callback_invoked, true);
 }
 
-TEST(LoggingTest, LogMacroDisablesStreamChain) {
+TEST_S(LogMacroDisablesStreamChain) {
   using level = display_device::Logger::LogLevel;
   auto &logger { display_device::Logger::get() };
 

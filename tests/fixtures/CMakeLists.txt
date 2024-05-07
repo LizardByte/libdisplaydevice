@@ -11,5 +11,15 @@ add_library(${MODULE} ${HEADER_LIST} ${SOURCE_LIST})
 # Provide the includes together with this library
 target_include_directories(${MODULE} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
+# Additional external libraries
+include(Boost_DD)
+
 # Link the additional libraries
-target_link_libraries(${MODULE} PRIVATE gtest libcommon)
+target_link_libraries(${MODULE}
+        PUBLIC
+        Boost::preprocessor
+
+        PRIVATE
+        gtest
+        libcommon
+)
