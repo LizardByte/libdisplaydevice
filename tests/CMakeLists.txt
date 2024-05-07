@@ -56,10 +56,3 @@ target_link_libraries(${TEST_BINARY}
 
 # Add the test to CTest
 gtest_discover_tests(${TEST_BINARY})
-
-#
-# Additional setup for coverage
-# https://gcovr.com/en/stable/guide/compiling.html#compiler-options
-#
-set(CMAKE_CXX_FLAGS "-fprofile-arcs -ftest-coverage -O1")
-set(CMAKE_C_FLAGS "-fprofile-arcs -ftest-coverage -O1")

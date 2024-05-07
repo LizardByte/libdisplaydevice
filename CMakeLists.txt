@@ -24,14 +24,22 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 option(BUILD_TESTS "Build tests" ON)
 
 #
-# Library code is located here
-#
-add_subdirectory(src)
-
-#
 # Testing only available if this is the main project
 #
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTS)
+    #
+    # Additional setup for coverage
+    # https://gcovr.com/en/stable/guide/compiling.html#compiler-options
+    #
+    set(CMAKE_CXX_FLAGS "-fprofile-arcs -ftest-coverage -O0")
+    set(CMAKE_C_FLAGS "-fprofile-arcs -ftest-coverage -O0")
+
     enable_testing()
     add_subdirectory(tests)
 endif()
+
+#
+# Library code is located here
+# When building tests this must be after the coverage flags are set
+#
+add_subdirectory(src)

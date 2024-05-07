@@ -160,18 +160,21 @@ jobs:
           ${{ steps.python-path.outputs.python-path }} -m pip install gcovr
           ${{ steps.python-path.outputs.python-path }} -m gcovr -r .. \
             --exclude '.*tests/.*' \
-            --exclude '.*tests/.*' \
+            --exclude '.*third-party/.*' \
             --xml-pretty \
             -o coverage.xml
 
       - name: Upload coverage
         # any except canceled or skipped
         if: >-
-          always() && (steps.test_report.outcome == 'success') &&
+          always() &&
+          (steps.test_report.outcome == 'success') &&
           startsWith(github.repository, 'LizardByte/')
         uses: codecov/codecov-action@v4
         with:
+          disable_search: true
           fail_ci_if_error: true
           files: ./build/coverage.xml
           flags: ${{ runner.os }}
           token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
