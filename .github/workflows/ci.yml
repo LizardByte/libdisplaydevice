@@ -167,17 +167,46 @@ jobs:
             --xml-pretty \
             -o coverage.xml
 
-      - name: Upload coverage
-        # any except canceled or skipped
+      - name: Upload coverage artifact
         if: >-
           always() &&
-          (steps.test_report.outcome == 'success') &&
-          startsWith(github.repository, 'LizardByte/')
+          (steps.test_report.outcome == 'success')
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.os }}
+          path: build/coverage.xml
+
+  coverage:
+    if: >-
+      always() &&
+      (needs.build.result == 'success' || needs.build.result == 'failure') &&
+      startsWith(github.repository, 'LizardByte/')
+    name: Coverage-${{ matrix.flag }}
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - build_os: ubuntu-latest
+            flag: Linux
+          - build_os: macos-latest
+            flag: macOS
+          - build_os: windows-latest
+            flag: Windows
+    steps:
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-${{ matrix.build_os }}
+          path: build
+
+      - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
           disable_search: true
           fail_ci_if_error: true
           files: ./build/coverage.xml
-          flags: ${{ runner.os }}
+          flags: ${{ matrix.flag }}
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
