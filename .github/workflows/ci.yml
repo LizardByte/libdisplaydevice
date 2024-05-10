@@ -159,9 +159,9 @@ jobs:
         run: |
           ${{ steps.python-path.outputs.python-path }} -m pip install gcovr
           ${{ steps.python-path.outputs.python-path }} -m gcovr -r .. \
+            --exclude '.*build/.*' \
             --exclude '.*tests/.*' \
             --exclude '.*third-party/.*' \
-            --exclude '.*/_deps/.*' \
             --exclude-noncode-lines \
             --exclude-throw-branches \
             --exclude-unreachable-branches \
