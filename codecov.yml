@@ -17,6 +17,5 @@ comment:
   require_changes: false  # if true: only post the comment if coverage changes
 
 ignore:
-  - "build"
   - "tests"
   - "third-party"
