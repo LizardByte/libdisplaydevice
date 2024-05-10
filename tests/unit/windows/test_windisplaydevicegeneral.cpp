@@ -8,7 +8,7 @@
 namespace {
   // Convenience keywords for GMock
   using ::testing::HasSubstr;
-  
+
   // Specialized TEST macro(s) for this test file
 #define TEST_S(...) DD_MAKE_TEST(TEST, WinDisplayDeviceGeneral, __VA_ARGS__)
 }  // namespace
