@@ -1,12 +1,12 @@
 #pragma once
 
-// the most stupid and smelly windows include
-#include <windows.h>
-
 // system includes
 #include <optional>
 #include <string>
 #include <vector>
+
+// local includes
+#include "types.h"
 
 namespace display_device {
   /**
@@ -14,22 +14,6 @@ namespace display_device {
    */
   class WinApiLayerInterface {
   public:
-    /**
-     * @brief Type of query the OS should perform while searching for display devices.
-     */
-    enum class QueryType {
-      Active, /**< The device path must be active. */
-      All /**< The device path can be active or inactive. */
-    };
-
-    /**
-     * @brief Contains currently available paths and associated modes.
-     */
-    struct PathAndModeData {
-      std::vector<DISPLAYCONFIG_PATH_INFO> m_paths; /**< Available display paths. */
-      std::vector<DISPLAYCONFIG_MODE_INFO> m_modes; /**< Display modes for ACTIVE displays. */
-    };
-
     /**
      * @brief Default virtual destructor.
      */
