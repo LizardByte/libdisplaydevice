@@ -55,14 +55,13 @@ jobs:
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
         with:
+          msystem: ucrt64
           update: true
           install: >-
-            base-devel
-            make
-            mingw-w64-x86_64-binutils
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-ninja
-            mingw-w64-x86_64-toolchain
+            mingw-w64-ucrt-x86_64-binutils
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-toolchain
 
       - name: Prepare tests
         id: prepare-tests
@@ -142,7 +141,7 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          cmake -G Ninja ..
+          cmake -DCMAKE_BUILD_TYPE:STRING=Debug -G Ninja ..
           ninja
 
       - name: Run tests
