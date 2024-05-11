@@ -78,7 +78,7 @@ namespace display_device::win_utils {
    */
   [[nodiscard]] std::optional<UINT32>
   getSourceIndex(const DISPLAYCONFIG_PATH_INFO &path, const std::vector<DISPLAYCONFIG_MODE_INFO> &modes);
-  
+
   /**
    * @brief Set the source mode index in the path.
    * @param path Path to modify.
@@ -94,7 +94,7 @@ namespace display_device::win_utils {
    */
   void
   setSourceIndex(DISPLAYCONFIG_PATH_INFO &path, const std::optional<UINT32> &index);
-  
+
   /**
    * @brief Set the target mode index in the path.
    * @param path Path to modify.
