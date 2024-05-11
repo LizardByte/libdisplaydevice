@@ -7,7 +7,7 @@
 
 // local includes
 #include "displaydevice/logging.h"
-#include "displaydevice/windows/winutils.h"
+#include "displaydevice/windows/winapiutils.h"
 
 namespace display_device {
   ActiveTopology

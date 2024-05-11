@@ -1,10 +1,5 @@
 #pragma once
 
-// system includes
-#include <optional>
-#include <string>
-#include <vector>
-
 // local includes
 #include "types.h"
 
@@ -59,8 +54,8 @@ namespace display_device {
      * (probably because it uses the EDID for the id generation and the current
      * virtual displays have incomplete EDID information). The "ContainerID"
      * also does not change if the physical device is plugged into a different
-     * port and seems to be very stable, however because of virtual displays
-     * other solution was used.
+     * port (which does not satisfy the "device id for the path" part) and is
+     * unstable for virtual displays, therefore other solution was used.
      *
      * The accepted solution was to use the "InstanceID" and EDID (just to be
      * on the safe side). "InstanceID" is semi-stable, it has some parts that

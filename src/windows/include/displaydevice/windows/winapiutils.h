@@ -1,8 +1,5 @@
 #pragma once
 
-// system includes
-#include <optional>
-
 // local includes
 #include "winapilayerinterface.h"
 
@@ -46,6 +43,22 @@ namespace display_device::win_utils {
   isActive(const DISPLAYCONFIG_PATH_INFO &path);
 
   /**
+   * @brief Mark the display device path as active.
+   * @param path Path to mark.
+   * @see WinApiLayerInterface::queryDisplayConfig on how to get paths from the system.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * DISPLAYCONFIG_PATH_INFO path;
+   * if (!isActive(path)) {
+   *   setActive(path);
+   * }
+   * ```
+   */
+  void
+  setActive(DISPLAYCONFIG_PATH_INFO &path);
+
+  /**
    * @brief Get the source mode index from the path.
    *
    * It performs sanity checks on the modes list that the index is indeed correct.
@@ -65,6 +78,70 @@ namespace display_device::win_utils {
    */
   [[nodiscard]] std::optional<UINT32>
   getSourceIndex(const DISPLAYCONFIG_PATH_INFO &path, const std::vector<DISPLAYCONFIG_MODE_INFO> &modes);
+
+  /**
+   * @brief Set the source mode index in the path.
+   * @param path Path to modify.
+   * @param index Index value to set or empty optional to mark the index as invalid.
+   * @see query_display_config on how to get paths and modes from the system.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * DISPLAYCONFIG_PATH_INFO path;
+   * set_source_index(path, 5);
+   * set_source_index(path, std::nullopt);
+   * ```
+   */
+  void
+  setSourceIndex(DISPLAYCONFIG_PATH_INFO &path, const std::optional<UINT32> &index);
+
+  /**
+   * @brief Set the target mode index in the path.
+   * @param path Path to modify.
+   * @param index Index value to set or empty optional to mark the index as invalid.
+   * @see query_display_config on how to get paths and modes from the system.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * DISPLAYCONFIG_PATH_INFO path;
+   * set_target_index(path, 5);
+   * set_target_index(path, std::nullopt);
+   * ```
+   */
+  void
+  setTargetIndex(DISPLAYCONFIG_PATH_INFO &path, const std::optional<UINT32> &index);
+
+  /**
+   * @brief Set the desktop mode index in the path.
+   * @param path Path to modify.
+   * @param index Index value to set or empty optional to mark the index as invalid.
+   * @see query_display_config on how to get paths and modes from the system.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * DISPLAYCONFIG_PATH_INFO path;
+   * set_desktop_index(path, 5);
+   * set_desktop_index(path, std::nullopt);
+   * ```
+   */
+  void
+  setDesktopIndex(DISPLAYCONFIG_PATH_INFO &path, const std::optional<UINT32> &index);
+
+  /**
+   * @brief Set the clone group id in the path.
+   * @param path Path to modify.
+   * @param id Id value to set or empty optional to mark the id as invalid.
+   * @see query_display_config on how to get paths and modes from the system.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * DISPLAYCONFIG_PATH_INFO path;
+   * set_clone_group_id(path, 5);
+   * set_clone_group_id(path, std::nullopt);
+   * ```
+   */
+  void
+  setCloneGroupId(DISPLAYCONFIG_PATH_INFO &path, const std::optional<UINT32> &id);
 
   /**
    * @brief Get the source mode from the list at the specified index.
@@ -123,4 +200,24 @@ namespace display_device::win_utils {
    */
   [[nodiscard]] std::optional<ValidatedDeviceInfo>
   getDeviceInfoForValidPath(const WinApiLayerInterface &w_api, const DISPLAYCONFIG_PATH_INFO &path, bool must_be_active);
+
+  /**
+   * @brief Collect arbitrary source data from provided paths.
+   *
+   * This function filters paths that can be used later on and
+   * collects for a quick lookup.
+   *
+   * @param paths List of paths.
+   * @returns Data for valid paths.
+   * @see WinApiLayerInterface::queryDisplayConfig on how to get paths from the system.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * std::vector<DISPLAYCONFIG_PATH_INFO> paths;
+   * const WinApiLayerInterface* iface = getIface(...);
+   * const auto path_data = collectSourceDataForMatchingPaths(*iface, paths);
+   * ```
+   */
+  [[nodiscard]] PathSourceIndexDataMap
+  collectSourceDataForMatchingPaths(const WinApiLayerInterface &w_api, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
 }  // namespace display_device::win_utils
