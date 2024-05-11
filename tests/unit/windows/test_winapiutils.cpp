@@ -440,11 +440,35 @@ TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, DifferentPathsWithSameId) {
   EXPECT_EQ(display_device::win_utils::collectSourceDataForMatchingPaths(m_layer, PATHS_WITH_SOURCE_IDS), expected_data);
 }
 
-TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, MismatchingAdapterIdsForPaths) {
+TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, MismatchingAdapterIdsForPaths, HighPart) {
   std::vector<DISPLAYCONFIG_PATH_INFO> paths { PATHS_WITH_SOURCE_IDS };
 
   // Invalidate the adapter id
   paths.at(2).sourceInfo.adapterId.HighPart++;
+
+  EXPECT_CALL(m_layer, getMonitorDevicePath(_))
+    .Times(3)
+    .WillOnce(Return("Path1"))
+    .WillOnce(Return("Path2"))
+    .WillOnce(Return("Path1"));
+  EXPECT_CALL(m_layer, getDisplayName(_))
+    .Times(3)
+    .WillRepeatedly(Return("DisplayNameX"));
+  EXPECT_CALL(m_layer, getDeviceId(_))
+    .Times(3)
+    .WillOnce(Return("DeviceId1"))
+    .WillOnce(Return("DeviceId2"))
+    .WillOnce(Return("DeviceId1"));
+
+  const display_device::PathSourceIndexDataMap expected_data {};
+  EXPECT_EQ(display_device::win_utils::collectSourceDataForMatchingPaths(m_layer, paths), expected_data);
+}
+
+TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, MismatchingAdapterIdsForPaths, LowPart) {
+  std::vector<DISPLAYCONFIG_PATH_INFO> paths { PATHS_WITH_SOURCE_IDS };
+
+  // Invalidate the adapter id
+  paths.at(2).sourceInfo.adapterId.LowPart++;
 
   EXPECT_CALL(m_layer, getMonitorDevicePath(_))
     .Times(3)
