@@ -109,7 +109,7 @@ TEST_F_S_MOCKED(IsAvailable) {
   EXPECT_EQ(display_device::win_utils::isAvailable(unavailable_path), false);
 }
 
-TEST_F_S_MOCKED(IsActive) {
+TEST_F_S_MOCKED(IsActiveAndSetActive) {
   DISPLAYCONFIG_PATH_INFO inactive_path;
   DISPLAYCONFIG_PATH_INFO only_active_path;
   DISPLAYCONFIG_PATH_INFO contains_active_path;
@@ -119,6 +119,14 @@ TEST_F_S_MOCKED(IsActive) {
   contains_active_path.flags = inactive_path.flags | only_active_path.flags;
 
   EXPECT_EQ(display_device::win_utils::isActive(inactive_path), false);
+  EXPECT_EQ(display_device::win_utils::isActive(only_active_path), true);
+  EXPECT_EQ(display_device::win_utils::isActive(contains_active_path), true);
+
+  display_device::win_utils::setActive(inactive_path);
+  display_device::win_utils::setActive(only_active_path);
+  display_device::win_utils::setActive(contains_active_path);
+
+  EXPECT_EQ(display_device::win_utils::isActive(inactive_path), true);
   EXPECT_EQ(display_device::win_utils::isActive(only_active_path), true);
   EXPECT_EQ(display_device::win_utils::isActive(contains_active_path), true);
 }

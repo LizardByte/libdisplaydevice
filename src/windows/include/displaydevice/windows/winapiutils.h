@@ -43,6 +43,22 @@ namespace display_device::win_utils {
   isActive(const DISPLAYCONFIG_PATH_INFO &path);
 
   /**
+   * @brief Mark the display device path as active.
+   * @param path Path to mark.
+   * @see WinApiLayerInterface::queryDisplayConfig on how to get paths from the system.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * DISPLAYCONFIG_PATH_INFO path;
+   * if (!isActive(path)) {
+   *   setActive(path);
+   * }
+   * ```
+   */
+  void
+  setActive(DISPLAYCONFIG_PATH_INFO &path);
+
+  /**
    * @brief Get the source mode index from the path.
    *
    * It performs sanity checks on the modes list that the index is indeed correct.
