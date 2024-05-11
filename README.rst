@@ -40,7 +40,7 @@ Windows
 Requirements
 ~~~~~~~~~~~~
 
-First you need to install `MSYS2 <https://www.msys2.org>`__, then startup "MSYS2 MinGW 64-bit" and execute the following
+First you need to install `MSYS2 <https://www.msys2.org>`__, then startup "MSYS2 UCRT64" and execute the following
 codes.
 
 Update all packages:
@@ -52,13 +52,10 @@ Install dependencies:
    .. code-block:: bash
 
       pacman -S \
-        base-devel \
-        cmake \
-        gcc \
-        make \
-        mingw-w64-x86_64-binutils \
-        mingw-w64-x86_64-cmake \
-        mingw-w64-x86_64-toolchain
+        mingw-w64-ucrt-x86_64-binutils \
+        mingw-w64-ucrt-x86_64-cmake \
+        mingw-w64-ucrt-x86_64-ninja \
+        mingw-w64-ucrt-x86_64-toolchain
 
 Build
 ~~~~~
@@ -67,8 +64,8 @@ Build
 
 .. code-block:: bash
 
-   cmake -G "MinGW Makefiles" ..
-   mingw32-make -j$(nproc)
+   cmake -DCMAKE_BUILD_TYPE:STRING=Debug -G Ninja ..
+   ninja
 
 Test
 ~~~~
