@@ -220,4 +220,26 @@ namespace display_device::win_utils {
    */
   [[nodiscard]] PathSourceIndexDataMap
   collectSourceDataForMatchingPaths(const WinApiLayerInterface &w_api, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
+
+  /**
+   * @brief Select the best possible paths to be used for the requested topology based on the data that is available to us.
+   *
+   * If the paths will be used for a completely new topology (Windows has never had it set), we need to take into
+   * account the source id availability per the adapter - duplicated displays must share the same source id
+   * (if they belong to the same adapter) and have different ids if they are not duplicated displays.
+   *
+   * There are limited amount of available ids (see comments in the code) so we will abort early if we are
+   * out of ids.
+   *
+   * The paths for a topology that already exists (Windows has set it at least once) does not have to follow
+   * the mentioned "source id" rule. Windows can simply ignore them (we will ask it later) and select
+   * paths that were previously configured (that might differ in source ids) based on the paths that we provide.
+   *
+   * @param new_topology Topology that we want to have in the end.
+   * @param path_source_data Collected source data from paths.
+   * @param paths Display paths that were used for collecting source data.
+   * @return A list of path that will make up new topology, or an empty list if function fails.
+   */
+  [[nodiscard]] std::vector<DISPLAYCONFIG_PATH_INFO>
+  makePathsForNewTopology(const ActiveTopology &new_topology, const PathSourceIndexDataMap &path_source_data, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
 }  // namespace display_device::win_utils
