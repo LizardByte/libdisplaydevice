@@ -7,7 +7,6 @@
 #include <map>
 #include <optional>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 namespace display_device {
@@ -41,7 +40,7 @@ namespace display_device {
    * @brief Contains information about sources with identical adapter ids from matching paths.
    */
   struct PathSourceIndexData {
-    std::unordered_map<UINT32, std::size_t> m_source_id_to_path_index; /**< Maps source ids to its index in the path list. */
+    std::map<UINT32, std::size_t> m_source_id_to_path_index; /**< Maps source ids to its index in the path list. */
     LUID m_adapter_id {}; /**< Adapter id shared by all source ids. */
     std::optional<UINT32> m_active_source; /**< Currently active source id. */
   };
