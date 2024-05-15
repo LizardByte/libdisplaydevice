@@ -244,7 +244,7 @@ namespace display_device {
 
       status = RegQueryValueExW(reg_key, L"EDID", nullptr, nullptr, edid.data(), &required_size_in_bytes);
       if (status != ERROR_SUCCESS) {
-        DD_LOG(error) << w_api.getErrorString(status) << " \"RegQueryValueExW\" failed when getting size.";
+        DD_LOG(error) << w_api.getErrorString(status) << " \"RegQueryValueExW\" failed when getting data.";
         return false;
       }
 
