@@ -55,6 +55,7 @@ get_property(libraries GLOBAL PROPERTY DD_TEST_LIBRARIES)
 
 add_executable(${TEST_BINARY} ${sources})
 target_link_libraries(${TEST_BINARY}
+        PUBLIC
         gmock_main  # if we use this we don't need our own main function
         libdisplaydevice # we are always testing at least the public API so it's safe to always link this
         libfixtures # these are our fixtures/helpers for the tests

@@ -10,6 +10,51 @@
 #include "displaydevice/windows/winapiutils.h"
 
 namespace display_device {
+  namespace {
+    /**
+     * @see set_topology for a description as this was split off to reduce cognitive complexity.
+     */
+    bool
+    doSetTopology(WinApiLayerInterface &w_api, const ActiveTopology &new_topology) {
+      auto display_data { w_api.queryDisplayConfig(QueryType::All) };
+      if (!display_data) {
+        // Error already logged
+        return false;
+      }
+
+      const auto path_data { win_utils::collectSourceDataForMatchingPaths(w_api, display_data->m_paths) };
+      if (path_data.empty()) {
+        // Error already logged
+        return false;
+      }
+
+      auto paths { win_utils::makePathsForNewTopology(new_topology, path_data, display_data->m_paths) };
+      if (paths.empty()) {
+        // Error already logged
+        return false;
+      }
+
+      UINT32 flags { SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE };
+      LONG result { w_api.setDisplayConfig(paths, {}, flags) };
+      if (result == ERROR_GEN_FAILURE) {
+        DD_LOG(warning) << w_api.getErrorString(result) << " failed to change topology using the topology from Windows DB! Asking Windows to create the topology.";
+
+        flags = SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_ALLOW_CHANGES /* This flag is probably not needed, but who knows really... (not MSDOCS at least) */ | SDC_VIRTUAL_MODE_AWARE | SDC_SAVE_TO_DATABASE;
+        result = w_api.setDisplayConfig(paths, {}, flags);
+        if (result != ERROR_SUCCESS) {
+          DD_LOG(error) << w_api.getErrorString(result) << " failed to create new topology configuration!";
+          return false;
+        }
+      }
+      else if (result != ERROR_SUCCESS) {
+        DD_LOG(error) << w_api.getErrorString(result) << " failed to change topology configuration!";
+        return false;
+      }
+
+      return true;
+    }
+  }  // namespace
+
   ActiveTopology
   WinDisplayDevice::getCurrentTopology() const {
     const auto display_data { m_w_api->queryDisplayConfig(QueryType::Active) };
@@ -96,5 +141,68 @@ namespace display_device {
     sort_topology(rhs_copy);
 
     return lhs_copy == rhs_copy;
+  }
+
+  bool
+  WinDisplayDevice::setTopology(const ActiveTopology &new_topology) {
+    if (!isTopologyValid(new_topology)) {
+      DD_LOG(error) << "Topology input is invalid!";
+      return false;
+    }
+
+    const auto current_topology { getCurrentTopology() };
+    if (!isTopologyValid(current_topology)) {
+      DD_LOG(error) << "Failed to get current topology!";
+      return false;
+    }
+
+    if (isTopologyTheSame(current_topology, new_topology)) {
+      DD_LOG(debug) << "Same topology provided.";
+      return true;
+    }
+
+    if (doSetTopology(*m_w_api, new_topology)) {
+      const auto updated_topology { getCurrentTopology() };
+      if (isTopologyValid(updated_topology)) {
+        if (isTopologyTheSame(new_topology, updated_topology)) {
+          return true;
+        }
+        else {
+          // There is an interesting bug in Windows when you have nearly
+          // identical devices, drivers or something. For example, imagine you have:
+          //    AM   - Actual Monitor
+          //    IDD1 - Virtual display 1
+          //    IDD2 - Virtual display 2
+          //
+          // You can have the following topology:
+          //    [[AM, IDD1]]
+          // but not this:
+          //    [[AM, IDD2]]
+          //
+          // Windows API will just default to:
+          //    [[AM, IDD1]]
+          // even if you provide the second variant. Windows API will think
+          // it's OK and just return ERROR_SUCCESS in this case and there is
+          // nothing you can do. Even the Windows' settings app will not
+          // be able to set the desired topology.
+          //
+          // There seems to be a workaround - you need to make sure the IDD1
+          // device is used somewhere else in the topology, like:
+          //    [[AM, IDD2], [IDD1]]
+          //
+          // However, since we have this bug an additional sanity check is needed
+          // regardless of what Windows report back to us.
+          DD_LOG(error) << "Failed to change topology due to Windows bug or because the display is in deep sleep!";
+        }
+      }
+      else {
+        DD_LOG(error) << "Failed to get updated topology!";
+      }
+
+      // Revert back to the original topology
+      doSetTopology(*m_w_api, current_topology);  // Return value does not matter
+    }
+
+    return false;
   }
 }  // namespace display_device

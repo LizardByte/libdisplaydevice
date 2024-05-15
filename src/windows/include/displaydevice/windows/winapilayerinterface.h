@@ -146,5 +146,25 @@ namespace display_device {
      */
     [[nodiscard]] virtual std::string
     getDisplayName(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
+
+    /**
+     * @brief Direct wrapper around the SetDisplayConfig WinAPI.
+     *
+     * It implements no additional logic, just a direct pass-trough.
+     *
+     * @param paths List of paths to pass.
+     * @param modes List of modes to pass.
+     * @param flags Flags to pass.
+     * @returns The return error code of the API.
+     *
+     * EXAMPLES:
+     * ```cpp
+     * std::vector<DISPLAYCONFIG_PATH_INFO> paths;
+     * const WinApiLayerInterface* iface = getIface(...);
+     * const auto result = iface->setDisplayConfig(paths, {}, 0);
+     * ```
+     */
+    [[nodiscard]] virtual LONG
+    setDisplayConfig(const std::vector<DISPLAYCONFIG_PATH_INFO> &paths, const std::vector<DISPLAYCONFIG_MODE_INFO> &modes, UINT32 flags) = 0;
   };
 }  // namespace display_device

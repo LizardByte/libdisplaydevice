@@ -528,4 +528,16 @@ namespace display_device {
 
     return toUtf8(*this, source_name.viewGdiDeviceName);
   }
+
+  LONG
+  WinApiLayer::setDisplayConfig(const std::vector<DISPLAYCONFIG_PATH_INFO> &paths, const std::vector<DISPLAYCONFIG_MODE_INFO> &modes, UINT32 flags) {
+    // std::vector::data() "may or may not return a null pointer, if size() is 0", therefore we want to enforce nullptr...
+    // Also, the WinAPI has no context about consts, so we need to cast it away...
+    return ::SetDisplayConfig(
+      paths.size(),
+      paths.empty() ? nullptr : const_cast<std::vector<DISPLAYCONFIG_PATH_INFO> &>(paths).data(),
+      modes.size(),
+      modes.empty() ? nullptr : const_cast<std::vector<DISPLAYCONFIG_MODE_INFO> &>(modes).data(),
+      flags);
+  }
 }  // namespace display_device
