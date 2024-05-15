@@ -87,7 +87,7 @@ namespace {
 
 }  // namespace
 
-TEST_F_S(GetCurrentTopology, System) {
+TEST_F_S(GetCurrentTopology) {
   const auto active_devices { m_layer->queryDisplayConfig(display_device::QueryType::Active) };
   ASSERT_TRUE(active_devices);
 
@@ -115,7 +115,7 @@ TEST_F_S(GetCurrentTopology, System) {
   EXPECT_EQ(flattened_topology, expected_devices);
 }
 
-TEST_F_S(SetCurrentTopology, System, ExtendedTopology) {
+TEST_F_S(SetCurrentTopology, ExtendedTopology) {
   const auto available_devices { getAvailableDevices() };
   ASSERT_TRUE(available_devices);
 
@@ -137,7 +137,7 @@ TEST_F_S(SetCurrentTopology, System, ExtendedTopology) {
   ASSERT_TRUE(m_win_dd.setTopology(multiple_device_topology));
 }
 
-TEST_F_S(SetCurrentTopology, System, DuplicatedTopology) {
+TEST_F_S(SetCurrentTopology, DuplicatedTopology) {
   const auto available_devices { getAvailableDevices() };
   ASSERT_TRUE(available_devices);
 
@@ -155,7 +155,7 @@ TEST_F_S(SetCurrentTopology, System, DuplicatedTopology) {
   ASSERT_TRUE(m_win_dd.setTopology(multiple_device_topology));
 }
 
-TEST_F_S(SetCurrentTopology, System, MixedTopology) {
+TEST_F_S(SetCurrentTopology, MixedTopology) {
   const auto available_devices { getAvailableDevices() };
   ASSERT_TRUE(available_devices);
 

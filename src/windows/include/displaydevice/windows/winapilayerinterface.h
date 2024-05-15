@@ -165,6 +165,6 @@ namespace display_device {
      * ```
      */
     [[nodiscard]] virtual LONG
-    setDisplayConfig(const std::vector<DISPLAYCONFIG_PATH_INFO> &paths, const std::vector<DISPLAYCONFIG_MODE_INFO> &modes, UINT32 flags) = 0;
+    setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> paths, std::vector<DISPLAYCONFIG_MODE_INFO> modes, UINT32 flags) = 0;
   };
 }  // namespace display_device

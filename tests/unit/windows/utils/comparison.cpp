@@ -22,6 +22,11 @@ operator==(const DISPLAYCONFIG_RATIONAL &lhs, const DISPLAYCONFIG_RATIONAL &rhs)
 }
 
 bool
+operator==(const DISPLAYCONFIG_2DREGION &lhs, const DISPLAYCONFIG_2DREGION &rhs) {
+  return lhs.cx == rhs.cx && lhs.cy == rhs.cy;
+}
+
+bool
 operator==(const DISPLAYCONFIG_PATH_SOURCE_INFO &lhs, const DISPLAYCONFIG_PATH_SOURCE_INFO &rhs) {
   // clang-format off
   return lhs.adapterId == rhs.adapterId &&
@@ -58,9 +63,17 @@ bool
 operator==(const DISPLAYCONFIG_SOURCE_MODE &lhs, const DISPLAYCONFIG_SOURCE_MODE &rhs) {
   return lhs.width == rhs.width && lhs.height == rhs.height && lhs.pixelFormat == rhs.pixelFormat && lhs.position == rhs.position;
 }
-
 bool
 operator==(const DISPLAYCONFIG_VIDEO_SIGNAL_INFO &lhs, const DISPLAYCONFIG_VIDEO_SIGNAL_INFO &rhs) {
+  // clang-format on
+  return lhs.pixelRate == rhs.pixelRate &&
+         lhs.hSyncFreq == rhs.hSyncFreq &&
+         lhs.vSyncFreq == rhs.vSyncFreq &&
+         lhs.activeSize == rhs.activeSize &&
+         lhs.totalSize == rhs.totalSize &&
+         lhs.videoStandard == rhs.videoStandard &&
+         lhs.scanLineOrdering == rhs.scanLineOrdering;
+  // clang-format oon
 }
 
 bool

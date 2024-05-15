@@ -35,6 +35,6 @@ namespace display_device {
 
     /** For details @see WinApiLayerInterface::setDisplayConfig */
     [[nodiscard]] LONG
-    setDisplayConfig(const std::vector<DISPLAYCONFIG_PATH_INFO> &paths, const std::vector<DISPLAYCONFIG_MODE_INFO> &modes, UINT32 flags) override;
+    setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> paths, std::vector<DISPLAYCONFIG_MODE_INFO> modes, UINT32 flags) override;
   };
 }  // namespace display_device

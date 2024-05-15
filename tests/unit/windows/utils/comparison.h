@@ -17,6 +17,9 @@ bool
 operator==(const DISPLAYCONFIG_RATIONAL &lhs, const DISPLAYCONFIG_RATIONAL &rhs);
 
 bool
+operator==(const DISPLAYCONFIG_2DREGION &lhs, const DISPLAYCONFIG_2DREGION &rhs);
+
+bool
 operator==(const DISPLAYCONFIG_PATH_SOURCE_INFO &lhs, const DISPLAYCONFIG_PATH_SOURCE_INFO &rhs);
 
 bool
