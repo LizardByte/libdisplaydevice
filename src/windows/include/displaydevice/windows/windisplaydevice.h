@@ -31,6 +31,10 @@ namespace display_device {
     [[nodiscard]] bool
     isTopologyTheSame(const ActiveTopology &lhs, const ActiveTopology &rhs) const override;
 
+    /** For details @see WinDisplayDevice::setTopology */
+    [[nodiscard]] bool
+    setTopology(const ActiveTopology &new_topology) override;
+
   private:
     std::shared_ptr<WinApiLayerInterface> m_w_api;
   };

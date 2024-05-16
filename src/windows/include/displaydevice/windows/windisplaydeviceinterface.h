@@ -65,5 +65,20 @@ namespace display_device {
      */
     [[nodiscard]] virtual bool
     isTopologyTheSame(const ActiveTopology &lhs, const ActiveTopology &rhs) const = 0;
+
+    /**
+     * @brief Set a new active topology for the OS.
+     * @param new_topology New device topology to set.
+     * @returns True if the new topology has been set, false otherwise.
+     *
+     * EXAMPLES:
+     * ```cpp
+     * auto current_topology { getCurrentTopology() };
+     * // Modify the current_topology
+     * const bool success = setTopology(current_topology);
+     * ```
+     */
+    [[nodiscard]] virtual bool
+    setTopology(const ActiveTopology &new_topology) = 0;
   };
 }  // namespace display_device

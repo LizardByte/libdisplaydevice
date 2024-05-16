@@ -112,8 +112,9 @@ jobs:
           Set-Location -Path usbmmidd_v2/usbmmidd_v2
           ./deviceinstaller64 install usbmmidd.inf usbmmidd
 
-          # create up to 4 virtual displays
-          for ($i = 1; $i -le 4; $i++) {
+          # create 2 virtual displays, using 4 can crash the runner
+          # see: https://github.com/LizardByte/libdisplaydevice/pull/36
+          for ($i = 1; $i -le 2; $i++) {
             ./deviceinstaller64 enableidd 1
           }
 

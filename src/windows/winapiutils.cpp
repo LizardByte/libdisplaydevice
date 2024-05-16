@@ -371,6 +371,9 @@ namespace display_device::win_utils {
       group_id++;
     }
 
+    if (new_paths.empty()) {
+      DD_LOG(error) << "Failed to make paths for new topology!";
+    }
     return new_paths;
   }
 }  // namespace display_device::win_utils

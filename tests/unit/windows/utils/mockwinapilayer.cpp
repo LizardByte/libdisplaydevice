@@ -11,6 +11,8 @@ namespace {
       data.m_paths.push_back({});
       data.m_paths.back().flags = DISPLAYCONFIG_PATH_ACTIVE;
       data.m_paths.back().sourceInfo.sourceModeInfoIdx = data.m_modes.size();
+      data.m_paths.back().sourceInfo.adapterId = { 1, 1 };
+      data.m_paths.back().sourceInfo.id = 0;
       data.m_paths.back().targetInfo.targetAvailable = TRUE;
 
       data.m_modes.push_back({});
@@ -26,6 +28,8 @@ namespace {
       data.m_paths.push_back({});
       data.m_paths.back().flags = DISPLAYCONFIG_PATH_ACTIVE;
       data.m_paths.back().sourceInfo.sourceModeInfoIdx = data.m_modes.size();
+      data.m_paths.back().sourceInfo.adapterId = { 2, 2 };
+      data.m_paths.back().sourceInfo.id = 0;
       data.m_paths.back().targetInfo.targetAvailable = TRUE;
 
       data.m_modes.push_back({});
@@ -39,6 +43,8 @@ namespace {
         data.m_paths.push_back({});
         data.m_paths.back().flags = DISPLAYCONFIG_PATH_ACTIVE;
         data.m_paths.back().sourceInfo.sourceModeInfoIdx = data.m_modes.size();
+        data.m_paths.back().sourceInfo.adapterId = { 3, 3 };
+        data.m_paths.back().sourceInfo.id = 0;
         data.m_paths.back().targetInfo.targetAvailable = TRUE;
 
         data.m_modes.push_back({});
@@ -55,6 +61,8 @@ namespace {
       data.m_paths.push_back({});
       data.m_paths.back().flags = DISPLAYCONFIG_PATH_ACTIVE;
       data.m_paths.back().sourceInfo.sourceModeInfoIdx = data.m_modes.size();
+      data.m_paths.back().sourceInfo.adapterId = { 4, 4 };
+      data.m_paths.back().sourceInfo.id = 0;
       data.m_paths.back().targetInfo.targetAvailable = TRUE;
 
       data.m_modes.push_back({});
@@ -71,7 +79,7 @@ namespace {
 
 namespace ut_consts {
   const std::optional<display_device::PathAndModeData> PAM_NULL { std::nullopt };
-  const std::optional<display_device::PathAndModeData> PAM_EMPTY {};
+  const std::optional<display_device::PathAndModeData> PAM_EMPTY { display_device::PathAndModeData {} };
   const std::optional<display_device::PathAndModeData> PAM_3_ACTIVE { make3ActiveDeviceGroups(false) };
   const std::optional<display_device::PathAndModeData> PAM_3_ACTIVE_WITH_INVALID_MODE_IDX { []() {
     auto data { make3ActiveDeviceGroups(false) };

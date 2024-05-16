@@ -244,7 +244,7 @@ namespace display_device {
 
       status = RegQueryValueExW(reg_key, L"EDID", nullptr, nullptr, edid.data(), &required_size_in_bytes);
       if (status != ERROR_SUCCESS) {
-        DD_LOG(error) << w_api.getErrorString(status) << " \"RegQueryValueExW\" failed when getting size.";
+        DD_LOG(error) << w_api.getErrorString(status) << " \"RegQueryValueExW\" failed when getting data.";
         return false;
       }
 
@@ -527,5 +527,16 @@ namespace display_device {
     }
 
     return toUtf8(*this, source_name.viewGdiDeviceName);
+  }
+
+  LONG
+  WinApiLayer::setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> paths, std::vector<DISPLAYCONFIG_MODE_INFO> modes, UINT32 flags) {
+    // std::vector::data() "may or may not return a null pointer, if size() is 0", therefore we want to enforce nullptr...
+    return ::SetDisplayConfig(
+      paths.size(),
+      paths.empty() ? nullptr : paths.data(),
+      modes.size(),
+      modes.empty() ? nullptr : modes.data(),
+      flags);
   }
 }  // namespace display_device

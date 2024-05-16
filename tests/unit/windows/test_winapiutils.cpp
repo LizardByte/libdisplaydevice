@@ -1,7 +1,8 @@
 // local includes
 #include "displaydevice/windows/winapiutils.h"
 #include "fixtures.h"
-#include "mocks/mockwinapilayer.h"
+#include "utils/comparison.h"
+#include "utils/mockwinapilayer.h"
 
 namespace {
   // Convenience keywords for GMock
@@ -127,57 +128,6 @@ namespace {
   }
 
 }  // namespace
-
-// Helper comparison operators
-bool
-operator==(const LUID &lhs, const LUID &rhs) {
-  return lhs.HighPart == rhs.HighPart && lhs.LowPart == rhs.LowPart;
-}
-
-bool
-operator==(const DISPLAYCONFIG_RATIONAL &lhs, const DISPLAYCONFIG_RATIONAL &rhs) {
-  return lhs.Denominator == rhs.Denominator && lhs.Numerator == rhs.Numerator;
-}
-
-bool
-operator==(const DISPLAYCONFIG_PATH_SOURCE_INFO &lhs, const DISPLAYCONFIG_PATH_SOURCE_INFO &rhs) {
-  // clang-format off
-  return lhs.adapterId == rhs.adapterId &&
-         lhs.id == rhs.id &&
-         lhs.cloneGroupId == rhs.cloneGroupId &&
-         lhs.sourceModeInfoIdx == rhs.sourceModeInfoIdx &&
-         lhs.statusFlags == rhs.statusFlags;
-  // clang-format on
-}
-
-bool
-operator==(const DISPLAYCONFIG_PATH_TARGET_INFO &lhs, const DISPLAYCONFIG_PATH_TARGET_INFO &rhs) {
-  // clang-format off
-  return lhs.adapterId == rhs.adapterId &&
-         lhs.id == rhs.id &&
-         lhs.desktopModeInfoIdx == rhs.desktopModeInfoIdx &&
-         lhs.targetModeInfoIdx == rhs.targetModeInfoIdx &&
-         lhs.outputTechnology == rhs.outputTechnology &&
-         lhs.rotation == rhs.rotation &&
-         lhs.scaling == rhs.scaling &&
-         lhs.refreshRate == rhs.refreshRate &&
-         lhs.scanLineOrdering == rhs.scanLineOrdering &&
-         lhs.targetAvailable == rhs.targetAvailable &&
-         lhs.statusFlags == rhs.statusFlags;
-  // clang-format on
-}
-
-bool
-operator==(const DISPLAYCONFIG_PATH_INFO &lhs, const DISPLAYCONFIG_PATH_INFO &rhs) {
-  return lhs.sourceInfo == rhs.sourceInfo && lhs.targetInfo == rhs.targetInfo && lhs.flags == rhs.flags;
-}
-
-namespace display_device {
-  bool
-  operator==(const PathSourceIndexData &lhs, const PathSourceIndexData &rhs) {
-    return lhs.m_source_id_to_path_index == rhs.m_source_id_to_path_index && lhs.m_adapter_id == rhs.m_adapter_id && lhs.m_active_source == rhs.m_active_source;
-  }
-}  // namespace display_device
 
 TEST_F_S_MOCKED(IsAvailable) {
   DISPLAYCONFIG_PATH_INFO available_path;
@@ -744,4 +694,11 @@ TEST_F_S_MOCKED(MakePathsForNewTopology, IndexOutOfRange) {
 
   const std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths {};
   EXPECT_EQ(display_device::win_utils::makePathsForNewTopology(new_topology, EXPECTED_SOURCE_INDEX_DATA, {}), expected_paths);
+}
+
+TEST_F_S_MOCKED(MakePathsForNewTopology, EmptyList) {
+  const display_device::ActiveTopology new_topology {};
+
+  const std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths {};
+  EXPECT_EQ(display_device::win_utils::makePathsForNewTopology(new_topology, EXPECTED_SOURCE_INDEX_DATA, PATHS_WITH_SOURCE_IDS), expected_paths);
 }
