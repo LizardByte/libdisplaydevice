@@ -59,6 +59,21 @@ protected:
   void
   TearDown() override;
 
+  /**
+   * @brief Check if the test interacts/modifies with the system settings.
+   * @returns True if it does, false otherwise.
+   * @note By setting SKIP_SYSTEM_TESTS=1 env, these tests will be skipped (useful during development).
+   */
+  [[nodiscard]] virtual bool
+  isSystemTest() const;
+
+  /**
+   * @brief Skip the test by specifying the reason.
+   * @returns A non-empty string (reason) if test needs to be skipped, empty string otherwise.
+   */
+  [[nodiscard]] virtual std::string
+  skipTest() const;
+
   int
   exec(const char *cmd);
 
@@ -72,31 +87,25 @@ protected:
   std::streambuf *m_sbuf;
   FILE *m_pipe_stdout;
   FILE *m_pipe_stderr;
+
+private:
+  bool m_test_skipped_at_setup { false };
 };
 
 class LinuxTest: public BaseTest {
 protected:
-  void
-  SetUp() override;
-
-  void
-  TearDown() override;
+  [[nodiscard]] std::string
+  skipTest() const override;
 };
 
 class MacOSTest: public BaseTest {
 protected:
-  void
-  SetUp() override;
-
-  void
-  TearDown() override;
+  [[nodiscard]] std::string
+  skipTest() const override;
 };
 
 class WindowsTest: public BaseTest {
 protected:
-  void
-  SetUp() override;
-
-  void
-  TearDown() override;
+  [[nodiscard]] std::string
+  skipTest() const override;
 };
