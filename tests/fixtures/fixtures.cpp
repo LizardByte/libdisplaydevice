@@ -1,9 +1,6 @@
 // header include
 #include "fixtures.h"
 
-// system includes
-#include <cstdlib>
-
 // local includes
 #include "displaydevice/logging.h"
 
@@ -92,7 +89,7 @@ BaseTest::skipTest() const {
   if (isSystemTest()) {
     const static bool is_system_test_skippable {
       []() {
-        const std::string value { std::getenv("SKIP_SYSTEM_TESTS") };
+        const auto value { getEnv("SKIP_SYSTEM_TESTS") };
         return value == "1";
       }()
     };
