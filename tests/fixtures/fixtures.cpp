@@ -90,15 +90,15 @@ BaseTest::isSystemTest() const {
 std::string
 BaseTest::skipTest() const {
   if (isSystemTest()) {
-    const static bool is_system_test_skipable {
+    const static bool is_system_test_skippable {
       []() {
         const std::string value { std::getenv("SKIP_SYSTEM_TESTS") };
         return value == "1";
       }()
     };
 
-    if (is_system_test_skipable) {
-      return "Skipping, this system test is disabled via ENV.";
+    if (is_system_test_skippable) {
+      return "Skipping, this system test is disabled via SKIP_SYSTEM_TESTS=1 env.";
     }
   }
   return {};
