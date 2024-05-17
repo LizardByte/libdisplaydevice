@@ -11,6 +11,11 @@ BaseTest::BaseTest():
 
 void
 BaseTest::SetUp() {
+  if (const auto skip_reason { skipTest() }; !skip_reason.empty()) {
+    m_test_skipped_at_setup = true;
+    GTEST_SKIP() << skip_reason;
+  }
+
   // todo: only run this one time, instead of every time a test is run
   // see: https://stackoverflow.com/questions/2435277/googletest-accessing-the-environment-from-a-test
   // get command line args from the test executable
@@ -38,6 +43,13 @@ BaseTest::SetUp() {
 
 void
 BaseTest::TearDown() {
+  if (m_test_skipped_at_setup) {
+    // We are not using the IsSkipped() state here. Here we are skipping
+    // teardown, because we have skipped the setup entirely, but during normal
+    // skips we still want to do teardown.
+    return;
+  }
+
   display_device::Logger::get().setCustomCallback(nullptr);  // restore the default callback to avoid potential leaks
   std::cout.rdbuf(m_sbuf);  // restore cout buffer
 
@@ -67,6 +79,28 @@ BaseTest::TearDown() {
   }
 }
 
+bool
+BaseTest::isSystemTest() const {
+  return false;
+}
+
+std::string
+BaseTest::skipTest() const {
+  if (isSystemTest()) {
+    const static bool is_system_test_skippable {
+      []() {
+        const auto value { getEnv("SKIP_SYSTEM_TESTS") };
+        return value == "1";
+      }()
+    };
+
+    if (is_system_test_skippable) {
+      return "Skipping, this system test is disabled via SKIP_SYSTEM_TESTS=1 env.";
+    }
+  }
+  return {};
+}
+
 int
 BaseTest::exec(const char *cmd) {
   std::array<char, 128> buffer {};
@@ -81,62 +115,38 @@ BaseTest::exec(const char *cmd) {
   while (fgets(buffer.data(), buffer.size(), m_pipe_stderr) != nullptr) {
     m_stderr_buffer << buffer.data();
   }
-  int returnCode = pclose(m_pipe_stdout);
+  int return_code = pclose(m_pipe_stdout);
   m_pipe_stdout = nullptr;
-  if (returnCode != 0) {
+  if (return_code != 0) {
     std::cout << "Error: " << m_stderr_buffer.str() << std::endl
-              << "Return code: " << returnCode << std::endl;
+              << "Return code: " << return_code << std::endl;
   }
-  return returnCode;
+  return return_code;
 }
 
-void
-LinuxTest::SetUp() {
+std::string
+LinuxTest::skipTest() const {
 #ifndef __linux__
-  GTEST_SKIP_("Skipping, this test is for Linux only.");
+  return "Skipping, this test is for Linux only.";
+#else
+  return BaseTest::skipTest();
 #endif
-  BaseTest::SetUp();
 }
 
-void
-LinuxTest::TearDown() {
-#ifndef __linux__
-  // This a noop case to skip the teardown
-  return;
-#endif
-  BaseTest::TearDown();
-}
-
-void
-MacOSTest::SetUp() {
+std::string
+MacOSTest::skipTest() const {
 #if !defined(__APPLE__) || !defined(__MACH__)
-  GTEST_SKIP_("Skipping, this test is for macOS only.");
+  return "Skipping, this test is for macOS only.";
+#else
+  return BaseTest::skipTest();
 #endif
-  BaseTest::SetUp();
 }
 
-void
-MacOSTest::TearDown() {
-#if !defined(__APPLE__) || !defined(__MACH__)
-  // This a noop case to skip the teardown
-  return;
-#endif
-  BaseTest::TearDown();
-}
-
-void
-WindowsTest::SetUp() {
+std::string
+WindowsTest::skipTest() const {
 #ifndef _WIN32
-  GTEST_SKIP_("Skipping, this test is for Windows only.");
+  return "Skipping, this test is for Windows only.";
+#else
+  return BaseTest::skipTest();
 #endif
-  BaseTest::SetUp();
-}
-
-void
-WindowsTest::TearDown() {
-#ifndef _WIN32
-  // This a noop case to skip the teardown
-  return;
-#endif
-  BaseTest::TearDown();
 }

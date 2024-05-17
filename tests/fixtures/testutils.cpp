@@ -2,6 +2,9 @@
 #include "testutils.h"
 
 // system includes
+#include <cstdlib>
+
+// system includes
 #include <iostream>
 #include <regex>
 
@@ -25,4 +28,12 @@ setEnv(const std::string &name, const std::string &value) {
 #else
   return setenv(name.c_str(), value.c_str(), 1);
 #endif
+}
+
+std::optional<std::string>
+getEnv(const std::string &name) {
+  if (const auto value { std::getenv(name.c_str()) }; value) {
+    return std::string { value };
+  }
+  return std::nullopt;
 }

@@ -17,6 +17,11 @@ namespace {
   // Test fixture(s) for this file
   class WinDisplayDeviceTopology: public BaseTest {
   public:
+    bool
+    isSystemTest() const override {
+      return true;
+    }
+
     std::optional<std::vector<std::string>>
     getAvailableDevices() {
       const auto all_devices { m_layer->queryDisplayConfig(display_device::QueryType::All) };
