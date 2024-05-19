@@ -10,7 +10,7 @@ namespace display_device {
   };
 
   /**
-   * @brief Floating point is stored in a "numerator/denominator" form.
+   * @brief Floating point stored in a "numerator/denominator" form.
    */
   struct Rational {
     unsigned int m_numerator;
