@@ -47,22 +47,22 @@ namespace display_device {
       // Time (limited by GCC 11, so it's not pretty and no timezones are supported...)
       {
         static const auto get_time { []() {
-          static const auto to_year_month_day { [](const auto &time) {
-            return std::chrono::year_month_day { std::chrono::time_point_cast<std::chrono::days>(time) };
+          static const auto to_year_month_day { [](const auto &now) {
+            return std::chrono::year_month_day { std::chrono::time_point_cast<std::chrono::days>(now) };
           } };
-          static const auto to_hour_minute_second { [](const auto &time) {
-            const auto start_of_day { std::chrono::floor<std::chrono::days>(time) };
-            const auto time_since_start_of_day { std::chrono::round<std::chrono::seconds>(time - start_of_day) };
+          static const auto to_hour_minute_second { [](const auto &now) {
+            const auto start_of_day { std::chrono::floor<std::chrono::days>(now) };
+            const auto time_since_start_of_day { std::chrono::round<std::chrono::seconds>(now - start_of_day) };
             return std::chrono::hh_mm_ss { time_since_start_of_day };
           } };
-          static const auto to_milliseconds { [](const auto &now, const auto &time) {
+          static const auto to_milliseconds { [](const auto &now) {
             const auto now_ms { std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) };
-            const auto time_s { std::chrono::duration_cast<std::chrono::seconds>(time.time_since_epoch()) };
+            const auto time_s { std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()) };
             return now_ms - time_s;
           } };
 
           const auto now { std::chrono::system_clock::now() };
-          return std::make_tuple(to_year_month_day(now), to_hour_minute_second(now), to_milliseconds(now, now));
+          return std::make_tuple(to_year_month_day(now), to_hour_minute_second(now), to_milliseconds(now));
         } };
 
         const auto [year_month_day, hh_mm_ss, ms] { get_time() };
