@@ -44,7 +44,7 @@ namespace display_device {
 
     std::stringstream stream;
     {
-      // Time
+      // Time (limited by GCC 11, so it's not pretty and no timezones are supported...)
       {
         static const auto get_time { []() {
           static const auto to_year_month_day { [](const auto &time) {
@@ -62,18 +62,27 @@ namespace display_device {
           } };
 
           const auto now { std::chrono::system_clock::now() };
-          const auto time_zone { std::chrono::current_zone() };
-          if (time_zone) {
-            const auto local_time { time_zone->to_local(now) };
-            return std::make_tuple(to_year_month_day(local_time), to_hour_minute_second(local_time), to_milliseconds(now, local_time));
-          }
           return std::make_tuple(to_year_month_day(now), to_hour_minute_second(now), to_milliseconds(now, now));
         } };
 
         const auto [year_month_day, hh_mm_ss, ms] { get_time() };
         const auto old_flags { stream.flags() };  // Save formatting flags so that they can be restored...
 
-        stream << "[" << year_month_day << " " << hh_mm_ss << "." << std::setfill('0') << std::setw(3) << ms.count() << "] ";
+        stream << "[";
+        stream << std::setfill('0') << std::setw(2) << static_cast<int>(year_month_day.year());
+        stream << "-";
+        stream << std::setfill('0') << std::setw(2) << static_cast<unsigned>(year_month_day.month());
+        stream << "-";
+        stream << std::setfill('0') << std::setw(2) << static_cast<unsigned>(year_month_day.day());
+        stream << " ";
+        stream << std::setfill('0') << std::setw(2) << hh_mm_ss.hours().count();
+        stream << ":";
+        stream << std::setfill('0') << std::setw(2) << hh_mm_ss.minutes().count();
+        stream << ":";
+        stream << std::setfill('0') << std::setw(2) << hh_mm_ss.seconds().count();
+        stream << ".";
+        stream << std::setfill('0') << std::setw(3) << ms.count();
+        stream << "] ";
         stream.flags(old_flags);
       }
 
