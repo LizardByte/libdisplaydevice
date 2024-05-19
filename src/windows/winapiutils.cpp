@@ -38,6 +38,26 @@ namespace {
   toString(const LUID &id) {
     return std::to_string(id.HighPart) + std::to_string(id.LowPart);
   }
+
+  /**
+   * @brief Check if the source modes are duplicated (cloned).
+   * @param lhs First mode to check.
+   * @param rhs Second mode to check.
+   * @returns True if both mode have the same origin point, false otherwise.
+   * @note Windows enforces the behaviour that only the duplicate devices can
+   *       have the same origin point as otherwise the configuration is considered invalid by the OS.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * DISPLAYCONFIG_SOURCE_MODE mode_a;
+   * DISPLAYCONFIG_SOURCE_MODE mode_b;
+   * const bool are_duplicated = are_modes_duplicated(mode_a, mode_b);
+   * ```
+   */
+  bool
+  are_modes_duplicated(const DISPLAYCONFIG_SOURCE_MODE &lhs, const DISPLAYCONFIG_SOURCE_MODE &rhs) {
+    return lhs.position.x == rhs.position.x && lhs.position.y == rhs.position.y;
+  }
 }  // namespace
 
 namespace display_device::win_utils {
@@ -169,13 +189,13 @@ namespace display_device::win_utils {
   }
 
   std::optional<ValidatedDeviceInfo>
-  getDeviceInfoForValidPath(const WinApiLayerInterface &w_api, const DISPLAYCONFIG_PATH_INFO &path, bool must_be_active) {
+  getDeviceInfoForValidPath(const WinApiLayerInterface &w_api, const DISPLAYCONFIG_PATH_INFO &path, const ValidatedPathType type) {
     if (!isAvailable(path)) {
       // Could be transient issue according to MSDOCS (no longer available, but still "active")
       return std::nullopt;
     }
 
-    if (must_be_active) {
+    if (type == ValidatedPathType::Active) {
       if (!isActive(path)) {
         return std::nullopt;
       }
@@ -199,6 +219,27 @@ namespace display_device::win_utils {
     return ValidatedDeviceInfo { device_path, device_id };
   }
 
+  const DISPLAYCONFIG_PATH_INFO *
+  getActivePath(const WinApiLayerInterface &w_api, const std::string &device_id, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths) {
+    for (const auto &path : paths) {
+      const auto device_info { getDeviceInfoForValidPath(w_api, path, ValidatedPathType::Active) };
+      if (!device_info) {
+        continue;
+      }
+
+      if (device_info->m_device_id == device_id) {
+        return &path;
+      }
+    }
+
+    return nullptr;
+  }
+
+  DISPLAYCONFIG_PATH_INFO *
+  getActivePath(const WinApiLayerInterface &w_api, const std::string &device_id, std::vector<DISPLAYCONFIG_PATH_INFO> &paths) {
+    return const_cast<DISPLAYCONFIG_PATH_INFO *>(getActivePath(w_api, device_id, const_cast<const std::vector<DISPLAYCONFIG_PATH_INFO> &>(paths)));
+  }
+
   PathSourceIndexDataMap
   collectSourceDataForMatchingPaths(const WinApiLayerInterface &w_api, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths) {
     PathSourceIndexDataMap path_data;
@@ -207,7 +248,7 @@ namespace display_device::win_utils {
     for (std::size_t index = 0; index < paths.size(); ++index) {
       const auto &path { paths[index] };
 
-      const auto device_info { getDeviceInfoForValidPath(w_api, path, false) };
+      const auto device_info { getDeviceInfoForValidPath(w_api, path, ValidatedPathType::Any) };
       if (!device_info) {
         // Path is not valid
         continue;
@@ -375,5 +416,80 @@ namespace display_device::win_utils {
       DD_LOG(error) << "Failed to make paths for new topology!";
     }
     return new_paths;
+  }
+
+  std::set<std::string>
+  getAllDeviceIdsAndMatchingDuplicates(const WinApiLayerInterface &w_api, const std::set<std::string> &device_ids) {
+    const auto display_data { w_api.queryDisplayConfig(QueryType::Active) };
+    if (!display_data) {
+      // Error already logged
+      return {};
+    }
+
+    std::set<std::string> all_device_ids;
+    for (const auto &device_id : device_ids) {
+      if (device_id.empty()) {
+        DD_LOG(error) << "Device it is empty!";
+        return {};
+      }
+
+      const auto provided_path { getActivePath(w_api, device_id, display_data->m_paths) };
+      if (!provided_path) {
+        DD_LOG(warning) << "Failed to find device for " << device_id << "!";
+        return {};
+      }
+
+      const auto provided_path_source_mode { getSourceMode(getSourceIndex(*provided_path, display_data->m_modes), display_data->m_modes) };
+      if (!provided_path_source_mode) {
+        DD_LOG(error) << "Active device does not have a source mode: " << device_id << "!";
+        return {};
+      }
+
+      // We will now iterate over all the active paths (provided path included) and check if
+      // any of them are duplicated.
+      for (const auto &path : display_data->m_paths) {
+        const auto device_info { getDeviceInfoForValidPath(w_api, path, ValidatedPathType::Active) };
+        if (!device_info) {
+          continue;
+        }
+
+        if (all_device_ids.contains(device_info->m_device_id)) {
+          // Already checked
+          continue;
+        }
+
+        const auto source_mode { getSourceMode(getSourceIndex(path, display_data->m_modes), display_data->m_modes) };
+        if (!source_mode) {
+          DD_LOG(error) << "Active device does not have a source mode: " << device_info->m_device_id << "!";
+          return {};
+        }
+
+        if (!are_modes_duplicated(*provided_path_source_mode, *source_mode)) {
+          continue;
+        }
+
+        all_device_ids.insert(device_info->m_device_id);
+      }
+    }
+
+    return all_device_ids;
+  }
+
+  bool
+  fuzzyCompareRefreshRates(const Rational &lhs, const Rational &rhs) {
+    if (lhs.m_denominator > 0 && rhs.m_denominator > 0) {
+      const float lhs_f { static_cast<float>(lhs.m_numerator) / static_cast<float>(lhs.m_denominator) };
+      const float rhs_f { static_cast<float>(rhs.m_numerator) / static_cast<float>(rhs.m_denominator) };
+      return (std::abs(lhs_f - rhs_f) <= 0.9f);
+    }
+
+    return false;
+  }
+
+  bool
+  fuzzyCompareModes(const DisplayMode &lhs, const DisplayMode &rhs) {
+    return lhs.m_resolution.m_width == rhs.m_resolution.m_width &&
+           lhs.m_resolution.m_height == rhs.m_resolution.m_height &&
+           fuzzyCompareRefreshRates(lhs.m_refresh_rate, rhs.m_refresh_rate);
   }
 }  // namespace display_device::win_utils

@@ -9,6 +9,9 @@
 #include <string>
 #include <vector>
 
+// local includes
+#include "displaydevice/types.h"
+
 namespace display_device {
   /**
    * @brief Type of query the OS should perform while searching for display devices.
@@ -24,6 +27,14 @@ namespace display_device {
   struct PathAndModeData {
     std::vector<DISPLAYCONFIG_PATH_INFO> m_paths; /**< Available display paths. */
     std::vector<DISPLAYCONFIG_MODE_INFO> m_modes; /**< Display modes for ACTIVE displays. */
+  };
+
+  /**
+   * @brief Specifies additional constraints for the validated device.
+   */
+  enum class ValidatedPathType {
+    Active, /**< The device path must be active. */
+    Any /**< The device path can be active or inactive. */
   };
 
   /**
@@ -66,5 +77,13 @@ namespace display_device {
    * @note On Windows the order does not matter of both device ids or the inner lists.
    */
   using ActiveTopology = std::vector<std::vector<std::string>>;
+
+  /**
+   * @brief Display's mode (resolution + refresh rate).
+   */
+  struct DisplayMode {
+    Resolution m_resolution;
+    Rational m_refresh_rate;
+  };
 
 }  // namespace display_device

@@ -7,12 +7,31 @@
 namespace {
   // Convenience keywords for GMock
   using ::testing::_;
+  using ::testing::InSequence;
   using ::testing::Return;
   using ::testing::StrictMock;
 
   // Test fixture(s) for this file
   class WinApiUtilsMocked: public BaseTest {
   public:
+    void
+    setupExpectCallForValidPaths(int number_of_calls, InSequence & /* To ensure that sequence is created outside this scope */) {
+      for (int i = 1; i <= number_of_calls; ++i) {
+        EXPECT_CALL(m_layer, getMonitorDevicePath(_))
+          .Times(1)
+          .WillOnce(Return("Path" + std::to_string(i)))
+          .RetiresOnSaturation();
+        EXPECT_CALL(m_layer, getDeviceId(_))
+          .Times(1)
+          .WillOnce(Return("DeviceId" + std::to_string(i)))
+          .RetiresOnSaturation();
+        EXPECT_CALL(m_layer, getDisplayName(_))
+          .Times(1)
+          .WillOnce(Return("DisplayName" + std::to_string(i)))
+          .RetiresOnSaturation();
+      }
+    }
+
     StrictMock<display_device::MockWinApiLayer> m_layer;
   };
 
@@ -299,7 +318,7 @@ TEST_F_S_MOCKED(GetDeviceInfo, AvailablePath, ActivePath, MustBeActiveIsTrue) {
     .Times(1)
     .WillOnce(Return("DisplayName"));
 
-  const auto result { display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_ACTIVE_PATH, true) };
+  const auto result { display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_ACTIVE_PATH, display_device::ValidatedPathType::Active) };
   ASSERT_TRUE(result);
 
   EXPECT_EQ(result->m_device_path, "DevicePath");
@@ -317,7 +336,7 @@ TEST_F_S_MOCKED(GetDeviceInfo, AvailablePath, ActivePath, MustBeActiveIsFalse) {
     .Times(1)
     .WillOnce(Return("DisplayName"));
 
-  const auto result { display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_ACTIVE_PATH, false) };
+  const auto result { display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_ACTIVE_PATH, display_device::ValidatedPathType::Any) };
   ASSERT_TRUE(result);
 
   EXPECT_EQ(result->m_device_path, "DevicePath");
@@ -335,7 +354,7 @@ TEST_F_S_MOCKED(GetDeviceInfo, AvailablePath, InactivePath, MustBeActiveIsTrue) 
     .Times(1)
     .WillOnce(Return(""));
 
-  EXPECT_EQ(display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_ACTIVE_PATH, true), std::nullopt);
+  EXPECT_EQ(display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_ACTIVE_PATH, display_device::ValidatedPathType::Active), std::nullopt);
 }
 
 TEST_F_S_MOCKED(GetDeviceInfo, AvailablePath, InactivePath, MustBeActiveIsFalse) {
@@ -349,7 +368,7 @@ TEST_F_S_MOCKED(GetDeviceInfo, AvailablePath, InactivePath, MustBeActiveIsFalse)
     .Times(1)
     .WillOnce(Return("DisplayName"));
 
-  const auto result { display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_INACTIVE_PATH, false) };
+  const auto result { display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_INACTIVE_PATH, display_device::ValidatedPathType::Any) };
   ASSERT_TRUE(result);
 
   EXPECT_EQ(result->m_device_path, "DevicePath");
@@ -364,7 +383,7 @@ TEST_F_S_MOCKED(GetDeviceInfo, AvailablePath, ActivePath, EmptyDeviceId) {
     .Times(1)
     .WillOnce(Return(""));
 
-  EXPECT_EQ(display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_ACTIVE_PATH, true), std::nullopt);
+  EXPECT_EQ(display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_ACTIVE_PATH, display_device::ValidatedPathType::Active), std::nullopt);
 }
 
 TEST_F_S_MOCKED(GetDeviceInfo, AvailablePath, ActivePath, EmptyDevicePath) {
@@ -372,11 +391,11 @@ TEST_F_S_MOCKED(GetDeviceInfo, AvailablePath, ActivePath, EmptyDevicePath) {
     .Times(1)
     .WillOnce(Return(""));
 
-  EXPECT_EQ(display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_ACTIVE_PATH, true), std::nullopt);
+  EXPECT_EQ(display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_ACTIVE_PATH, display_device::ValidatedPathType::Active), std::nullopt);
 }
 
 TEST_F_S_MOCKED(GetDeviceInfo, AvailablePath, InactivePath) {
-  EXPECT_EQ(display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_INACTIVE_PATH, true), std::nullopt);
+  EXPECT_EQ(display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_INACTIVE_PATH, display_device::ValidatedPathType::Active), std::nullopt);
 }
 
 TEST_F_S_MOCKED(GetDeviceInfo, UnavailablePath, ActivePath) {
@@ -385,7 +404,61 @@ TEST_F_S_MOCKED(GetDeviceInfo, UnavailablePath, ActivePath) {
   path.targetInfo.targetAvailable = FALSE;
   path.flags = DISPLAYCONFIG_PATH_ACTIVE;
 
-  EXPECT_EQ(display_device::win_utils::getDeviceInfoForValidPath(m_layer, path, false), std::nullopt);
+  EXPECT_EQ(display_device::win_utils::getDeviceInfoForValidPath(m_layer, path, display_device::ValidatedPathType::Any), std::nullopt);
+}
+
+TEST_F_S_MOCKED(GetActivePath, InstantMatch) {
+  EXPECT_CALL(m_layer, getMonitorDevicePath(_))
+    .Times(2)
+    .WillRepeatedly(Return("Path1"));
+  EXPECT_CALL(m_layer, getDisplayName(_))
+    .Times(2)
+    .WillRepeatedly(Return("DisplayNameX"));
+  EXPECT_CALL(m_layer, getDeviceId(_))
+    .Times(2)
+    .WillRepeatedly(Return("DeviceId1"));
+
+  auto *path { display_device::win_utils::getActivePath(m_layer, "DeviceId1", const_cast<std::vector<DISPLAYCONFIG_PATH_INFO> &>(PATHS_WITH_SOURCE_IDS)) };
+  auto *const_path { display_device::win_utils::getActivePath(m_layer, "DeviceId1", PATHS_WITH_SOURCE_IDS) };
+
+  EXPECT_EQ(path, const_path);
+  EXPECT_EQ(path, &PATHS_WITH_SOURCE_IDS.at(0));
+}
+
+TEST_F_S_MOCKED(GetActivePath, SecondMatch) {
+  EXPECT_CALL(m_layer, getMonitorDevicePath(_))
+    .Times(4)
+    .WillOnce(Return("Path1"))
+    .WillOnce(Return("Path2"))
+    .WillOnce(Return("Path1"))
+    .WillOnce(Return("Path2"));
+  EXPECT_CALL(m_layer, getDisplayName(_))
+    .Times(4)
+    .WillRepeatedly(Return("DisplayNameX"));
+  EXPECT_CALL(m_layer, getDeviceId(_))
+    .Times(4)
+    .WillOnce(Return("DeviceId1"))
+    .WillOnce(Return("DeviceId2"))
+    .WillOnce(Return("DeviceId1"))
+    .WillOnce(Return("DeviceId2"));
+
+  auto *path { display_device::win_utils::getActivePath(m_layer, "DeviceId2", const_cast<std::vector<DISPLAYCONFIG_PATH_INFO> &>(PATHS_WITH_SOURCE_IDS)) };
+  auto *const_path { display_device::win_utils::getActivePath(m_layer, "DeviceId2", PATHS_WITH_SOURCE_IDS) };
+
+  EXPECT_EQ(path, const_path);
+  EXPECT_EQ(path, &PATHS_WITH_SOURCE_IDS.at(1));
+}
+
+TEST_F_S_MOCKED(GetActivePath, NoMatch) {
+  EXPECT_CALL(m_layer, getMonitorDevicePath(_))
+    .Times(4)
+    .WillOnce(Return(""));
+
+  auto *path { display_device::win_utils::getActivePath(m_layer, "DeviceId1", const_cast<std::vector<DISPLAYCONFIG_PATH_INFO> &>(PATHS_WITH_SOURCE_IDS)) };
+  auto *const_path { display_device::win_utils::getActivePath(m_layer, "DeviceId1", PATHS_WITH_SOURCE_IDS) };
+
+  EXPECT_EQ(path, const_path);
+  EXPECT_EQ(path, nullptr);
 }
 
 TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths) {
@@ -701,4 +774,120 @@ TEST_F_S_MOCKED(MakePathsForNewTopology, EmptyList) {
 
   const std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths {};
   EXPECT_EQ(display_device::win_utils::makePathsForNewTopology(new_topology, EXPECTED_SOURCE_INDEX_DATA, PATHS_WITH_SOURCE_IDS), expected_paths);
+}
+
+TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates) {
+  auto pam_no_modes { ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES };
+
+  InSequence sequence;
+  EXPECT_CALL(m_layer, queryDisplayConfig(display_device::QueryType::Active))
+    .Times(1)
+    .WillOnce(Return(pam_no_modes));
+
+  // DeviceId1 iterations
+  {
+    // Outer loop
+    setupExpectCallForValidPaths(1, sequence);
+
+    // Inner loop
+    setupExpectCallForValidPaths(4, sequence);
+  }
+
+  // DeviceId2 iterations
+  {
+    // Outer loop
+    setupExpectCallForValidPaths(2, sequence);
+
+    // Inner loop
+    setupExpectCallForValidPaths(4, sequence);
+  }
+
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, { "DeviceId1", "DeviceId2" }), (std::set<std::string> { "DeviceId1", "DeviceId2", "DeviceId3" }));
+}
+
+TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, FailedToQueryDevices) {
+  EXPECT_CALL(m_layer, queryDisplayConfig(display_device::QueryType::Active))
+    .Times(1)
+    .WillOnce(Return(ut_consts::PAM_NULL));
+
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, { "DeviceId2" }), std::set<std::string> {});
+}
+
+TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, EmptyDeviceIdInProvidedList) {
+  //  InSequence sequence;
+  //  setupExpectCallFor4ActivePathsAndModes(display_device::QueryType::Active, sequence);
+  EXPECT_CALL(m_layer, queryDisplayConfig(display_device::QueryType::Active))
+    .Times(1)
+    .WillOnce(Return(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES));
+
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, { "" }), std::set<std::string> {});
+}
+
+TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, FailedToFindActivePath) {
+  EXPECT_CALL(m_layer, queryDisplayConfig(display_device::QueryType::Active))
+    .Times(1)
+    .WillOnce(Return(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES));
+  EXPECT_CALL(m_layer, getMonitorDevicePath(_))
+    .Times(4)
+    .WillOnce(Return(""));
+
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, { "DeviceId2" }), std::set<std::string> {});
+}
+
+TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, NoSourceModeFound) {
+  auto pam_no_modes { ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES };
+  pam_no_modes->m_modes.clear();
+
+  InSequence sequence;
+  EXPECT_CALL(m_layer, queryDisplayConfig(display_device::QueryType::Active))
+    .Times(1)
+    .WillOnce(Return(pam_no_modes));
+  setupExpectCallForValidPaths(2, sequence);
+
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, { "DeviceId2" }), std::set<std::string> {});
+}
+
+TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, IncompleteListOfSources) {
+  auto pam_no_modes { ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES };
+  pam_no_modes->m_modes.resize(2);
+
+  InSequence sequence;
+  EXPECT_CALL(m_layer, queryDisplayConfig(display_device::QueryType::Active))
+    .Times(1)
+    .WillOnce(Return(pam_no_modes));
+  setupExpectCallForValidPaths(2, sequence);
+  EXPECT_CALL(m_layer, getMonitorDevicePath(_))
+    .Times(1)
+    .WillOnce(Return(""))
+    .RetiresOnSaturation();
+  setupExpectCallForValidPaths(1, sequence);
+
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, { "DeviceId1" }), std::set<std::string> {});
+}
+
+TEST_F_S_MOCKED(FuzzyCompareRefreshRates) {
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareRefreshRates(display_device::Rational { 60, 1 }, display_device::Rational { 5985, 100 }), true);
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareRefreshRates(display_device::Rational { 60, 1 }, display_device::Rational { 5920, 100 }), true);
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareRefreshRates(display_device::Rational { 60, 1 }, display_device::Rational { 5900, 100 }), false);
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareRefreshRates(display_device::Rational { 60, 0 }, display_device::Rational { 5985, 100 }), false);
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareRefreshRates(display_device::Rational { 60, 1 }, display_device::Rational { 5985, 0 }), false);
+}
+
+TEST_F_S_MOCKED(FuzzyCompareModes) {
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareModes(
+              display_device::DisplayMode { 1920, 1080, { 60, 1 } },
+              display_device::DisplayMode { 1920, 1080, { 60, 1 } }),
+    true);
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareModes(
+              display_device::DisplayMode { 123, 1080, { 60, 1 } },
+              display_device::DisplayMode { 1920, 1080, { 60, 1 } }),
+    false);
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareModes(
+              display_device::DisplayMode { 1920, 123, { 60, 1 } },
+              display_device::DisplayMode { 1920, 1080, { 60, 1 } }),
+    false);
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareModes(
+              display_device::DisplayMode { 1920, 1080, { 60, 1 } },
+              display_device::DisplayMode { 1920, 1080, { 50, 1 } }),
+    false);
 }

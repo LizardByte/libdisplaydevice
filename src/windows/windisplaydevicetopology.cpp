@@ -69,7 +69,7 @@ namespace display_device {
     std::unordered_map<std::string, std::size_t> position_to_topology_index;
     ActiveTopology topology;
     for (const auto &path : display_data->m_paths) {
-      const auto device_info { win_utils::getDeviceInfoForValidPath(*m_w_api, path, true) };
+      const auto device_info { win_utils::getDeviceInfoForValidPath(*m_w_api, path, display_device::ValidatedPathType::Active) };
       if (!device_info) {
         continue;
       }

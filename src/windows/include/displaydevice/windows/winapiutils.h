@@ -1,5 +1,8 @@
 #pragma once
 
+// system includes
+#include <set>
+
 // local includes
 #include "winapilayerinterface.h"
 
@@ -187,7 +190,7 @@ namespace display_device::win_utils {
    *
    * @param w_api Reference to the Windows API layer.
    * @param path Path to validate and get info for.
-   * @param must_be_active Optionally request that the valid path must also be active.
+   * @param type Additional constraints for the path.
    * @returns Commonly used info for the path, or empty optional if the path is invalid.
    * @see WinApiLayerInterface::queryDisplayConfig on how to get paths and modes from the system.
    *
@@ -195,11 +198,35 @@ namespace display_device::win_utils {
    * ```cpp
    * DISPLAYCONFIG_PATH_INFO path;
    * const WinApiLayerInterface* iface = getIface(...);
-   * const auto device_info = getDeviceInfoForValidPath(*iface, path, true);
+   * const auto device_info = getDeviceInfoForValidPath(*iface, path, ValidatedPathType::Active);
    * ```
    */
   [[nodiscard]] std::optional<ValidatedDeviceInfo>
-  getDeviceInfoForValidPath(const WinApiLayerInterface &w_api, const DISPLAYCONFIG_PATH_INFO &path, bool must_be_active);
+  getDeviceInfoForValidPath(const WinApiLayerInterface &w_api, const DISPLAYCONFIG_PATH_INFO &path, ValidatedPathType type);
+
+  /**
+   * @brief Get the active path matching the device id.
+   * @param w_api Reference to the Windows API layer.
+   * @param device_id Id to search for in the the list.
+   * @param paths List to be searched.
+   * @returns A pointer to an active path matching our id, nullptr otherwise.
+   * @see WinApiLayerInterface::queryDisplayConfig on how to get paths and modes from the system.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * const std::vector<DISPLAYCONFIG_PATH_INFO> paths;
+   * const WinApiLayerInterface* iface = getIface(...);
+   * const DISPLAYCONFIG_PATH_INFO* active_path = get_active_path(*iface, "MY_DEVICE_ID", paths);
+   * ```
+   */
+  [[nodiscard]] const DISPLAYCONFIG_PATH_INFO *
+  getActivePath(const WinApiLayerInterface &w_api, const std::string &device_id, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
+
+  /**
+   * @see getActivePath (const version) for the description.
+   */
+  [[nodiscard]] DISPLAYCONFIG_PATH_INFO *
+  getActivePath(const WinApiLayerInterface &w_api, const std::string &device_id, std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
 
   /**
    * @brief Collect arbitrary source data from provided paths.
@@ -242,4 +269,52 @@ namespace display_device::win_utils {
    */
   [[nodiscard]] std::vector<DISPLAYCONFIG_PATH_INFO>
   makePathsForNewTopology(const ActiveTopology &new_topology, const PathSourceIndexDataMap &path_source_data, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
+
+  /**
+   * @brief Get all the missing duplicate device ids for the provided device ids.
+   * @param w_api Reference to the Windows API layer.
+   * @param device_ids Device ids to find the missing duplicate ids for.
+   * @returns A list of device ids containing the provided device ids and all unspecified ids
+   *          for duplicated displays.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * const WinApiLayerInterface* iface = getIface(...);
+   * const auto device_ids_with_duplicates = getAllDeviceIdsAndMatchingDuplicates(*iface, { "MY_ID1" });
+   * ```
+   */
+  [[nodiscard]] std::set<std::string>
+  getAllDeviceIdsAndMatchingDuplicates(const WinApiLayerInterface &w_api, const std::set<std::string> &device_ids);
+
+  /**
+   * @brief Check if the refresh rates are almost equal.
+   * @param lhs First refresh rate.
+   * @param rhs Second refresh rate.
+   * @return True if refresh rates are almost equal, false otherwise.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * const bool almost_equal = fuzzyCompareRefreshRates(Rational { 60, 1 }, Rational { 5985, 100 });
+   * const bool not_equal = fuzzyCompareRefreshRates(Rational { 60, 1 }, Rational { 5585, 100 });
+   * ```
+   */
+  [[nodiscard]] bool
+  fuzzyCompareRefreshRates(const Rational &lhs, const Rational &rhs);
+
+  /**
+   * @brief Check if the display modes are almost equal.
+   * @param lhs First mode.
+   * @param rhs Second mode.
+   * @return True if display modes are almost equal, false otherwise.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * const bool almost_equal = fuzzyCompareModes(DisplayMode { { 1920, 1080 }, { 60, 1 } },
+   *                                             DisplayMode { { 1920, 1080 }, { 5985, 100 } });
+   * const bool not_equal = fuzzyCompareModes(DisplayMode { { 1920, 1080 }, { 60, 1 } },
+   *                                          DisplayMode { { 1920, 1080 }, { 5585, 100 } });
+   * ```
+   */
+  [[nodiscard]] bool
+  fuzzyCompareModes(const DisplayMode &lhs, const DisplayMode &rhs);
 }  // namespace display_device::win_utils

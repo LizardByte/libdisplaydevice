@@ -68,7 +68,7 @@ namespace {
       data.m_modes.push_back({});
       data.m_modes.back().infoType = DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE;
       data.m_modes.back().sourceMode = {};  // Set the union
-      data.m_modes.back().sourceMode.position = { 3842, 0 };
+      data.m_modes.back().sourceMode.position = { 0, 1081 };
       data.m_modes.back().sourceMode.width = 1920;
       data.m_modes.back().sourceMode.height = 1080;
     }
