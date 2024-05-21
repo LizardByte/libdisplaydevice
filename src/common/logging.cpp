@@ -44,28 +44,46 @@ namespace display_device {
 
     std::stringstream stream;
     {
-      // Time
+      // Time (limited by GCC 11, so it's not pretty and no timezones are supported...)
       {
-        // The stupid std::localtime function may not be thread-safe?!
-        static std::mutex time_mutex;
-        std::lock_guard lock { time_mutex };
+        static const auto get_time { []() {
+          static const auto to_year_month_day { [](const auto &now) {
+            return std::chrono::year_month_day { std::chrono::time_point_cast<std::chrono::days>(now) };
+          } };
+          static const auto to_hour_minute_second { [](const auto &now) {
+            const auto start_of_day { std::chrono::floor<std::chrono::days>(now) };
+            const auto time_since_start_of_day { std::chrono::round<std::chrono::seconds>(now - start_of_day) };
+            return std::chrono::hh_mm_ss { time_since_start_of_day };
+          } };
+          static const auto to_milliseconds { [](const auto &now) {
+            const auto now_ms { std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) };
+            const auto time_s { std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()) };
+            return now_ms - time_s;
+          } };
 
-        const auto now { std::chrono::system_clock::now() };
-        const auto now_ms { std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) };
-        const auto now_s { std::chrono::duration_cast<std::chrono::seconds>(now_ms) };
+          const auto now { std::chrono::system_clock::now() };
+          return std::make_tuple(to_year_month_day(now), to_hour_minute_second(now), to_milliseconds(now));
+        } };
 
-        std::time_t time { std::chrono::system_clock::to_time_t(now) };
-        const auto *localtime { std::localtime(&time) };
-        if (localtime) {  // It theoretically can fail for unspecified reasons...
-          const auto now_decimal_part { now_ms - now_s };
+        const auto [year_month_day, hh_mm_ss, ms] { get_time() };
+        const auto old_flags { stream.flags() };  // Save formatting flags so that they can be restored...
 
-          const auto old_flags { stream.flags() };  // Save formatting flags so that they can be restored...
-          stream << std::put_time(std::localtime(&time), "[%Y-%m-%d %H:%M:%S.") << std::setfill('0') << std::setw(3) << now_decimal_part.count() << "] ";
-          stream.flags(old_flags);
-        }
-        else {
-          stream << "[NULL TIME] ";
-        }
+        stream << "[";
+        stream << std::setfill('0') << std::setw(2) << static_cast<int>(year_month_day.year());
+        stream << "-";
+        stream << std::setfill('0') << std::setw(2) << static_cast<unsigned>(year_month_day.month());
+        stream << "-";
+        stream << std::setfill('0') << std::setw(2) << static_cast<unsigned>(year_month_day.day());
+        stream << " ";
+        stream << std::setfill('0') << std::setw(2) << hh_mm_ss.hours().count();
+        stream << ":";
+        stream << std::setfill('0') << std::setw(2) << hh_mm_ss.minutes().count();
+        stream << ":";
+        stream << std::setfill('0') << std::setw(2) << hh_mm_ss.seconds().count();
+        stream << ".";
+        stream << std::setfill('0') << std::setw(3) << ms.count();
+        stream << "] ";
+        stream.flags(old_flags);
       }
 
       // Log level
@@ -84,8 +102,6 @@ namespace display_device {
           break;
         case LogLevel::error:
           stream << "ERROR:   ";
-          break;
-        default:
           break;
       }
 
