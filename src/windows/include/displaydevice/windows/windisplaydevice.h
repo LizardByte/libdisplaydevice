@@ -34,7 +34,7 @@ namespace display_device {
     /** For details @see WinDisplayDeviceInterface::setTopology */
     [[nodiscard]] bool
     setTopology(const ActiveTopology &new_topology) override;
-    
+
     /** For details @see WinDisplayDeviceInterface::getCurrentDisplayModes */
     [[nodiscard]] DeviceDisplayModeMap
     getCurrentDisplayModes(const std::set<std::string> &device_ids) const override;
