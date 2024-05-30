@@ -19,21 +19,29 @@ namespace display_device {
      */
     explicit WinDisplayDevice(std::shared_ptr<WinApiLayerInterface> w_api);
 
-    /** For details @see WinDisplayDevice::getCurrentTopology */
+    /** For details @see WinDisplayDeviceInterface::getCurrentTopology */
     [[nodiscard]] ActiveTopology
     getCurrentTopology() const override;
 
-    /** For details @see WinDisplayDevice::isTopologyValid */
+    /** For details @see WinDisplayDeviceInterface::isTopologyValid */
     [[nodiscard]] bool
     isTopologyValid(const ActiveTopology &topology) const override;
 
-    /** For details @see WinDisplayDevice::getCurrentTopology */
+    /** For details @see WinDisplayDeviceInterface::getCurrentTopology */
     [[nodiscard]] bool
     isTopologyTheSame(const ActiveTopology &lhs, const ActiveTopology &rhs) const override;
 
-    /** For details @see WinDisplayDevice::setTopology */
+    /** For details @see WinDisplayDeviceInterface::setTopology */
     [[nodiscard]] bool
     setTopology(const ActiveTopology &new_topology) override;
+    
+    /** For details @see WinDisplayDeviceInterface::getCurrentDisplayModes */
+    [[nodiscard]] DeviceDisplayModeMap
+    getCurrentDisplayModes(const std::set<std::string> &device_ids) const override;
+
+    /** For details @see WinDisplayDeviceInterface::setDisplayModes */
+    [[nodiscard]] bool
+    setDisplayModes(const DeviceDisplayModeMap &modes) override;
 
   private:
     std::shared_ptr<WinApiLayerInterface> m_w_api;

@@ -46,4 +46,13 @@ operator==(const DISPLAYCONFIG_MODE_INFO &lhs, const DISPLAYCONFIG_MODE_INFO &rh
 namespace display_device {
   bool
   operator==(const PathSourceIndexData &lhs, const PathSourceIndexData &rhs);
+
+  bool
+  operator==(const Rational &lhs, const Rational &rhs);
+
+  bool
+  operator==(const Resolution &lhs, const Resolution &rhs);
+
+  bool
+  operator==(const DisplayMode &lhs, const DisplayMode &rhs);
 }  // namespace display_device

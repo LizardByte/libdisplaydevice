@@ -111,4 +111,19 @@ namespace display_device {
   operator==(const PathSourceIndexData &lhs, const PathSourceIndexData &rhs) {
     return lhs.m_source_id_to_path_index == rhs.m_source_id_to_path_index && lhs.m_adapter_id == rhs.m_adapter_id && lhs.m_active_source == rhs.m_active_source;
   }
+
+  bool
+  operator==(const Rational &lhs, const Rational &rhs) {
+    return lhs.m_numerator == rhs.m_numerator && lhs.m_denominator == rhs.m_denominator;
+  }
+
+  bool
+  operator==(const Resolution &lhs, const Resolution &rhs) {
+    return lhs.m_height == rhs.m_height && lhs.m_width == rhs.m_width;
+  }
+
+  bool
+  operator==(const DisplayMode &lhs, const DisplayMode &rhs) {
+    return lhs.m_refresh_rate == rhs.m_refresh_rate && lhs.m_resolution == rhs.m_resolution;
+  }
 }  // namespace display_device
