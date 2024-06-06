@@ -37,3 +37,10 @@ makePrimaryGuard(display_device::WinDisplayDevice &win_dd) {
     static_cast<void>(win_dd.setAsPrimary(primary_device));
   });
 }
+
+inline auto
+makeHdrStateGuard(display_device::WinDisplayDevice &win_dd) {
+  return boost::scope::make_scope_exit([&win_dd, states = win_dd.getCurrentHdrStates(flattenTopology(win_dd.getCurrentTopology()))]() {
+    static_cast<void>(win_dd.setHdrStates(states));
+  });
+}

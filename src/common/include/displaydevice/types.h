@@ -2,6 +2,14 @@
 
 namespace display_device {
   /**
+   * @brief The device's HDR state in the operating system.
+   */
+  enum class HdrState {
+    Disabled,
+    Enabled
+  };
+
+  /**
    * @brief Display's resolution.
    */
   struct Resolution {
