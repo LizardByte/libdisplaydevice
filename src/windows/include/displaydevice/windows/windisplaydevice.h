@@ -19,6 +19,14 @@ namespace display_device {
      */
     explicit WinDisplayDevice(std::shared_ptr<WinApiLayerInterface> w_api);
 
+    /** For details @see WinDisplayDeviceInterface::isApiAccessAvailable */
+    [[nodiscard]] bool
+    isApiAccessAvailable() const override;
+
+    /** For details @see WinDisplayDeviceInterface::getDisplayName */
+    [[nodiscard]] std::string
+    getDisplayName(const std::string &device_id) const override;
+
     /** For details @see WinDisplayDeviceInterface::getCurrentTopology */
     [[nodiscard]] ActiveTopology
     getCurrentTopology() const override;
