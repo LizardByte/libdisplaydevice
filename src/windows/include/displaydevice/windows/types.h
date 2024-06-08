@@ -86,4 +86,9 @@ namespace display_device {
     Rational m_refresh_rate;
   };
 
+  /**
+   * @brief Ordered map of [DEVICE_ID -> DisplayMode].
+   */
+  using DeviceDisplayModeMap = std::map<std::string, DisplayMode>;
+
 }  // namespace display_device

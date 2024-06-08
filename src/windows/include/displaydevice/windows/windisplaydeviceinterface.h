@@ -1,5 +1,8 @@
 #pragma once
 
+// system includes
+#include <set>
+
 // local includes
 #include "displaydevice/windows/types.h"
 
@@ -73,12 +76,48 @@ namespace display_device {
      *
      * EXAMPLES:
      * ```cpp
-     * auto current_topology { getCurrentTopology() };
+     * const WinDisplayDeviceInterface* iface = getIface(...);
+     * auto current_topology { iface->getCurrentTopology() };
      * // Modify the current_topology
-     * const bool success = setTopology(current_topology);
+     * const bool success = iface->setTopology(current_topology);
      * ```
      */
     [[nodiscard]] virtual bool
     setTopology(const ActiveTopology &new_topology) = 0;
+
+    /**
+     * @brief Get current display modes for the devices.
+     * @param device_ids A list of devices to get the modes for.
+     * @returns A map of device modes per a device or an empty map if a mode could not be found (e.g. device is inactive).
+     *          Empty map can also be returned if an error has occurred.
+     *
+     * EXAMPLES:
+     * ```cpp
+     * const WinDisplayDeviceInterface* iface = getIface(...);
+     * const std::set<std::string> device_ids { "DEVICE_ID_1", "DEVICE_ID_2" };
+     * const auto current_modes = iface->getCurrentDisplayModes(device_ids);
+     * ```
+     */
+    [[nodiscard]] virtual DeviceDisplayModeMap
+    getCurrentDisplayModes(const std::set<std::string> &device_ids) const = 0;
+
+    /**
+     * @brief Set new display modes for the devices.
+     * @param modes A map of modes to set.
+     * @returns True if modes were set, false otherwise.
+     * @warning if any of the specified devices are duplicated, modes modes be provided
+     *          for duplicates too!
+     *
+     * EXAMPLES:
+     * ```cpp
+     * const WinDisplayDeviceInterface* iface = getIface(...);
+     * const std::string display_a { "MY_ID_1" };
+     * const std::string display_b { "MY_ID_2" };
+     * const auto success = iface->setDisplayModes({ { display_a, { { 1920, 1080 }, { 60, 1 } } },
+     *                                               { display_b, { { 1920, 1080 }, { 120, 1 } } } });
+     * ```
+     */
+    [[nodiscard]] virtual bool
+    setDisplayModes(const DeviceDisplayModeMap &modes) = 0;
   };
 }  // namespace display_device

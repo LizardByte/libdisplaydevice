@@ -15,20 +15,14 @@ namespace display_device {
      * @see set_topology for a description as this was split off to reduce cognitive complexity.
      */
     bool
-    doSetTopology(WinApiLayerInterface &w_api, const ActiveTopology &new_topology) {
-      auto display_data { w_api.queryDisplayConfig(QueryType::All) };
-      if (!display_data) {
-        // Error already logged
-        return false;
-      }
-
-      const auto path_data { win_utils::collectSourceDataForMatchingPaths(w_api, display_data->m_paths) };
+    doSetTopology(WinApiLayerInterface &w_api, const ActiveTopology &new_topology, const PathAndModeData &display_data) {
+      const auto path_data { win_utils::collectSourceDataForMatchingPaths(w_api, display_data.m_paths) };
       if (path_data.empty()) {
         // Error already logged
         return false;
       }
 
-      auto paths { win_utils::makePathsForNewTopology(new_topology, path_data, display_data->m_paths) };
+      auto paths { win_utils::makePathsForNewTopology(new_topology, path_data, display_data.m_paths) };
       if (paths.empty()) {
         // Error already logged
         return false;
@@ -161,7 +155,13 @@ namespace display_device {
       return true;
     }
 
-    if (doSetTopology(*m_w_api, new_topology)) {
+    const auto &original_data { m_w_api->queryDisplayConfig(QueryType::All) };
+    if (!original_data) {
+      // Error already logged
+      return false;
+    }
+
+    if (doSetTopology(*m_w_api, new_topology, *original_data)) {
       const auto updated_topology { getCurrentTopology() };
       if (isTopologyValid(updated_topology)) {
         if (isTopologyTheSame(new_topology, updated_topology)) {
@@ -200,7 +200,8 @@ namespace display_device {
       }
 
       // Revert back to the original topology
-      doSetTopology(*m_w_api, current_topology);  // Return value does not matter
+      const UINT32 flags { SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE };
+      static_cast<void>(m_w_api->setDisplayConfig(original_data->m_paths, original_data->m_modes, flags));  // Return value does not matter as we are trying out best to undo
     }
 
     return false;

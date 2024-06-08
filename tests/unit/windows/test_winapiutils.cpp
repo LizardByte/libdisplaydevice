@@ -777,12 +777,10 @@ TEST_F_S_MOCKED(MakePathsForNewTopology, EmptyList) {
 }
 
 TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates) {
-  auto pam_no_modes { ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES };
-
   InSequence sequence;
   EXPECT_CALL(m_layer, queryDisplayConfig(display_device::QueryType::Active))
     .Times(1)
-    .WillOnce(Return(pam_no_modes));
+    .WillOnce(Return(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES));
 
   // DeviceId1 iterations
   {

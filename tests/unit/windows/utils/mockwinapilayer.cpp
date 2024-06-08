@@ -14,6 +14,7 @@ namespace {
       data.m_paths.back().sourceInfo.adapterId = { 1, 1 };
       data.m_paths.back().sourceInfo.id = 0;
       data.m_paths.back().targetInfo.targetAvailable = TRUE;
+      data.m_paths.back().targetInfo.refreshRate = { 120, 1 };
 
       data.m_modes.push_back({});
       data.m_modes.back().infoType = DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE;
@@ -31,13 +32,14 @@ namespace {
       data.m_paths.back().sourceInfo.adapterId = { 2, 2 };
       data.m_paths.back().sourceInfo.id = 0;
       data.m_paths.back().targetInfo.targetAvailable = TRUE;
+      data.m_paths.back().targetInfo.refreshRate = { 119995, 1000 };
 
       data.m_modes.push_back({});
       data.m_modes.back().infoType = DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE;
       data.m_modes.back().sourceMode = {};  // Set the union
-      data.m_modes.back().sourceMode.position = { 1921, 0 };  // TODO
+      data.m_modes.back().sourceMode.position = { 1921, 0 };
       data.m_modes.back().sourceMode.width = 1920;
-      data.m_modes.back().sourceMode.height = 1080;
+      data.m_modes.back().sourceMode.height = 2160;
 
       if (include_duplicate) {
         data.m_paths.push_back({});
@@ -46,13 +48,14 @@ namespace {
         data.m_paths.back().sourceInfo.adapterId = { 3, 3 };
         data.m_paths.back().sourceInfo.id = 0;
         data.m_paths.back().targetInfo.targetAvailable = TRUE;
+        data.m_paths.back().targetInfo.refreshRate = { 60, 1 };
 
         data.m_modes.push_back({});
         data.m_modes.back().infoType = DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE;
         data.m_modes.back().sourceMode = {};  // Set the union
         data.m_modes.back().sourceMode.position = { 1921, 0 };
         data.m_modes.back().sourceMode.width = 1920;
-        data.m_modes.back().sourceMode.height = 1080;
+        data.m_modes.back().sourceMode.height = 2160;
       }
     }
 
@@ -64,13 +67,14 @@ namespace {
       data.m_paths.back().sourceInfo.adapterId = { 4, 4 };
       data.m_paths.back().sourceInfo.id = 0;
       data.m_paths.back().targetInfo.targetAvailable = TRUE;
+      data.m_paths.back().targetInfo.refreshRate = { 90, 1 };
 
       data.m_modes.push_back({});
       data.m_modes.back().infoType = DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE;
       data.m_modes.back().sourceMode = {};  // Set the union
       data.m_modes.back().sourceMode.position = { 0, 1081 };
-      data.m_modes.back().sourceMode.width = 1920;
-      data.m_modes.back().sourceMode.height = 1080;
+      data.m_modes.back().sourceMode.width = 3840;
+      data.m_modes.back().sourceMode.height = 2160;
     }
 
     return data;

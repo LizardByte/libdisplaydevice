@@ -22,24 +22,6 @@ namespace {
       return true;
     }
 
-    std::optional<std::vector<std::string>>
-    getAvailableDevices() {
-      const auto all_devices { m_layer->queryDisplayConfig(display_device::QueryType::All) };
-      if (!all_devices) {
-        return std::nullopt;
-      }
-
-      std::set<std::string> device_ids;
-      for (const auto &path : all_devices->m_paths) {
-        const auto device_id { m_layer->getDeviceId(path) };
-        if (!device_id.empty()) {
-          device_ids.insert(device_id);
-        }
-      }
-
-      return std::vector<std::string> { device_ids.begin(), device_ids.end() };
-    }
-
     std::shared_ptr<display_device::WinApiLayer> m_layer { std::make_shared<display_device::WinApiLayer>() };
     display_device::WinDisplayDevice m_win_dd { m_layer };
   };
@@ -108,20 +90,11 @@ TEST_F_S(GetCurrentTopology) {
   }
 
   // It is enough to check whether the topology contains expected ids - others test cases check the structure.
-  std::set<std::string> flattened_topology;
-  const auto current_topology { m_win_dd.getCurrentTopology() };
-  for (const auto &group : current_topology) {
-    for (const auto &device_id : group) {
-      EXPECT_FALSE(device_id.empty());
-      EXPECT_TRUE(flattened_topology.insert(device_id).second);
-    }
-  }
-
-  EXPECT_EQ(flattened_topology, expected_devices);
+  EXPECT_EQ(flattenTopology(m_win_dd.getCurrentTopology()), expected_devices);
 }
 
 TEST_F_S(SetCurrentTopology, ExtendedTopology) {
-  const auto available_devices { getAvailableDevices() };
+  const auto available_devices { getAvailableDevices(*m_layer) };
   ASSERT_TRUE(available_devices);
 
   if (available_devices->size() < 2) {
@@ -143,7 +116,7 @@ TEST_F_S(SetCurrentTopology, ExtendedTopology) {
 }
 
 TEST_F_S(SetCurrentTopology, DuplicatedTopology) {
-  const auto available_devices { getAvailableDevices() };
+  const auto available_devices { getAvailableDevices(*m_layer) };
   ASSERT_TRUE(available_devices);
 
   if (available_devices->size() < 2) {
@@ -161,7 +134,7 @@ TEST_F_S(SetCurrentTopology, DuplicatedTopology) {
 }
 
 TEST_F_S(SetCurrentTopology, MixedTopology) {
-  const auto available_devices { getAvailableDevices() };
+  const auto available_devices { getAvailableDevices(*m_layer) };
   ASSERT_TRUE(available_devices);
 
   if (available_devices->size() < 3) {
@@ -440,9 +413,10 @@ TEST_F_S_MOCKED(SetCurrentTopology, TopologyWasSetAccordingToWinApi, CouldNotGet
     .WillOnce(Return(ut_consts::PAM_NULL));
 
   // Called when doing the undo
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
+  expected_flags = SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE;
+  EXPECT_CALL(*m_layer, setDisplayConfig(ut_consts::PAM_3_ACTIVE->m_paths, ut_consts::PAM_3_ACTIVE->m_modes, expected_flags))
     .Times(1)
-    .WillOnce(Return(ut_consts::PAM_NULL));
+    .WillOnce(Return(ERROR_SUCCESS));
 
   EXPECT_FALSE(m_win_dd.setTopology({ { "DeviceId1" } }));
 }
@@ -461,9 +435,10 @@ TEST_F_S_MOCKED(SetCurrentTopology, TopologyWasSetAccordingToWinApi, WinApiLied)
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::Active, sequence);
 
   // Called when doing the undo
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
+  expected_flags = SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE;
+  EXPECT_CALL(*m_layer, setDisplayConfig(ut_consts::PAM_3_ACTIVE->m_paths, ut_consts::PAM_3_ACTIVE->m_modes, expected_flags))
     .Times(1)
-    .WillOnce(Return(ut_consts::PAM_NULL));
+    .WillOnce(Return(ERROR_SUCCESS));
 
   EXPECT_FALSE(m_win_dd.setTopology({ { "DeviceId1" } }));
 }
