@@ -76,6 +76,11 @@ namespace display_device::win_utils {
     path.flags |= DISPLAYCONFIG_PATH_ACTIVE;
   }
 
+  bool
+  isPrimary(const DISPLAYCONFIG_SOURCE_MODE &mode) {
+    return mode.position.x == 0 && mode.position.y == 0;
+  }
+
   std::optional<UINT32>
   getSourceIndex(const DISPLAYCONFIG_PATH_INFO &path, const std::vector<DISPLAYCONFIG_MODE_INFO> &modes) {
     // The MS docs is not clear when to access the index union struct or not. It appears that union struct is available,

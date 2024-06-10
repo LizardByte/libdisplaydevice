@@ -119,5 +119,36 @@ namespace display_device {
      */
     [[nodiscard]] virtual bool
     setDisplayModes(const DeviceDisplayModeMap &modes) = 0;
+
+    /**
+     * @brief Check whether the specified device is primary.
+     * @param device_id A device to perform the check for.
+     * @returns True if the device is primary, false otherwise.
+     *
+     * EXAMPLES:
+     * ```cpp
+     * const WinDisplayDeviceInterface* iface = getIface(...);
+     * const std::string device_id { "MY_DEVICE_ID" };
+     * const bool is_primary = iface->isPrimary(device_id);
+     * ```
+     */
+    [[nodiscard]] virtual bool
+    isPrimary(const std::string &device_id) const = 0;
+
+    /**
+     * @brief Set the device as a primary display.
+     * @param device_id A device to set as primary.
+     * @returns True if the device is or was set as primary, false otherwise.
+     * @note On Windows if the device is duplicated, the other duplicated device(-s) will also become a primary device.
+     *
+     * EXAMPLES:
+     * ```cpp
+     * const WinDisplayDeviceInterface* iface = getIface(...);
+     * const std::string device_id { "MY_DEVICE_ID" };
+     * const bool success = iface->set_as_primary_device(device_id);
+     * ```
+     */
+    [[nodiscard]] virtual bool
+    setAsPrimary(const std::string &device_id) = 0;
   };
 }  // namespace display_device

@@ -181,6 +181,20 @@ TEST_F_S_MOCKED(IsActiveAndSetActive) {
   EXPECT_EQ(display_device::win_utils::isActive(contains_active_path), true);
 }
 
+TEST_F_S_MOCKED(IsPrimary) {
+  DISPLAYCONFIG_SOURCE_MODE primary_mode;
+  DISPLAYCONFIG_SOURCE_MODE non_primary_mode_1;
+  DISPLAYCONFIG_SOURCE_MODE non_primary_mode_2;
+
+  primary_mode.position = { 0, 0 };
+  non_primary_mode_1.position = { 1, 0 };
+  non_primary_mode_2.position = { 0, 2 };
+
+  EXPECT_TRUE(display_device::win_utils::isPrimary(primary_mode));
+  EXPECT_FALSE(display_device::win_utils::isPrimary(non_primary_mode_1));
+  EXPECT_FALSE(display_device::win_utils::isPrimary(non_primary_mode_2));
+}
+
 TEST_F_S_MOCKED(GetSourceIndex) {
   DISPLAYCONFIG_PATH_INFO path;
   std::vector<DISPLAYCONFIG_MODE_INFO> modes;

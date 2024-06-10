@@ -62,6 +62,21 @@ namespace display_device::win_utils {
   setActive(DISPLAYCONFIG_PATH_INFO &path);
 
   /**
+   * @brief Check if the display's source mode is primary - if the associated device is a primary display device.
+   * @param mode Mode to check.
+   * @returns True if the mode's origin point is at (0, 0) coordinate (primary), false otherwise.
+   * @note It is possible to have multiple primary source modes at the same time.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * DISPLAYCONFIG_SOURCE_MODE mode;
+   * const bool is_primary = isPrimary(mode);
+   * ```
+   */
+  bool
+  isPrimary(const DISPLAYCONFIG_SOURCE_MODE &mode);
+
+  /**
    * @brief Get the source mode index from the path.
    *
    * It performs sanity checks on the modes list that the index is indeed correct.

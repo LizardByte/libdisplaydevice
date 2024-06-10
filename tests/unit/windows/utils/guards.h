@@ -21,3 +21,19 @@ makeModeGuard(display_device::WinDisplayDevice &win_dd) {
     static_cast<void>(win_dd.setDisplayModes(modes));
   });
 }
+
+inline auto
+makePrimaryGuard(display_device::WinDisplayDevice &win_dd) {
+  return boost::scope::make_scope_exit([&win_dd, primary_device = [&win_dd]() -> std::string {
+    const auto flat_topology { flattenTopology(win_dd.getCurrentTopology()) };
+    for (const auto &device_id : flat_topology) {
+      if (win_dd.isPrimary(device_id)) {
+        return device_id;
+      }
+    }
+
+    return {};
+  }()]() {
+    static_cast<void>(win_dd.setAsPrimary(primary_device));
+  });
+}

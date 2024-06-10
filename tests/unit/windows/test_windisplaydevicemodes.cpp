@@ -159,7 +159,7 @@ TEST_F_S(GetCurrentDisplayModes) {
 }
 
 TEST_F_S(SetCurrentDisplayModes, ExtendedTopology) {
-  const auto available_devices { getAvailableDevices(*m_layer, true) };
+  const auto available_devices { getAvailableDevices(*m_layer) };
   ASSERT_TRUE(available_devices);
 
   if (available_devices->size() < 2) {
@@ -184,7 +184,7 @@ TEST_F_S(SetCurrentDisplayModes, ExtendedTopology) {
 }
 
 TEST_F_S(SetCurrentDisplayModes, DuplicatedTopology) {
-  const auto available_devices { getAvailableDevices(*m_layer, true) };
+  const auto available_devices { getAvailableDevices(*m_layer) };
   ASSERT_TRUE(available_devices);
 
   if (available_devices->size() < 2) {
@@ -214,7 +214,7 @@ TEST_F_S(SetCurrentDisplayModes, DuplicatedTopology) {
 }
 
 TEST_F_S(SetCurrentDisplayModes, MixedTopology) {
-  const auto available_devices { getAvailableDevices(*m_layer, true) };
+  const auto available_devices { getAvailableDevices(*m_layer) };
   ASSERT_TRUE(available_devices);
 
   if (available_devices->size() < 3) {

@@ -12,4 +12,4 @@ std::set<std::string>
 flattenTopology(const display_device::ActiveTopology &topology);
 
 std::optional<std::vector<std::string>>
-getAvailableDevices(display_device::WinApiLayer &layer, bool only_valid_output = false);
+getAvailableDevices(display_device::WinApiLayer &layer, bool only_valid_output = true);

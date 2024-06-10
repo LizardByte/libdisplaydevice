@@ -43,6 +43,14 @@ namespace display_device {
     [[nodiscard]] bool
     setDisplayModes(const DeviceDisplayModeMap &modes) override;
 
+    /** For details @see WinDisplayDeviceInterface::isPrimary */
+    [[nodiscard]] bool
+    isPrimary(const std::string &device_id) const override;
+
+    /** For details @see WinDisplayDeviceInterface::setAsPrimary */
+    [[nodiscard]] bool
+    setAsPrimary(const std::string &device_id) override;
+
   private:
     std::shared_ptr<WinApiLayerInterface> m_w_api;
   };
