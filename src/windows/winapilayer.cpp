@@ -522,7 +522,7 @@ namespace display_device {
 
     LONG result { DisplayConfigGetDeviceInfo(&source_name.header) };
     if (result != ERROR_SUCCESS) {
-      DD_LOG(error) << getErrorString(result) << " failed to get display name! ";
+      DD_LOG(error) << getErrorString(result) << " failed to get display name!";
       return {};
     }
 
@@ -538,5 +538,40 @@ namespace display_device {
       modes.size(),
       modes.empty() ? nullptr : modes.data(),
       flags);
+  }
+
+  std::optional<HdrState>
+  WinApiLayer::getHdrState(const DISPLAYCONFIG_PATH_INFO &path) const {
+    DISPLAYCONFIG_GET_ADVANCED_COLOR_INFO color_info = {};
+    color_info.header.adapterId = path.targetInfo.adapterId;
+    color_info.header.id = path.targetInfo.id;
+    color_info.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_ADVANCED_COLOR_INFO;
+    color_info.header.size = sizeof(color_info);
+
+    LONG result { DisplayConfigGetDeviceInfo(&color_info.header) };
+    if (result != ERROR_SUCCESS) {
+      DD_LOG(error) << getErrorString(result) << " failed to get advanced color info!";
+      return std::nullopt;
+    }
+
+    return color_info.advancedColorSupported ? std::make_optional(color_info.advancedColorEnabled ? HdrState::Enabled : HdrState::Disabled) : std::nullopt;
+  }
+
+  bool
+  WinApiLayer::setHdrState(const DISPLAYCONFIG_PATH_INFO &path, HdrState state) {
+    DISPLAYCONFIG_SET_ADVANCED_COLOR_STATE color_state = {};
+    color_state.header.adapterId = path.targetInfo.adapterId;
+    color_state.header.id = path.targetInfo.id;
+    color_state.header.type = DISPLAYCONFIG_DEVICE_INFO_SET_ADVANCED_COLOR_STATE;
+    color_state.header.size = sizeof(color_state);
+    color_state.enableAdvancedColor = state == HdrState::Enabled ? 1 : 0;
+
+    LONG result { DisplayConfigSetDeviceInfo(&color_state.header) };
+    if (result != ERROR_SUCCESS) {
+      DD_LOG(error) << getErrorString(result) << " failed to set advanced color info!";
+      return false;
+    }
+
+    return true;
   }
 }  // namespace display_device

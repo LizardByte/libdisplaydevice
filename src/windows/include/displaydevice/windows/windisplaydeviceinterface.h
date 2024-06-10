@@ -150,5 +150,40 @@ namespace display_device {
      */
     [[nodiscard]] virtual bool
     setAsPrimary(const std::string &device_id) = 0;
+
+    /**
+     * @brief Get HDR state for the devices.
+     * @param device_ids A list of devices to get the HDR states for.
+     * @returns A map of HDR states per a device or an empty map if an error has occurred.
+     * @note On Windows the state cannot be retrieved until the device is active even if it supports it.
+     *
+     * EXAMPLES:
+     * ```cpp
+     * const WinDisplayDeviceInterface* iface = getIface(...);
+     * const std::unordered_set<std::string> device_ids { "DEVICE_ID_1", "DEVICE_ID_2" };
+     * const auto current_hdr_states = iface->getCurrentHdrStates(device_ids);
+     * ```
+     */
+    [[nodiscard]] virtual HdrStateMap
+    getCurrentHdrStates(const std::set<std::string> &device_ids) const = 0;
+
+    /**
+     * @brief Set HDR states for the devices.
+     * @param modes A map of HDR states to set.
+     * @returns True if HDR states were set, false otherwise.
+     * @note If `unknown` states are provided, they will be silently ignored
+     *       and current state will not be changed.
+     *
+     * EXAMPLES:
+     * ```cpp
+     * const WinDisplayDeviceInterface* iface = getIface(...);
+     * const std::string display_a { "MY_ID_1" };
+     * const std::string display_b { "MY_ID_2" };
+     * const auto success = iface->setHdrStates({ { display_a, HdrState::Enabled },
+     *                                            { display_b, HdrState::Disabled } });
+     * ```
+     */
+    [[nodiscard]] virtual bool
+    setHdrStates(const HdrStateMap &states) = 0;
   };
 }  // namespace display_device

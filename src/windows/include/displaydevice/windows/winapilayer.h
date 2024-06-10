@@ -36,5 +36,13 @@ namespace display_device {
     /** For details @see WinApiLayerInterface::setDisplayConfig */
     [[nodiscard]] LONG
     setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> paths, std::vector<DISPLAYCONFIG_MODE_INFO> modes, UINT32 flags) override;
+
+    /** For details @see WinApiLayerInterface::getHdrState */
+    [[nodiscard]] std::optional<HdrState>
+    getHdrState(const DISPLAYCONFIG_PATH_INFO &path) const override;
+
+    /** For details @see WinApiLayerInterface::setHdrState */
+    [[nodiscard]] bool
+    setHdrState(const DISPLAYCONFIG_PATH_INFO &path, HdrState state) override;
   };
 }  // namespace display_device

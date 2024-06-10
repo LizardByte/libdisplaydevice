@@ -91,4 +91,8 @@ namespace display_device {
    */
   using DeviceDisplayModeMap = std::map<std::string, DisplayMode>;
 
+  /**
+   * @brief Ordered map of [DEVICE_ID -> std::optional<HdrState>].
+   */
+  using HdrStateMap = std::map<std::string, std::optional<HdrState>>;
 }  // namespace display_device

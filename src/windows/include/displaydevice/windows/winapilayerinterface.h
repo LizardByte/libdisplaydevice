@@ -166,5 +166,36 @@ namespace display_device {
      */
     [[nodiscard]] virtual LONG
     setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> paths, std::vector<DISPLAYCONFIG_MODE_INFO> modes, UINT32 flags) = 0;
+
+    /**
+     * @brief Get the HDR state the path.
+     * @param path Path to get HDR state for.
+     * @returns std::nullopt if the state could not be retrieved, or other enum values describing the state otherwise.
+     *
+     * EXAMPLES:
+     * ```cpp
+     * DISPLAYCONFIG_PATH_INFO path;
+     * const WinApiLayerInterface* iface = getIface(...);
+     * const auto hdr_state = iface->getHdrState(path);
+     * ```
+     */
+    [[nodiscard]] virtual std::optional<HdrState>
+    getHdrState(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
+
+    /**
+     * @brief Set the HDR state for the path.
+     * @param path Path to set HDR state for.
+     * @param state Specify new HDR state.
+     * @returns True if the device is in the new state, false otherwise.
+     *
+     * EXAMPLES:
+     * ```cpp
+     * DISPLAYCONFIG_PATH_INFO path;
+     * const WinApiLayerInterface* iface = getIface(...);
+     * const bool success = iface->setHdrState(path, HdrState::Enabled);
+     * ```
+     */
+    [[nodiscard]] virtual bool
+    setHdrState(const DISPLAYCONFIG_PATH_INFO &path, HdrState state) = 0;
   };
 }  // namespace display_device

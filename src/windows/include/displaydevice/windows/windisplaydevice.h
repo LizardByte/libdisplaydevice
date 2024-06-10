@@ -51,6 +51,14 @@ namespace display_device {
     [[nodiscard]] bool
     setAsPrimary(const std::string &device_id) override;
 
+    /** For details @see WinDisplayDeviceInterface::getCurrentHdrStates */
+    [[nodiscard]] HdrStateMap
+    getCurrentHdrStates(const std::set<std::string> &device_ids) const override;
+
+    /** For details @see WinDisplayDeviceInterface::setHdrStates */
+    [[nodiscard]] bool
+    setHdrStates(const HdrStateMap &states) override;
+
   private:
     std::shared_ptr<WinApiLayerInterface> m_w_api;
   };

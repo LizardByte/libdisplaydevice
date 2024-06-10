@@ -204,3 +204,11 @@ TEST_F_S(GetDisplayName) {
 TEST_F_S(GetDisplayName, InvalidPath) {
   EXPECT_EQ(m_layer.getDisplayName(INVALID_PATH), std::string {});
 }
+
+TEST_F_S(GetHdrState, InvalidPath) {
+  EXPECT_EQ(m_layer.getHdrState(INVALID_PATH), std::nullopt);
+}
+
+TEST_F_S(SetHdrState, InvalidPath) {
+  EXPECT_FALSE(m_layer.setHdrState(INVALID_PATH, display_device::HdrState::Enabled));
+}
