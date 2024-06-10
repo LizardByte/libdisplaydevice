@@ -18,6 +18,35 @@ namespace display_device {
     virtual ~WinDisplayDeviceInterface() = default;
 
     /**
+     * @brief Check if the API for changing display settings is accessible.
+     * @returns True if display settings can be changed, false otherwise.
+     *
+     * EXAMPLES:
+     * ```cpp
+     * const WinDisplayDeviceInterface* iface = getIface(...);
+     * const bool have_access { iface->isApiAccessAvailable() };
+     * ```
+     */
+    [[nodiscard]] virtual bool
+    isApiAccessAvailable() const = 0;
+
+    /**
+     * @brief Get display name associated with the device.
+     * @param device_id A device to get display name for.
+     * @returns A display name for the device, or an empty string if the device is inactive or not found.
+     *          Empty string can also be returned if an error has occurred.
+     *
+     * EXAMPLES:
+     * ```cpp
+     * const std::string device_name { "MY_DEVICE_ID" };
+     * const WinDisplayDeviceInterface* iface = getIface(...);
+     * const std::string display_name = iface->getDisplayName(device_id);
+     * ```
+     */
+    [[nodiscard]] virtual std::string
+    getDisplayName(const std::string &device_id) const = 0;
+
+    /**
      * @brief Get the active (current) topology.
      * @returns A list representing the current topology.
      *          Empty list can also be returned if an error has occurred.
