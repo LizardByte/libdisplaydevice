@@ -584,7 +584,8 @@ namespace display_device {
     };
 
     EnumData enum_data { display_name, std::nullopt };
-    EnumDisplayMonitors(nullptr, nullptr, [](HMONITOR monitor, HDC, LPRECT, LPARAM user_data) -> BOOL {
+    EnumDisplayMonitors(
+      nullptr, nullptr, [](HMONITOR monitor, HDC, LPRECT, LPARAM user_data) -> BOOL {
       auto *data = reinterpret_cast<EnumData*>(user_data);
       if (data == nullptr)
       {

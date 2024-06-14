@@ -213,6 +213,6 @@ namespace display_device {
      * ```
      */
     [[nodiscard]] virtual std::optional<float>
-    getDisplayScale(const std::string &display_name, const DISPLAYCONFIG_SOURCE_MODE& source_mode) const = 0;
+    getDisplayScale(const std::string &display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const = 0;
   };
 }  // namespace display_device
