@@ -212,3 +212,38 @@ TEST_F_S(GetHdrState, InvalidPath) {
 TEST_F_S(SetHdrState, InvalidPath) {
   EXPECT_FALSE(m_layer.setHdrState(INVALID_PATH, display_device::HdrState::Enabled));
 }
+
+TEST_F_S(GetDisplayScale) {
+  const auto active_devices { m_layer.queryDisplayConfig(display_device::QueryType::Active) };
+  ASSERT_TRUE(active_devices);
+
+  for (const auto &path : active_devices->m_paths) {
+    const auto source_mode_index = path.sourceInfo.sourceModeInfoIdx;
+
+    if (source_mode_index != DISPLAYCONFIG_PATH_SOURCE_MODE_IDX_INVALID) {
+      ASSERT_TRUE(source_mode_index < active_devices->m_modes.size());
+      ASSERT_EQ(active_devices->m_modes[source_mode_index].infoType, DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE);
+
+      // Valid case
+      {
+        const auto scale { m_layer.getDisplayScale(m_layer.getDisplayName(path), active_devices->m_modes[source_mode_index].sourceMode) };
+        EXPECT_TRUE(scale.has_value());  // Can't really compare against anything...
+      }
+
+      // Invalid display name case
+      {
+        const auto scale { m_layer.getDisplayScale("FAKE", active_devices->m_modes[source_mode_index].sourceMode) };
+        EXPECT_FALSE(scale.has_value());
+      }
+
+      // Zero width case
+      {
+        auto mode { active_devices->m_modes[source_mode_index].sourceMode };
+        mode.width = 0;
+
+        const auto scale { m_layer.getDisplayScale(m_layer.getDisplayName(path), mode) };
+        EXPECT_FALSE(scale.has_value());
+      }
+    }
+  }
+}

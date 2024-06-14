@@ -34,6 +34,64 @@ namespace display_device {
     return result == ERROR_SUCCESS;
   }
 
+  EnumeratedDeviceList
+  WinDisplayDevice::enumAvailableDevices() const {
+    const auto display_data { m_w_api->queryDisplayConfig(QueryType::All) };
+    if (!display_data) {
+      // Error already logged
+      return {};
+    }
+
+    EnumeratedDeviceList available_devices;
+    const auto source_data { win_utils::collectSourceDataForMatchingPaths(*m_w_api, display_data->m_paths) };
+    if (source_data.empty()) {
+      // Error already logged
+      return {};
+    }
+
+    for (const auto &[device_id, data] : source_data) {
+      const auto source_id_index { data.m_active_source.value_or(0) };
+      const auto &best_path { display_data->m_paths.at(data.m_source_id_to_path_index.at(source_id_index)) };
+      const auto friendly_name { m_w_api->getFriendlyName(best_path) };
+
+      if (win_utils::isActive(best_path)) {
+        const auto source_mode { win_utils::getSourceMode(win_utils::getSourceIndex(best_path, display_data->m_modes), display_data->m_modes) };
+        if (!source_mode) {
+          // Error already logged
+          return {};
+        }
+
+        const auto display_name { m_w_api->getDisplayName(best_path) };
+        const float refresh_rate { best_path.targetInfo.refreshRate.Denominator > 0 ?
+                                     static_cast<float>(best_path.targetInfo.refreshRate.Numerator) / static_cast<float>(best_path.targetInfo.refreshRate.Denominator) :
+                                     0.f };
+        const EnumeratedDevice::Info info {
+          { source_mode->width, source_mode->height },
+          m_w_api->getDisplayScale(display_name, *source_mode).value_or(0.f),
+          refresh_rate,
+          win_utils::isPrimary(*source_mode),
+          { source_mode->position.x, source_mode->position.y },
+          m_w_api->getHdrState(best_path)
+        };
+
+        available_devices.push_back(
+          { device_id,
+            display_name,
+            friendly_name,
+            info });
+      }
+      else {
+        available_devices.push_back(
+          { device_id,
+            std::string {},  // Inactive devices can have multiple display names, so it's just meaningless use any
+            friendly_name,
+            std::nullopt });
+      }
+    }
+
+    return available_devices;
+  }
+
   std::string
   WinDisplayDevice::getDisplayName(const std::string &device_id) const {
     if (device_id.empty()) {

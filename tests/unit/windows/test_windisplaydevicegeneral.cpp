@@ -4,12 +4,14 @@
 #include "displaydevice/windows/windisplaydevice.h"
 #include "fixtures.h"
 #include "utils/comparison.h"
+#include "utils/helpers.h"
 #include "utils/mockwinapilayer.h"
 
 namespace {
   // Convenience keywords for GMock
   using ::testing::_;
   using ::testing::HasSubstr;
+  using ::testing::InSequence;
   using ::testing::Return;
   using ::testing::StrictMock;
 
@@ -78,6 +80,164 @@ TEST_F_S_MOCKED(IsApiAccessAvailable, FailedToSetDisplayConfig) {
     .WillRepeatedly(Return("ErrorDesc"));
 
   EXPECT_FALSE(m_win_dd.isApiAccessAvailable());
+}
+
+TEST_F_S(EnumAvailableDevices) {
+  // Note: we can't verify live data precisely, so just basic check
+  // is performed regarding active vs. inactive devices
+
+  const auto available_devices { getAvailableDevices(*m_layer) };
+  ASSERT_TRUE(available_devices);
+
+  const auto enum_devices { m_win_dd.enumAvailableDevices() };
+  ASSERT_EQ(available_devices->size(), enum_devices.size());
+
+  const auto topology { flattenTopology(m_win_dd.getCurrentTopology()) };
+  for (const auto &device_id : *available_devices) {
+    auto enum_it { std::find_if(std::begin(enum_devices), std::end(enum_devices), [&device_id](const auto &entry) {
+      return entry.m_device_id == device_id;
+    }) };
+
+    ASSERT_TRUE(enum_it != std::end(enum_devices));
+    EXPECT_EQ(enum_it->m_info.has_value(), topology.contains(device_id));
+  }
+}
+
+TEST_F_S_MOCKED(EnumAvailableDevices) {
+  const auto pam_active_and_inactive { []() {
+    auto pam { ut_consts::PAM_3_ACTIVE };
+    pam->m_paths.at(0).targetInfo.refreshRate.Denominator = 0;
+    pam->m_paths.at(2).flags &= ~DISPLAYCONFIG_PATH_ACTIVE;
+    return pam;
+  }() };
+
+  InSequence sequence;
+  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
+    .Times(1)
+    .WillOnce(Return(pam_active_and_inactive))
+    .RetiresOnSaturation();
+
+  for (int i = 1; i <= 3; ++i) {
+    EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
+      .Times(1)
+      .WillOnce(Return("Path" + std::to_string(i)))
+      .RetiresOnSaturation();
+    EXPECT_CALL(*m_layer, getDeviceId(_))
+      .Times(1)
+      .WillOnce(Return("DeviceId" + std::to_string(i)))
+      .RetiresOnSaturation();
+    EXPECT_CALL(*m_layer, getDisplayName(_))
+      .Times(1)
+      .WillOnce(Return("DisplayName" + std::to_string(i)))
+      .RetiresOnSaturation();
+  }
+
+  EXPECT_CALL(*m_layer, getFriendlyName(_))
+    .Times(1)
+    .WillOnce(Return("FriendlyName1"))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_layer, getDisplayName(_))
+    .Times(1)
+    .WillOnce(Return("DisplayName1"))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_layer, getDisplayScale(_, _))
+    .Times(1)
+    .WillOnce(Return(std::nullopt))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_layer, getHdrState(_))
+    .Times(1)
+    .WillOnce(Return(std::nullopt))
+    .RetiresOnSaturation();
+
+  EXPECT_CALL(*m_layer, getFriendlyName(_))
+    .Times(1)
+    .WillOnce(Return("FriendlyName2"))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_layer, getDisplayName(_))
+    .Times(1)
+    .WillOnce(Return("DisplayName2"))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_layer, getDisplayScale(_, _))
+    .Times(1)
+    .WillOnce(Return(1.75f))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_layer, getHdrState(_))
+    .Times(1)
+    .WillOnce(Return(display_device::HdrState::Enabled))
+    .RetiresOnSaturation();
+
+  EXPECT_CALL(*m_layer, getFriendlyName(_))
+    .Times(1)
+    .WillOnce(Return("FriendlyName3"))
+    .RetiresOnSaturation();
+
+  const display_device::EnumeratedDeviceList expected_list {
+    { "DeviceId1",
+      "DisplayName1",
+      "FriendlyName1",
+      display_device::EnumeratedDevice::Info {
+        { 1920, 1080 },
+        0.f,
+        0.f,
+        true,
+        { 0, 0 },
+        std::nullopt } },
+    { "DeviceId2",
+      "DisplayName2",
+      "FriendlyName2",
+      display_device::EnumeratedDevice::Info {
+        { 1920, 2160 },
+        1.75f,
+        119.995f,
+        false,
+        { 1921, 0 },
+        display_device::HdrState::Enabled } },
+    { "DeviceId3",
+      "",
+      "FriendlyName3",
+      std::nullopt }
+  };
+  EXPECT_EQ(m_win_dd.enumAvailableDevices(), expected_list);
+}
+
+TEST_F_S_MOCKED(EnumAvailableDevices, FailedToGetDisplayData) {
+  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
+    .Times(1)
+    .WillOnce(Return(ut_consts::PAM_NULL));
+
+  EXPECT_EQ(m_win_dd.enumAvailableDevices(), display_device::EnumeratedDeviceList {});
+}
+
+TEST_F_S_MOCKED(EnumAvailableDevices, FailedToCollectSourceData) {
+  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
+    .Times(1)
+    .WillOnce(Return(ut_consts::PAM_EMPTY));
+
+  EXPECT_EQ(m_win_dd.enumAvailableDevices(), display_device::EnumeratedDeviceList {});
+}
+
+TEST_F_S_MOCKED(EnumAvailableDevices, NoDisplayModes) {
+  auto pam_no_modes { ut_consts::PAM_3_ACTIVE };
+  pam_no_modes->m_paths.resize(1);
+  pam_no_modes->m_modes.clear();
+
+  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
+    .Times(1)
+    .WillOnce(Return(pam_no_modes));
+  EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
+    .Times(1)
+    .WillOnce(Return("Path1"));
+  EXPECT_CALL(*m_layer, getDeviceId(_))
+    .Times(1)
+    .WillOnce(Return("DeviceId1"));
+  EXPECT_CALL(*m_layer, getDisplayName(_))
+    .Times(1)
+    .WillOnce(Return("DisplayName1"));
+  EXPECT_CALL(*m_layer, getFriendlyName(_))
+    .Times(1)
+    .WillOnce(Return("FriendlyName1"));
+
+  EXPECT_EQ(m_win_dd.enumAvailableDevices(), display_device::EnumeratedDeviceList {});
 }
 
 TEST_F_S(GetDisplayName) {

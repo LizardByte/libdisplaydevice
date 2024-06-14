@@ -43,9 +43,15 @@ operator==(const DISPLAYCONFIG_DESKTOP_IMAGE_INFO &lhs, const DISPLAYCONFIG_DESK
 bool
 operator==(const DISPLAYCONFIG_MODE_INFO &lhs, const DISPLAYCONFIG_MODE_INFO &rhs);
 
+bool
+fuzzyCompare(float lhs, float rhs);
+
 namespace display_device {
   bool
   operator==(const PathSourceIndexData &lhs, const PathSourceIndexData &rhs);
+
+  bool
+  operator==(const Point &lhs, const Point &rhs);
 
   bool
   operator==(const Rational &lhs, const Rational &rhs);
@@ -55,4 +61,10 @@ namespace display_device {
 
   bool
   operator==(const DisplayMode &lhs, const DisplayMode &rhs);
+
+  bool
+  operator==(const EnumeratedDevice::Info &lhs, const EnumeratedDevice::Info &rhs);
+
+  bool
+  operator==(const EnumeratedDevice &lhs, const EnumeratedDevice &rhs);
 }  // namespace display_device
