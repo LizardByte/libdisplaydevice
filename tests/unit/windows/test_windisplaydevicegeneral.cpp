@@ -86,7 +86,7 @@ TEST_F_S(EnumAvailableDevices) {
   // Note: we can't verify live data precisely, so just basic check
   // is performed regarding active vs. inactive devices
 
-  const auto available_devices { getAvailableDevices(*m_layer) };
+  const auto available_devices { getAvailableDevices(*m_layer, false) };
   ASSERT_TRUE(available_devices);
 
   const auto enum_devices { m_win_dd.enumAvailableDevices() };
