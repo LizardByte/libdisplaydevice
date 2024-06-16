@@ -106,10 +106,20 @@ operator==(const DISPLAYCONFIG_MODE_INFO &lhs, const DISPLAYCONFIG_MODE_INFO &rh
   return false;
 }
 
+bool
+fuzzyCompare(float lhs, float rhs) {
+  return std::abs(lhs - rhs) * 100000.f <= std::min(std::abs(lhs), std::abs(rhs));
+}
+
 namespace display_device {
   bool
   operator==(const PathSourceIndexData &lhs, const PathSourceIndexData &rhs) {
     return lhs.m_source_id_to_path_index == rhs.m_source_id_to_path_index && lhs.m_adapter_id == rhs.m_adapter_id && lhs.m_active_source == rhs.m_active_source;
+  }
+
+  bool
+  operator==(const Point &lhs, const Point &rhs) {
+    return lhs.m_x == rhs.m_x && lhs.m_y == rhs.m_y;
   }
 
   bool
@@ -125,5 +135,17 @@ namespace display_device {
   bool
   operator==(const DisplayMode &lhs, const DisplayMode &rhs) {
     return lhs.m_refresh_rate == rhs.m_refresh_rate && lhs.m_resolution == rhs.m_resolution;
+  }
+
+  bool
+  operator==(const EnumeratedDevice::Info &lhs, const EnumeratedDevice::Info &rhs) {
+    return lhs.m_resolution == rhs.m_resolution && fuzzyCompare(lhs.m_resolution_scale, rhs.m_resolution_scale) &&
+           fuzzyCompare(lhs.m_refresh_rate, rhs.m_refresh_rate) && lhs.m_primary == rhs.m_primary &&
+           lhs.m_origin_point == rhs.m_origin_point && lhs.m_hdr_state == rhs.m_hdr_state;
+  }
+
+  bool
+  operator==(const EnumeratedDevice &lhs, const EnumeratedDevice &rhs) {
+    return lhs.m_device_id == rhs.m_device_id && lhs.m_display_name == rhs.m_display_name && lhs.m_friendly_name == rhs.m_friendly_name && lhs.m_info == rhs.m_info;
   }
 }  // namespace display_device

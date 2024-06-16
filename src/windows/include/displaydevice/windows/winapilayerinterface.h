@@ -197,5 +197,22 @@ namespace display_device {
      */
     [[nodiscard]] virtual bool
     setHdrState(const DISPLAYCONFIG_PATH_INFO &path, HdrState state) = 0;
+
+    /**
+     * @brief Get the scaling value for the display.
+     * @param display_name Display to get the scaling for.
+     * @returns Current display scale value or null optional in case of error
+     *          or if the value could not be retrieved.
+     *
+     * EXAMPLES:
+     * ```cpp
+     * DISPLAYCONFIG_PATH_INFO path;
+     * DISPLAYCONFIG_SOURCE_MODE source_mode;
+     * const WinApiLayerInterface* iface = getIface(...);
+     * const auto scale = iface->getDisplayScale(iface->getDisplayName(path), source_mode);
+     * ```
+     */
+    [[nodiscard]] virtual std::optional<float>
+    getDisplayScale(const std::string &display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const = 0;
   };
 }  // namespace display_device

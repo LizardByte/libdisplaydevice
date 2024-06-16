@@ -25,8 +25,8 @@ namespace display_device {
    * @brief Contains currently available paths and associated modes.
    */
   struct PathAndModeData {
-    std::vector<DISPLAYCONFIG_PATH_INFO> m_paths; /**< Available display paths. */
-    std::vector<DISPLAYCONFIG_MODE_INFO> m_modes; /**< Display modes for ACTIVE displays. */
+    std::vector<DISPLAYCONFIG_PATH_INFO> m_paths {}; /**< Available display paths. */
+    std::vector<DISPLAYCONFIG_MODE_INFO> m_modes {}; /**< Display modes for ACTIVE displays. */
   };
 
   /**
@@ -43,17 +43,17 @@ namespace display_device {
    * @see WinApiLayerInterface::getDeviceId for how we make the device id.
    */
   struct ValidatedDeviceInfo {
-    std::string m_device_path; /**< Unique device path string. */
-    std::string m_device_id; /**< A device id (made up by us) that is identifies the device. */
+    std::string m_device_path {}; /**< Unique device path string. */
+    std::string m_device_id {}; /**< A device id (made up by us) that is identifies the device. */
   };
 
   /**
    * @brief Contains information about sources with identical adapter ids from matching paths.
    */
   struct PathSourceIndexData {
-    std::map<UINT32, std::size_t> m_source_id_to_path_index; /**< Maps source ids to its index in the path list. */
+    std::map<UINT32, std::size_t> m_source_id_to_path_index {}; /**< Maps source ids to its index in the path list. */
     LUID m_adapter_id {}; /**< Adapter id shared by all source ids. */
-    std::optional<UINT32> m_active_source; /**< Currently active source id. */
+    std::optional<UINT32> m_active_source {}; /**< Currently active source id. */
   };
 
   /**
@@ -79,11 +79,19 @@ namespace display_device {
   using ActiveTopology = std::vector<std::vector<std::string>>;
 
   /**
+   * @brief Floating point stored in a "numerator/denominator" form.
+   */
+  struct Rational {
+    unsigned int m_numerator {};
+    unsigned int m_denominator {};
+  };
+
+  /**
    * @brief Display's mode (resolution + refresh rate).
    */
   struct DisplayMode {
-    Resolution m_resolution;
-    Rational m_refresh_rate;
+    Resolution m_resolution {};
+    Rational m_refresh_rate {};
   };
 
   /**

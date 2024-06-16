@@ -574,4 +574,49 @@ namespace display_device {
 
     return true;
   }
+
+  std::optional<float>
+  WinApiLayer::getDisplayScale(const std::string &display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const {
+    // Note: implementation based on https://stackoverflow.com/a/74046173
+    struct EnumData {
+      std::string m_display_name;
+      std::optional<int> m_width;
+    };
+
+    EnumData enum_data { display_name, std::nullopt };
+    EnumDisplayMonitors(
+      nullptr, nullptr, [](HMONITOR monitor, HDC, LPRECT, LPARAM user_data) -> BOOL {
+      auto *data = reinterpret_cast<EnumData*>(user_data);
+      if (data == nullptr)
+      {
+        // Sanity check
+        DD_LOG(error) << "EnumData is a nullptr!";
+        return FALSE;
+      }
+
+      MONITORINFOEXA  monitor_info{ sizeof(MONITORINFOEXA ) };
+      if (GetMonitorInfoA(monitor, &monitor_info))
+      {
+        if (data->m_display_name == monitor_info.szDevice)
+        {
+          data->m_width = monitor_info.rcMonitor.right - monitor_info.rcMonitor.left;
+          return FALSE;
+        }
+      }
+
+      return TRUE; }, reinterpret_cast<LPARAM>(&enum_data));
+
+    if (!enum_data.m_width) {
+      DD_LOG(error) << "Failed to get monitor info for " << display_name << "!";
+      return std::nullopt;
+    }
+
+    if (*enum_data.m_width * source_mode.width == 0) {
+      DD_LOG(error) << "Cannot get display scale for " << display_name << " from a width of 0!";
+      return std::nullopt;
+    }
+
+    const auto width { static_cast<float>(*enum_data.m_width) / static_cast<float>(source_mode.width) };
+    return static_cast<float>(GetDpiForSystem()) / 96.0f / width;
+  }
 }  // namespace display_device

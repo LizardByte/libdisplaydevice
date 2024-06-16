@@ -31,6 +31,19 @@ namespace display_device {
     isApiAccessAvailable() const = 0;
 
     /**
+     * @brief Enumerate the available (active and inactive) devices.
+     * @returns A list of available devices.
+     *          Empty list can also be returned if an error has occurred.
+     *
+     * EXAMPLES:
+     * ```cpp
+     * const auto devices { enumAvailableDevices() };
+     * ```
+     */
+    [[nodiscard]] virtual EnumeratedDeviceList
+    enumAvailableDevices() const = 0;
+
+    /**
      * @brief Get display name associated with the device.
      * @param device_id A device to get display name for.
      * @returns A display name for the device, or an empty string if the device is inactive or not found.

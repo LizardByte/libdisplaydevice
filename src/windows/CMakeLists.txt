@@ -11,6 +11,12 @@ add_library(${MODULE} ${HEADER_LIST} ${SOURCE_LIST})
 # Provide the includes together with this library
 target_include_directories(${MODULE} PUBLIC include)
 
+# Library requires newer WinAPI, therefore it is set to the Windows 10+ version
+target_compile_definitions(${MODULE} PRIVATE
+        _WIN32_WINNT=0x0A00
+        WINVER=0x0A00
+)
+
 # Additional external libraries
 include(Boost_DD)
 
