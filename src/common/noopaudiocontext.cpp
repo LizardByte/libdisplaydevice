@@ -6,7 +6,7 @@ namespace display_device {
   NoopAudioContext::capture(const std::vector<std::string> &) {
     return true;
   }
-  
+
   void
   NoopAudioContext::release(const std::vector<std::string> &) {
   }

@@ -10,7 +10,8 @@ namespace display_device {
     std::shared_ptr<WinDisplayDeviceInterface> dd_api,
     std::shared_ptr<SettingsPersistenceInterface> settings_persistence_api,
     std::shared_ptr<AudioContextInterface> audio_context_api):
-      m_dd_api { std::move(dd_api) }, m_settings_persistence_api { std::move(settings_persistence_api) }, m_audio_context_api { std::move(audio_context_api) } {
+      m_dd_api { std::move(dd_api) },
+      m_settings_persistence_api { std::move(settings_persistence_api) }, m_audio_context_api { std::move(audio_context_api) } {
     if (!m_dd_api) {
       throw std::logic_error { "Nullptr provided for WinDisplayDeviceInterface in SettingsManager!" };
     }

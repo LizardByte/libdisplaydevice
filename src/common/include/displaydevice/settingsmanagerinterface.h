@@ -64,7 +64,7 @@ namespace display_device {
      * ```
      */
     //[[nodiscard]] virtual ApplyResult
-    //applySettings(const SingleDisplayConfiguration &config) = 0;
+    // applySettings(const SingleDisplayConfiguration &config) = 0;
 
     /**
      * @brief Revert the applied configuration and restore the previous settings.
@@ -77,7 +77,7 @@ namespace display_device {
      * ```
      */
     //[[nodiscard]] virtual bool
-    //revertSettings() = 0;
+    // revertSettings() = 0;
 
     /**
      * @brief Reset the persistence in case the settings cannot be reverted.
@@ -101,7 +101,7 @@ namespace display_device {
      * }
      * ```
      */
-    //virtual void
-    //resetPersistence() = 0;
+    // virtual void
+    // resetPersistence() = 0;
   };
 }  // namespace display_device
