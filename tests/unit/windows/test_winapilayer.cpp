@@ -1,6 +1,6 @@
 // local includes
 #include "displaydevice/windows/winapilayer.h"
-#include "fixtures.h"
+#include "fixtures/fixtures.h"
 
 namespace {
   // Test fixture(s) for this file

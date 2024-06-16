@@ -1,6 +1,6 @@
 // local includes
 #include "displaydevice/logging.h"
-#include "fixtures.h"
+#include "fixtures/fixtures.h"
 
 namespace {
   // Specialized TEST macro(s) for this test file

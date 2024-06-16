@@ -1,5 +1,10 @@
 #pragma once
 
+// system includes
+#include <optional>
+#include <string>
+#include <vector>
+
 namespace display_device {
   /**
    * @brief The device's HDR state in the operating system.
@@ -51,4 +56,28 @@ namespace display_device {
    * @brief A list of EnumeratedDevice objects.
    */
   using EnumeratedDeviceList = std::vector<EnumeratedDevice>;
+
+  /**
+   * @brief Configuration centered around a single display.
+   *
+   * Allows to easily configure the display without providing a complete configuration
+   * for all of the system display devices.
+   */
+  struct SingleDisplayConfiguration {
+    /**
+     * @brief Enum detailing how to prepare the display device.
+     */
+    enum class DevicePreparation {
+      VerifyOnly, /**< User has to make sure the display device is active, we will only verify. */
+      EnsureActive, /**< Activate the device if needed. */
+      EnsurePrimary, /**< Activate the device if needed and make it a primary display. */
+      EnsureOnlyDisplay /**< Deactivate other displays and turn on the specified one only. */
+    };
+
+    std::string m_device_id {}; /**< Device id manually provided by the user via config. */
+    DevicePreparation m_device_prep {}; /**< Instruction on how to prepare device. */
+    std::optional<Resolution> m_resolution {}; /**< Resolution to configure. */
+    std::optional<float> m_refresh_rate {}; /**< Refresh rate to configure. */
+    std::optional<HdrState> m_hdr_state {}; /**< HDR state to configure (if supported by the display). */
+  };
 }  // namespace display_device

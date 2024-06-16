@@ -1,7 +1,7 @@
 // local includes
 #include "displaydevice/windows/winapilayer.h"
 #include "displaydevice/windows/windisplaydevice.h"
-#include "fixtures.h"
+#include "fixtures/fixtures.h"
 #include "utils/comparison.h"
 #include "utils/guards.h"
 #include "utils/mockwinapilayer.h"

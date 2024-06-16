@@ -1,5 +1,5 @@
 // local includes
-#include "fixtures.h"
+#include "fixtures/fixtures.h"
 
 TEST(HelloWorldTest, HelloWorld) {
   EXPECT_TRUE(true);
