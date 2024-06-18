@@ -52,10 +52,10 @@ namespace display_device {
      * EXAMPLES:
      * ```cpp
      * SettingsPersistenceInterface* iface = getIface(...);
-     * iface->clear();
+     * const auto result = iface->clear();
      * ```
      */
-    virtual void
+    [[nodiscard]] virtual bool
     clear() = 0;
   };
 }  // namespace display_device

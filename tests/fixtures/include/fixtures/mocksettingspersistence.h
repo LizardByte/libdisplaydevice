@@ -11,6 +11,6 @@ namespace display_device {
   public:
     MOCK_METHOD(bool, store, (const std::vector<std::uint8_t> &), (override));
     MOCK_METHOD(std::optional<std::vector<std::uint8_t>>, load, (), (const, override));
-    MOCK_METHOD(void, clear, (), (override));
+    MOCK_METHOD(bool, clear, (), (override));
   };
 }  // namespace display_device

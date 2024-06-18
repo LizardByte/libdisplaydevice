@@ -1,10 +1,12 @@
 // local includes
-#include "fixtures/comparison.h"
+#include "displaydevice/types.h"
 
-bool
-fuzzyCompare(float lhs, float rhs) {
-  return std::abs(lhs - rhs) * 100000.f <= std::min(std::abs(lhs), std::abs(rhs));
-}
+namespace {
+  bool
+  fuzzyCompare(const float lhs, const float rhs) {
+    return std::abs(lhs - rhs) * 100000.f <= std::min(std::abs(lhs), std::abs(rhs));
+  }
+}  // namespace
 
 namespace display_device {
   bool

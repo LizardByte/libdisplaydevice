@@ -23,5 +23,5 @@ TEST_F_S(Load) {
 }
 
 TEST_F_S(Clear) {
-  EXPECT_NO_THROW(m_impl.clear());
+  EXPECT_TRUE(m_impl.clear());
 }

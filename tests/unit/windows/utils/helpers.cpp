@@ -1,16 +1,6 @@
 // local includes
 #include "helpers.h"
-
-std::set<std::string>
-flattenTopology(const display_device::ActiveTopology &topology) {
-  std::set<std::string> flattened_topology;
-  for (const auto &group : topology) {
-    for (const auto &device_id : group) {
-      flattened_topology.insert(device_id);
-    }
-  }
-  return flattened_topology;
-}
+#include "displaydevice/windows/json.h"
 
 std::optional<std::vector<std::string>>
 getAvailableDevices(display_device::WinApiLayer &layer, const bool only_valid_output) {
@@ -32,4 +22,21 @@ getAvailableDevices(display_device::WinApiLayer &layer, const bool only_valid_ou
   }
 
   return std::vector<std::string> { device_ids.begin(), device_ids.end() };
+}
+
+std::optional<std::vector<std::uint8_t>>
+serializeState(const std::optional<display_device::SingleDisplayConfigState> &state) {
+  if (state) {
+    if (state->m_initial.m_topology.empty() && state->m_initial.m_primary_devices.empty() && state->m_modified.m_topology.empty() && !state->m_modified.hasModifications()) {
+      return std::vector<std::uint8_t> {};
+    }
+
+    bool is_ok { false };
+    const auto data_string { toJson(*state, 2, &is_ok) };
+    if (is_ok) {
+      return std::vector<std::uint8_t> { std::begin(data_string), std::end(data_string) };
+    }
+  }
+
+  return std::nullopt;
 }

@@ -13,7 +13,10 @@ namespace display_device {
      * @brief Outcome values when trying to apply settings.
      */
     enum class ApplyResult {
-      Ok
+      Ok,
+      ApiTemporarilyUnavailable,
+      DevicePrepFailed,
+      PersistenceSaveFailed,
     };
 
     /**
@@ -28,7 +31,8 @@ namespace display_device {
      *
      * EXAMPLES:
      * ```cpp
-     * const auto devices { enumAvailableDevices() };
+     * const SettingsManagerInterface* iface = getIface(...);
+     * const auto devices { iface->enumAvailableDevices() };
      * ```
      */
     [[nodiscard]] virtual EnumeratedDeviceList
@@ -43,7 +47,7 @@ namespace display_device {
      * EXAMPLES:
      * ```cpp
      * const std::string device_id { "MY_DEVICE_ID" };
-     * const WinDisplayDeviceInterface* iface = getIface(...);
+     * const SettingsManagerInterface* iface = getIface(...);
      * const std::string display_name = iface->getDisplayName(device_id);
      * ```
      */
@@ -63,8 +67,8 @@ namespace display_device {
      * const auto result = iface->applySettings(config);
      * ```
      */
-    //[[nodiscard]] virtual ApplyResult
-    // applySettings(const SingleDisplayConfiguration &config) = 0;
+    [[nodiscard]] virtual ApplyResult
+    applySettings(const SingleDisplayConfiguration &config) = 0;
 
     /**
      * @brief Revert the applied configuration and restore the previous settings.
@@ -76,8 +80,8 @@ namespace display_device {
      * const auto result = iface->revertSettings();
      * ```
      */
-    //[[nodiscard]] virtual bool
-    // revertSettings() = 0;
+    [[nodiscard]] virtual bool
+    revertSettings() = 0;
 
     /**
      * @brief Reset the persistence in case the settings cannot be reverted.

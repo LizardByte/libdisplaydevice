@@ -14,11 +14,19 @@ namespace {
 }  // namespace
 
 TEST_F_S(Capture) {
-  EXPECT_TRUE(m_impl.capture({}));
-  EXPECT_TRUE(m_impl.capture({ "DeviceId1" }));
+  EXPECT_FALSE(m_impl.isCaptured());
+  EXPECT_TRUE(m_impl.capture());
+  EXPECT_TRUE(m_impl.isCaptured());
+  EXPECT_TRUE(m_impl.capture());
+  EXPECT_TRUE(m_impl.isCaptured());
 }
 
 TEST_F_S(Release) {
-  EXPECT_NO_THROW(m_impl.release({}));
-  EXPECT_NO_THROW(m_impl.release({ "DeviceId1" }));
+  EXPECT_FALSE(m_impl.isCaptured());
+  EXPECT_NO_THROW(m_impl.release());
+  EXPECT_FALSE(m_impl.isCaptured());
+  EXPECT_TRUE(m_impl.capture());
+  EXPECT_TRUE(m_impl.isCaptured());
+  EXPECT_NO_THROW(m_impl.release());
+  EXPECT_FALSE(m_impl.isCaptured());
 }

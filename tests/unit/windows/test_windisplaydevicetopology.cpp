@@ -1,4 +1,5 @@
 // local includes
+#include "displaydevice/windows/settingsutils.h"
 #include "displaydevice/windows/winapilayer.h"
 #include "displaydevice/windows/winapiutils.h"
 #include "displaydevice/windows/windisplaydevice.h"
@@ -90,7 +91,7 @@ TEST_F_S(GetCurrentTopology) {
   }
 
   // It is enough to check whether the topology contains expected ids - others test cases check the structure.
-  EXPECT_EQ(flattenTopology(m_win_dd.getCurrentTopology()), expected_devices);
+  EXPECT_EQ(display_device::win_utils::flattenTopology(m_win_dd.getCurrentTopology()), expected_devices);
 }
 
 TEST_F_S(SetCurrentTopology, ExtendedTopology) {

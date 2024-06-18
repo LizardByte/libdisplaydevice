@@ -12,7 +12,8 @@ namespace display_device {
     return std::vector<std::uint8_t> {};
   }
 
-  void
+  bool
   NoopSettingsPersistence::clear() {
+    return true;
   }
 }  // namespace display_device

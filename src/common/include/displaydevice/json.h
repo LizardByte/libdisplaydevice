@@ -1,5 +1,8 @@
 #pragma once
 
+// system includes
+#include <set>
+
 // local includes
 #include "types.h"
 
@@ -18,6 +21,11 @@
 
 // Shared converters (add as needed)
 namespace display_device {
+  extern const std::optional<unsigned int> JSON_COMPACT;
+
   DD_JSON_DECLARE_CONVERTER(EnumeratedDeviceList)
   DD_JSON_DECLARE_CONVERTER(SingleDisplayConfiguration)
+  DD_JSON_DECLARE_CONVERTER(std::set<std::string>)
+  DD_JSON_DECLARE_CONVERTER(std::string)
+  DD_JSON_DECLARE_CONVERTER(bool)
 }  // namespace display_device

@@ -1,4 +1,5 @@
 // local includes
+#include "displaydevice/windows/settingsutils.h"
 #include "displaydevice/windows/winapilayer.h"
 #include "displaydevice/windows/windisplaydevice.h"
 #include "fixtures/fixtures.h"
@@ -71,7 +72,7 @@ TEST_F_S(GetSetHdrStates) {
   const auto topology_guard { makeTopologyGuard(m_win_dd) };
   ASSERT_TRUE(m_win_dd.setTopology(makeExtendedTopology(*available_devices)));
 
-  const auto hdr_states { m_win_dd.getCurrentHdrStates(flattenTopology(m_win_dd.getCurrentTopology())) };
+  const auto hdr_states { m_win_dd.getCurrentHdrStates(display_device::win_utils::flattenTopology(m_win_dd.getCurrentTopology())) };
   if (!std::ranges::any_of(hdr_states, [](auto entry) -> bool { return static_cast<bool>(entry.second); })) {
     GTEST_SKIP_("No HDR display is available in the system.");
   }
