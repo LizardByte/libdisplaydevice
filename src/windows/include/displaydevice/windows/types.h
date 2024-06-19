@@ -5,9 +5,6 @@
 
 // system includes
 #include <map>
-#include <optional>
-#include <string>
-#include <vector>
 
 // local includes
 #include "displaydevice/types.h"

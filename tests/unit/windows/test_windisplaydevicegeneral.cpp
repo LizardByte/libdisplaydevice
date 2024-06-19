@@ -2,7 +2,7 @@
 #include "displaydevice/windows/winapilayer.h"
 #include "displaydevice/windows/winapiutils.h"
 #include "displaydevice/windows/windisplaydevice.h"
-#include "fixtures.h"
+#include "fixtures/fixtures.h"
 #include "utils/comparison.h"
 #include "utils/helpers.h"
 #include "utils/mockwinapilayer.h"

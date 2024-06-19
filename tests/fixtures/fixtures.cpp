@@ -1,5 +1,5 @@
 // header include
-#include "fixtures.h"
+#include "fixtures/fixtures.h"
 
 // local includes
 #include "displaydevice/logging.h"

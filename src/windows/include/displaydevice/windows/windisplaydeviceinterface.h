@@ -51,7 +51,7 @@ namespace display_device {
      *
      * EXAMPLES:
      * ```cpp
-     * const std::string device_name { "MY_DEVICE_ID" };
+     * const std::string device_id { "MY_DEVICE_ID" };
      * const WinDisplayDeviceInterface* iface = getIface(...);
      * const std::string display_name = iface->getDisplayName(device_id);
      * ```
@@ -118,7 +118,7 @@ namespace display_device {
      *
      * EXAMPLES:
      * ```cpp
-     * const WinDisplayDeviceInterface* iface = getIface(...);
+     * WinDisplayDeviceInterface* iface = getIface(...);
      * auto current_topology { iface->getCurrentTopology() };
      * // Modify the current_topology
      * const bool success = iface->setTopology(current_topology);
@@ -152,7 +152,7 @@ namespace display_device {
      *
      * EXAMPLES:
      * ```cpp
-     * const WinDisplayDeviceInterface* iface = getIface(...);
+     * WinDisplayDeviceInterface* iface = getIface(...);
      * const std::string display_a { "MY_ID_1" };
      * const std::string display_b { "MY_ID_2" };
      * const auto success = iface->setDisplayModes({ { display_a, { { 1920, 1080 }, { 60, 1 } } },
@@ -185,7 +185,7 @@ namespace display_device {
      *
      * EXAMPLES:
      * ```cpp
-     * const WinDisplayDeviceInterface* iface = getIface(...);
+     * WinDisplayDeviceInterface* iface = getIface(...);
      * const std::string device_id { "MY_DEVICE_ID" };
      * const bool success = iface->set_as_primary_device(device_id);
      * ```
@@ -218,7 +218,7 @@ namespace display_device {
      *
      * EXAMPLES:
      * ```cpp
-     * const WinDisplayDeviceInterface* iface = getIface(...);
+     * WinDisplayDeviceInterface* iface = getIface(...);
      * const std::string display_a { "MY_ID_1" };
      * const std::string display_b { "MY_ID_2" };
      * const auto success = iface->setHdrStates({ { display_a, HdrState::Enabled },

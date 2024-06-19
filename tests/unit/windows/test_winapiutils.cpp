@@ -1,6 +1,6 @@
 // local includes
 #include "displaydevice/windows/winapiutils.h"
-#include "fixtures.h"
+#include "fixtures/fixtures.h"
 #include "utils/comparison.h"
 #include "utils/mockwinapilayer.h"
 

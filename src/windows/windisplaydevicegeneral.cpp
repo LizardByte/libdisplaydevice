@@ -1,9 +1,6 @@
 // class header include
 #include "displaydevice/windows/windisplaydevice.h"
 
-// system includes
-#include <stdexcept>
-
 // local includes
 #include "displaydevice/logging.h"
 #include "displaydevice/windows/winapiutils.h"

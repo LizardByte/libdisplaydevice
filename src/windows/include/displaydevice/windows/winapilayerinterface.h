@@ -160,7 +160,7 @@ namespace display_device {
      * EXAMPLES:
      * ```cpp
      * std::vector<DISPLAYCONFIG_PATH_INFO> paths;
-     * const WinApiLayerInterface* iface = getIface(...);
+     * WinApiLayerInterface* iface = getIface(...);
      * const auto result = iface->setDisplayConfig(paths, {}, 0);
      * ```
      */
@@ -191,7 +191,7 @@ namespace display_device {
      * EXAMPLES:
      * ```cpp
      * DISPLAYCONFIG_PATH_INFO path;
-     * const WinApiLayerInterface* iface = getIface(...);
+     * WinApiLayerInterface* iface = getIface(...);
      * const bool success = iface->setHdrState(path, HdrState::Enabled);
      * ```
      */
