@@ -3,10 +3,11 @@ set(MODULE libwindows)
 
 # Globing headers (so that they appear in some IDEs) and sources
 file(GLOB HEADER_LIST CONFIGURE_DEPENDS "include/displaydevice/windows/*.h")
+file(GLOB HEADER_DETAIL_LIST CONFIGURE_DEPENDS "include/displaydevice/windows/detail/*.h")
 file(GLOB SOURCE_LIST CONFIGURE_DEPENDS "*.cpp")
 
 # Automatic library - will be static or dynamic based on user setting
-add_library(${MODULE} ${HEADER_LIST} ${SOURCE_LIST})
+add_library(${MODULE} ${HEADER_LIST} ${HEADER_DETAIL_LIST} ${SOURCE_LIST})
 
 # Provide the includes together with this library
 target_include_directories(${MODULE} PUBLIC include)
@@ -19,6 +20,7 @@ target_compile_definitions(${MODULE} PRIVATE
 
 # Additional external libraries
 include(Boost_DD)
+include(Json_DD)
 
 # Link the additional libraries
 target_link_libraries(${MODULE} PRIVATE
@@ -26,4 +28,5 @@ target_link_libraries(${MODULE} PRIVATE
         Boost::scope
         Boost::uuid
         libcommon
+        nlohmann_json::nlohmann_json
         setupapi)

@@ -28,4 +28,9 @@ namespace display_device {
   operator==(const EnumeratedDevice &lhs, const EnumeratedDevice &rhs) {
     return lhs.m_device_id == rhs.m_device_id && lhs.m_display_name == rhs.m_display_name && lhs.m_friendly_name == rhs.m_friendly_name && lhs.m_info == rhs.m_info;
   }
+
+  bool
+  operator==(const SingleDisplayConfiguration &lhs, const SingleDisplayConfiguration &rhs) {
+    return lhs.m_device_id == rhs.m_device_id && lhs.m_device_prep == rhs.m_device_prep && lhs.m_resolution == rhs.m_resolution && lhs.m_refresh_rate == rhs.m_refresh_rate && lhs.m_hdr_state == rhs.m_hdr_state;
+  }
 }  // namespace display_device

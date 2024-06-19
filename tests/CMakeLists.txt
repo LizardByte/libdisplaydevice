@@ -47,6 +47,12 @@ add_subdirectory(fixtures)
 add_subdirectory(unit)
 
 #
+# Additional external libraries
+#
+include(Boost_DD)
+include(Json_DD)
+
+#
 # Setup the final test binary
 #
 set(TEST_BINARY test_libdisplaydevice)

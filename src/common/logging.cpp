@@ -10,7 +10,7 @@
 namespace display_device {
   Logger &
   Logger::get() {
-    static Logger instance;
+    static Logger instance;  // GCOVR_EXCL_BR_LINE for some reason...
     return instance;
   }
 
@@ -87,7 +87,7 @@ namespace display_device {
       }
 
       // Log level
-      switch (log_level) {
+      switch (log_level) {  // GCOVR_EXCL_BR_LINE for when there is no case match...
         case LogLevel::verbose:
           stream << "VERBOSE: ";
           break;
