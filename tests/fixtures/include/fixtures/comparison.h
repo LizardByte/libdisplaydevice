@@ -19,4 +19,7 @@ namespace display_device {
 
   bool
   operator==(const EnumeratedDevice &lhs, const EnumeratedDevice &rhs);
+
+  bool
+  operator==(const SingleDisplayConfiguration &lhs, const SingleDisplayConfiguration &rhs);
 }  // namespace display_device

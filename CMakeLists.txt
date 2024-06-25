@@ -1,7 +1,7 @@
 #
 # Project configuration
 #
-cmake_minimum_required(VERSION 3.13)  # todo: what is the minimum version required?
+cmake_minimum_required(VERSION 3.24)
 project(libdisplaydevice
         DESCRIPTION "Library to modify display devices."
         HOMEPAGE_URL "https://app.lizardbyte.dev"

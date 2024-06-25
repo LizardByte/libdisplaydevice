@@ -4,7 +4,7 @@
 #
 include_guard(GLOBAL)
 
-find_package(Boost 1.85)
+find_package(Boost 1.85 QUIET GLOBAL)
 if(NOT Boost_FOUND)
     message(STATUS "Boost v1.85.x package not found in the system. Falling back to FetchContent.")
     include(FetchContent)

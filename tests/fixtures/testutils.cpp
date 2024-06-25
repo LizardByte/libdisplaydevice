@@ -9,13 +9,13 @@
 #include <regex>
 
 bool
-testRegex(const std::string &test_pattern, const std::string &regex_pattern) {
-  std::regex regex(regex_pattern);
+testRegex(const std::string &input, const std::string &pattern) {
+  std::regex regex(pattern);
   std::smatch match;
-  if (!std::regex_match(test_pattern, match, regex)) {
+  if (!std::regex_match(input, match, regex)) {
     std::cout << "Regex test failed:\n"
-              << "    Pattern: " << test_pattern << "\n"
-              << "    Regex  : " << regex_pattern << std::endl;
+              << "    Input  : " << input << "\n"
+              << "    Pattern: " << pattern << std::endl;
     return false;
   }
   return true;
