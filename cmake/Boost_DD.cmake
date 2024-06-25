@@ -2,9 +2,10 @@
 # Loads the boost library giving the priority to the system package first, with a fallback
 # to the submodule.
 #
-find_package(Boost 1.85 QUIET)
+include_guard(GLOBAL)
+
+find_package(Boost 1.85 QUIET GLOBAL)
 if(NOT Boost_FOUND)
-    include_guard(GLOBAL)
     message(STATUS "Boost v1.85.x package not found in the system. Falling back to FetchContent.")
     include(FetchContent)
 
