@@ -20,9 +20,9 @@ if(NOT Boost_FOUND)
     set(BOOST_INCLUDE_LIBRARIES ${REQUIRED_HEADER_LIBRARIES})
     FetchContent_Declare(
             Boost
-            DOWNLOAD_EXTRACT_TIMESTAMP
             URL      https://github.com/boostorg/boost/releases/download/boost-1.85.0/boost-1.85.0-cmake.tar.xz
             URL_HASH MD5=BADEA970931766604D4D5F8F4090B176
+            DOWNLOAD_EXTRACT_TIMESTAMP
     )
     FetchContent_MakeAvailable(Boost)
 else()
