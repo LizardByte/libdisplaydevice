@@ -4,25 +4,33 @@
 #
 include_guard(GLOBAL)
 
+# Limit boost to the required libraries only
+set(REQUIRED_HEADER_LIBRARIES
+        algorithm
+        scope
+        preprocessor
+        uuid
+)
+
 find_package(Boost 1.85 QUIET GLOBAL)
 if(NOT Boost_FOUND)
     message(STATUS "Boost v1.85.x package not found in the system. Falling back to FetchContent.")
     include(FetchContent)
 
-    # Avoid warning about DOWNLOAD_EXTRACT_TIMESTAMP in CMake 3.24:
-    if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
-        cmake_policy(SET CMP0135 NEW)
-    endif()
-
-    # Limit boost to the required libraries only
-    set(BOOST_INCLUDE_LIBRARIES
-            algorithm
-            scope
-            uuid)
+    set(BOOST_INCLUDE_LIBRARIES ${REQUIRED_HEADER_LIBRARIES})
     FetchContent_Declare(
             Boost
             URL      https://github.com/boostorg/boost/releases/download/boost-1.85.0/boost-1.85.0-cmake.tar.xz
             URL_HASH MD5=BADEA970931766604D4D5F8F4090B176
+            DOWNLOAD_EXTRACT_TIMESTAMP
     )
     FetchContent_MakeAvailable(Boost)
+else()
+    # For whatever reason the Boost::headers from find_package is not the same as the one from FetchContent
+    # (differ in linked targets).
+    # Also, FetchContent creates Boost::<lib> targets, whereas find_package does not. Since we cannot extend
+    # Boost::headers as it is an ALIAS target, this is the workaround:
+    foreach (lib ${REQUIRED_HEADER_LIBRARIES})
+        add_library(Boost::${lib} ALIAS Boost::headers)
+    endforeach ()
 endif()
