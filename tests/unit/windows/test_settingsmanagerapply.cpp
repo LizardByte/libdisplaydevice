@@ -37,7 +37,7 @@ namespace {
     display_device::SettingsManager &
     getImpl() {
       if (!m_impl) {
-        m_impl = std::make_unique<display_device::SettingsManager>(m_dd_api,m_audio_context_api, std::make_unique<display_device::PersistentState>(m_settings_persistence_api));
+        m_impl = std::make_unique<display_device::SettingsManager>(m_dd_api, m_audio_context_api, std::make_unique<display_device::PersistentState>(m_settings_persistence_api));
       }
 
       return *m_impl;
