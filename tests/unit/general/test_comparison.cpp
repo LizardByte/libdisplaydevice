@@ -37,16 +37,16 @@ TEST_S(EnumeratedDevice, Info) {
 }
 
 TEST_S(EnumeratedDevice) {
-  EXPECT_EQ(display_device::EnumeratedDevice("1", "1", "1", display_device::EnumeratedDevice::Info {}),
-    display_device::EnumeratedDevice("1", "1", "1", display_device::EnumeratedDevice::Info {}));
-  EXPECT_NE(display_device::EnumeratedDevice("1", "1", "1", display_device::EnumeratedDevice::Info {}),
-    display_device::EnumeratedDevice("0", "1", "1", display_device::EnumeratedDevice::Info {}));
-  EXPECT_NE(display_device::EnumeratedDevice("1", "1", "1", display_device::EnumeratedDevice::Info {}),
-    display_device::EnumeratedDevice("1", "0", "1", display_device::EnumeratedDevice::Info {}));
-  EXPECT_NE(display_device::EnumeratedDevice("1", "1", "1", display_device::EnumeratedDevice::Info {}),
-    display_device::EnumeratedDevice("1", "1", "0", display_device::EnumeratedDevice::Info {}));
-  EXPECT_NE(display_device::EnumeratedDevice("1", "1", "1", display_device::EnumeratedDevice::Info {}),
-    display_device::EnumeratedDevice("1", "1", "1", std::nullopt));
+  EXPECT_EQ(display_device::EnumeratedDevice({ "1", "1", "1", display_device::EnumeratedDevice::Info {} }),
+    display_device::EnumeratedDevice({ "1", "1", "1", display_device::EnumeratedDevice::Info {} }));
+  EXPECT_NE(display_device::EnumeratedDevice({ "1", "1", "1", display_device::EnumeratedDevice::Info {} }),
+    display_device::EnumeratedDevice({ "0", "1", "1", display_device::EnumeratedDevice::Info {} }));
+  EXPECT_NE(display_device::EnumeratedDevice({ "1", "1", "1", display_device::EnumeratedDevice::Info {} }),
+    display_device::EnumeratedDevice({ "1", "0", "1", display_device::EnumeratedDevice::Info {} }));
+  EXPECT_NE(display_device::EnumeratedDevice({ "1", "1", "1", display_device::EnumeratedDevice::Info {} }),
+    display_device::EnumeratedDevice({ "1", "1", "0", display_device::EnumeratedDevice::Info {} }));
+  EXPECT_NE(display_device::EnumeratedDevice({ "1", "1", "1", display_device::EnumeratedDevice::Info {} }),
+    display_device::EnumeratedDevice({ "1", "1", "1", std::nullopt }));
 }
 
 TEST_S(SingleDisplayConfiguration) {
