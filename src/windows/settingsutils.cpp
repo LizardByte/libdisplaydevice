@@ -30,7 +30,7 @@ namespace display_device::win_utils {
      * @brief Get device ids from device list matching the predicate.
      * @param devices List of devices.
      * @param predicate Predicate to use.
-     * @return Fevice ids from device list matching the predicate.
+     * @return Device ids from device list matching the predicate.
      *
      * EXAMPLES:
      * ```cpp
@@ -52,6 +52,12 @@ namespace display_device::win_utils {
       return device_ids;
     }
 
+    /**
+     * @brief Remove the topology device ids and groups that no longer have valid devices.
+     * @param topology Topology to be stripped.
+     * @param devices List of devices.
+     * @return Topology without missing device ids.
+     */
     ActiveTopology
     stripTopology(const ActiveTopology &topology, const EnumeratedDeviceList &devices) {
       const std::set<std::string> available_device_ids { getDeviceIds(devices, anyDevice) };
@@ -73,16 +79,28 @@ namespace display_device::win_utils {
       return stripped_topology;
     }
 
+    /**
+     * @brief Remove device ids that are no longer available.
+     * @param device_ids Id list to be stripped.
+     * @param devices List of devices.
+     * @return List without missing device ids.
+     */
     std::set<std::string>
-    stripPrimaryDevices(const std::set<std::string> &primary_devices, const EnumeratedDeviceList &devices) {
+    stripDevices(const std::set<std::string> &device_ids, const EnumeratedDeviceList &devices) {
       std::set<std::string> available_device_ids { getDeviceIds(devices, anyDevice) };
 
-      std::set<std::string> available_primary_devices;
-      std::ranges::set_intersection(primary_devices, available_device_ids,
-        std::inserter(available_primary_devices, std::begin(available_primary_devices)));
-      return available_primary_devices;
+      std::set<std::string> available_devices;
+      std::ranges::set_intersection(device_ids, available_device_ids,
+        std::inserter(available_devices, std::begin(available_devices)));
+      return available_devices;
     }
 
+    /**
+     * @brief Find topology group with matching id and get other ids from the group.
+     * @param topology Topology to be searched.
+     * @param target_device_id Device id whose group to search for.
+     * @return Other ids in the group without (excluding the provided one).
+     */
     std::set<std::string>
     tryGetOtherDevicesInTheSameGroup(const ActiveTopology &topology, const std::string &target_device_id) {
       std::set<std::string> device_ids;
@@ -101,6 +119,9 @@ namespace display_device::win_utils {
       return device_ids;
     }
 
+    /**
+     * @brief Merge the configurable devices into a vector.
+     */
     std::vector<std::string>
     joinConfigurableDevices(const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure) {
       std::vector<std::string> devices { device_to_configure };
@@ -153,37 +174,36 @@ namespace display_device::win_utils {
   ActiveTopology
   computeNewTopology(const SingleDisplayConfiguration::DevicePreparation device_prep, const bool configuring_primary_devices, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, const ActiveTopology &initial_topology) {
     using DevicePrep = SingleDisplayConfiguration::DevicePreparation;
-    std::optional<ActiveTopology> new_topology;
 
     if (device_prep != DevicePrep::VerifyOnly) {
       if (device_prep == DevicePrep::EnsureOnlyDisplay) {
         // Device needs to be the only one that's active OR if it's a PRIMARY device,
         // only the whole PRIMARY group needs to be active (in case they are duplicated)
         if (configuring_primary_devices) {
-          new_topology = ActiveTopology { joinConfigurableDevices(device_to_configure, additional_devices_to_configure) };
+          return ActiveTopology { joinConfigurableDevices(device_to_configure, additional_devices_to_configure) };
         }
-        else {
-          new_topology = ActiveTopology { { device_to_configure } };
-        }
+
+        return ActiveTopology { { device_to_configure } };
       }
       // DevicePrep::EnsureActive || DevicePrep::EnsurePrimary
       else {
         //  The device needs to be active at least.
         if (!flattenTopology(initial_topology).contains(device_to_configure)) {
           // Create an extended topology as it's probably what makes sense the most...
-          new_topology = initial_topology;
-          new_topology->push_back({ device_to_configure });
+          ActiveTopology new_topology { initial_topology };
+          new_topology.push_back({ device_to_configure });
+          return new_topology;
         }
       }
     }
 
-    return new_topology.value_or(initial_topology);
+    return initial_topology;
   }
 
   std::optional<SingleDisplayConfigState::Initial>
   stripInitialState(const SingleDisplayConfigState::Initial &initial_state, const EnumeratedDeviceList &devices) {
     const auto stripped_initial_topology { stripTopology(initial_state.m_topology, devices) };
-    auto initial_primary_devices { stripPrimaryDevices(initial_state.m_primary_devices, devices) };
+    auto initial_primary_devices { stripDevices(initial_state.m_primary_devices, devices) };
 
     if (stripped_initial_topology.empty()) {
       DD_LOG(error) << "Enumerated device list does not contain ANY of the devices from the initial state!";
