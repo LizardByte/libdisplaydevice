@@ -197,8 +197,9 @@ namespace display_device::win_utils {
 
         return ActiveTopology { { device_to_configure } };
       }
+
       // DevicePrep::EnsureActive || DevicePrep::EnsurePrimary
-      else {
+      {
         //  The device needs to be active at least.
         if (!flattenTopology(initial_topology).contains(device_to_configure)) {
           // Create an extended topology as it's probably what makes sense the most...
@@ -265,7 +266,7 @@ namespace display_device::win_utils {
   }
 
   DeviceDisplayModeMap
-  computeNewDisplayModes(const std::optional<Resolution> &resolution,    const std::optional<double> &refresh_rate,   const bool configuring_primary_devices,    const std::string &device_to_configure,    const std::set<std::string> &additional_devices_to_configure, const DeviceDisplayModeMap &original_modes) {
+  computeNewDisplayModes(const std::optional<Resolution> &resolution, const std::optional<double> &refresh_rate, const bool configuring_primary_devices, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, const DeviceDisplayModeMap &original_modes) {
     DeviceDisplayModeMap new_modes { original_modes };
 
     if (resolution) {
@@ -284,14 +285,14 @@ namespace display_device::win_utils {
         // we need to apply the refresh rate change to all duplicates.
         const auto devices { joinConfigurableDevices(device_to_configure, additional_devices_to_configure) };
         for (const auto &device_id : devices) {
-          new_modes[device_id].m_refresh_rate = {};// *refresh_rate;
+          new_modes[device_id].m_refresh_rate = Rational::fromFloatingPoint(*refresh_rate);
         }
       }
       else {
         // Even if we have duplicate devices, their refresh rate may differ
         // and since the device was specified, let's apply the refresh
         // rate only to the specified device.
-        new_modes[device_to_configure].m_refresh_rate = {};//*refresh_rate;
+        new_modes[device_to_configure].m_refresh_rate = Rational::fromFloatingPoint(*refresh_rate);
       }
     }
 

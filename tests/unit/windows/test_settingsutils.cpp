@@ -21,6 +21,11 @@ namespace {
 
   // Additional convenience global const(s)
   const display_device::ActiveTopology DEFAULT_INITIAL_TOPOLOGY { { "DeviceId1", "DeviceId2" }, { "DeviceId3" } };
+  const display_device::DeviceDisplayModeMap DEFAULT_CURRENT_MODES {
+    { "DeviceId1", { { 1080, 720 }, { 120, 1 } } },
+    { "DeviceId2", { { 1920, 1080 }, { 60, 1 } } },
+    { "DeviceId3", { { 2560, 1440 }, { 30, 1 } } }
+  };
 }  // namespace
 
 TEST_F_S_MOCKED(FlattenTopology) {
@@ -78,6 +83,22 @@ TEST_F_S_MOCKED(ComputeNewTopology, EnsurePrimary) {
     display_device::ActiveTopology { { "DeviceId4" } });
   EXPECT_EQ(display_device::win_utils::computeNewTopology(DevicePrep::EnsurePrimary, true, "DeviceId4", { "DeviceId5", "DeviceId6" }, { { "DeviceId3" } }),
     (display_device::ActiveTopology { { "DeviceId3" }, { "DeviceId4" } }));
+}
+
+TEST_F_S_MOCKED(ComputeNewDisplayModes, PrimaryDevices) {
+  auto expected_modes { DEFAULT_CURRENT_MODES };
+  expected_modes["DeviceId1"] = { { 1920, 1080 }, { 1200000, 10000 } };
+  expected_modes["DeviceId2"] = { { 1920, 1080 }, { 1200000, 10000 } };
+
+  EXPECT_EQ(display_device::win_utils::computeNewDisplayModes({ { 1920, 1080 } }, { 120. }, true, "DeviceId1", { "DeviceId2" }, DEFAULT_CURRENT_MODES), expected_modes);
+}
+
+TEST_F_S_MOCKED(ComputeNewDisplayModes, NonPrimaryDevices) {
+  auto expected_modes { DEFAULT_CURRENT_MODES };
+  expected_modes["DeviceId1"] = { { 1920, 1080 }, { 1200000, 10000 } };
+  expected_modes["DeviceId2"] = { { 1920, 1080 }, expected_modes["DeviceId2"].m_refresh_rate };
+
+  EXPECT_EQ(display_device::win_utils::computeNewDisplayModes({ { 1920, 1080 } }, { 120. }, false, "DeviceId1", { "DeviceId2" }, DEFAULT_CURRENT_MODES), expected_modes);
 }
 
 TEST_F_S_MOCKED(StripInitialState, NoStripIsPerformed) {
