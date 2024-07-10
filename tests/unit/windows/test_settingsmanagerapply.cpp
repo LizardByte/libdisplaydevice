@@ -475,6 +475,26 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceSet) {
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId4", .m_device_prep = DevicePrep::EnsurePrimary }), display_device::SettingsManager::ApplyResult::Ok);
 }
 
+TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceSet, CachedDeviceReused) {
+  using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
+  auto initial_state { DEFAULT_PERSISTENCE_INPUT_BASE };
+  initial_state.m_modified.m_topology = { { "DeviceId1", "DeviceId2" }, { "DeviceId3" }, { "DeviceId4" } };
+  initial_state.m_modified.m_original_primary_device = "DeviceId1";
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, initial_state.m_modified.m_topology, initial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, initial_state.m_modified.m_topology, initial_state.m_modified.m_topology);
+
+  expectedIsPrimaryCall(sequence, "DeviceId1", false);
+  expectedIsPrimaryCall(sequence, "DeviceId2", false);
+  expectedIsPrimaryCall(sequence, "DeviceId3");
+  expectedSetAsPrimaryCall(sequence, "DeviceId4");
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId4", .m_device_prep = DevicePrep::EnsurePrimary }), display_device::SettingsManager::ApplyResult::Ok);
+}
+
 TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceSet, GuardInvoked) {
   using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
   auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
