@@ -198,15 +198,12 @@ namespace display_device::win_utils {
         return ActiveTopology { { device_to_configure } };
       }
 
-      // DevicePrep::EnsureActive || DevicePrep::EnsurePrimary
-      {
-        //  The device needs to be active at least.
-        if (!flattenTopology(initial_topology).contains(device_to_configure)) {
-          // Create an extended topology as it's probably what makes sense the most...
-          ActiveTopology new_topology { initial_topology };
-          new_topology.push_back({ device_to_configure });
-          return new_topology;
-        }
+      //  The device needs to be active at least for `DevicePrep::EnsureActive || DevicePrep::EnsurePrimary`.
+      if (!flattenTopology(initial_topology).contains(device_to_configure)) {
+        // Create an extended topology as it's probably what makes sense the most...
+        ActiveTopology new_topology { initial_topology };
+        new_topology.push_back({ device_to_configure });
+        return new_topology;
       }
     }
 
