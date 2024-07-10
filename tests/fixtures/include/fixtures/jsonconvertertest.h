@@ -1,7 +1,6 @@
 #pragma once
 
 // local includes
-#include "comparison.h"
 #include "displaydevice/json.h"
 #include "fixtures.h"
 

@@ -2,6 +2,7 @@
 #include <ranges>
 
 // local includes
+#include "displaydevice/windows/settingsutils.h"
 #include "displaydevice/windows/winapilayer.h"
 #include "displaydevice/windows/winapiutils.h"
 #include "displaydevice/windows/windisplaydevice.h"
@@ -149,7 +150,7 @@ namespace {
 }  // namespace
 
 TEST_F_S(GetCurrentDisplayModes) {
-  const auto flattened_topology { flattenTopology(m_win_dd.getCurrentTopology()) };
+  const auto flattened_topology { display_device::win_utils::flattenTopology(m_win_dd.getCurrentTopology()) };
   const auto current_modes { m_win_dd.getCurrentDisplayModes(flattened_topology) };
 
   // Can't really compare anything else without knowing system specs

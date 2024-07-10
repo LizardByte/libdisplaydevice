@@ -1,9 +1,5 @@
 #pragma once
 
-// system includes
-#include <string>
-#include <vector>
-
 namespace display_device {
   /**
    * @brief A class for capturing associated audio context (settings, info or whatever).
@@ -11,11 +7,6 @@ namespace display_device {
    * Some of the display devices have audio devices associated with them.
    * Turning off and on the devices will not necessarily restore them as the default
    * audio devices for the system.
-   *
-   * While this library does not preserve audio contexts, it does provide this interface
-   * for notifying which devices are about to be disabled (their audio context should
-   * probably be "captured") and which ones are to be re-enabled (their audio context should
-   * probably be "released").
    */
   class AudioContextInterface {
   public:
@@ -25,32 +16,41 @@ namespace display_device {
     virtual ~AudioContextInterface() = default;
 
     /**
-     * @brief Capture audio context for the devices that are about to be disabled.
-     * @param devices_to_be_disabled Devices that might be disabled soon.
+     * @brief Capture audio context for currently active devices.
      * @returns True if the contexts could be captured, false otherwise.
      *
      * EXAMPLES:
      * ```cpp
-     * const std::string device_id { "MY_DEVICE_ID" };
      * AudioContextInterface* iface = getIface(...);
-     * const auto result { iface->capture({ device_id }) };
+     * const auto result { iface->capture() };
      * ```
      */
     [[nodiscard]] virtual bool
-    capture(const std::vector<std::string> &devices_to_be_disabled) = 0;
+    capture() = 0;
 
     /**
-     * @brief Release audio context for the devices that are about to be re-enabled.
-     * @param devices_to_be_reenabled Devices that were captured before and are about to be re-enabled.
+     * @brief Check if the context is already captured.
+     * @returns True if the context is captured, false otherwise.
      *
      * EXAMPLES:
      * ```cpp
-     * const std::string device_id { "MY_DEVICE_ID" };
      * AudioContextInterface* iface = getIface(...);
-     * const auto result { iface->release({ device_id }) };
+     * const auto result { iface->isCaptured() };
+     * ```
+     */
+    [[nodiscard]] virtual bool
+    isCaptured() const = 0;
+
+    /**
+     * @brief Release captured audio context for the devices (if any).
+     *
+     * EXAMPLES:
+     * ```cpp
+     * AudioContextInterface* iface = getIface(...);
+     * const auto result { iface->release() };
      * ```
      */
     virtual void
-    release(const std::vector<std::string> &devices_to_be_reenabled) = 0;
+    release() = 0;
   };
 }  // namespace display_device

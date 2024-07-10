@@ -24,3 +24,19 @@ TEST_F_S(HdrStateMap) {
   executeTestCase(display_device::HdrStateMap { { "DeviceId1", std::nullopt }, { "DeviceId2", display_device::HdrState::Enabled } },
     R"({"DeviceId1":null,"DeviceId2":"Enabled"})");
 }
+
+TEST_F_S(SingleDisplayConfigState) {
+  const display_device::SingleDisplayConfigState valid_input {
+    { { { "DeviceId1" } },
+      { "DeviceId1" } },
+    { display_device::SingleDisplayConfigState::Modified {
+      { { "DeviceId2" } },
+      { { "DeviceId2", { { 1920, 1080 }, { 120, 1 } } } },
+      { { "DeviceId2", { display_device::HdrState::Disabled } } },
+      { "DeviceId2" },
+    } }
+  };
+
+  executeTestCase(display_device::SingleDisplayConfigState {}, R"({"initial":{"primary_devices":[],"topology":[]},"modified":{"original_hdr_states":{},"original_modes":{},"original_primary_device":"","topology":[]}})");
+  executeTestCase(valid_input, R"({"initial":{"primary_devices":["DeviceId1"],"topology":[["DeviceId1"]]},"modified":{"original_hdr_states":{"DeviceId2":"Disabled"},"original_modes":{"DeviceId2":{"refresh_rate":{"denominator":1,"numerator":120},"resolution":{"height":1080,"width":1920}}},"original_primary_device":"DeviceId2","topology":[["DeviceId2"]]}})");
+}

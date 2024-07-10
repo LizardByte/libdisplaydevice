@@ -8,5 +8,8 @@ namespace display_device {
   // Structs
   DD_JSON_DECLARE_SERIALIZE_TYPE(Rational)
   DD_JSON_DECLARE_SERIALIZE_TYPE(DisplayMode)
+  DD_JSON_DECLARE_SERIALIZE_TYPE(SingleDisplayConfigState::Initial)
+  DD_JSON_DECLARE_SERIALIZE_TYPE(SingleDisplayConfigState::Modified)
+  DD_JSON_DECLARE_SERIALIZE_TYPE(SingleDisplayConfigState)
 }  // namespace display_device
 #endif

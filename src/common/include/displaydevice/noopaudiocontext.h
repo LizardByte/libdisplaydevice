@@ -9,12 +9,19 @@ namespace display_device {
    */
   class NoopAudioContext: public AudioContextInterface {
   public:
-    /** Always returns true. */
+    /** Always returns true and sets m_is_captured to true. */
     [[nodiscard]] bool
-    capture(const std::vector<std::string> &) override;
+    capture() override;
 
-    /** Does nothing. */
+    /** Returns the m_is_captured value. */
+    [[nodiscard]] bool
+    isCaptured() const override;
+
+    /** Sets m_is_captured to false. */
     void
-    release(const std::vector<std::string> &) override;
+    release() override;
+
+  private:
+    bool m_is_captured {};
   };
 }  // namespace display_device

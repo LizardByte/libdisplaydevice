@@ -11,4 +11,7 @@
 namespace display_device {
   DD_JSON_DEFINE_CONVERTER(EnumeratedDeviceList)
   DD_JSON_DEFINE_CONVERTER(SingleDisplayConfiguration)
+  DD_JSON_DEFINE_CONVERTER(std::set<std::string>)
+  DD_JSON_DEFINE_CONVERTER(std::string)
+  DD_JSON_DEFINE_CONVERTER(bool)
 }  // namespace display_device

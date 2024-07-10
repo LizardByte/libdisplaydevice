@@ -24,3 +24,14 @@ namespace display_device {
     MOCK_METHOD(bool, setHdrStates, (const HdrStateMap &), (override));
   };
 }  // namespace display_device
+
+/**
+ * @brief Contains some useful predefined structures for UTs.
+ * @note Data is to be extended with relevant information as needed.
+ */
+namespace ut_consts {
+  extern const std::optional<display_device::SingleDisplayConfigState> SDCS_NULL;
+  extern const std::optional<display_device::SingleDisplayConfigState> SDCS_EMPTY;
+  extern const std::optional<display_device::SingleDisplayConfigState> SDCS_FULL;
+  extern const std::optional<display_device::SingleDisplayConfigState> SDCS_NO_MODIFICATIONS;
+}  // namespace ut_consts

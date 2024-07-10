@@ -52,3 +52,19 @@ TEST_F_S(SingleDisplayConfiguration) {
   executeTestCase(config_3, R"({"device_id":"ID_3","device_prep":"EnsureOnlyDisplay","hdr_state":null,"refresh_rate":null,"resolution":{"height":123,"width":156}})");
   executeTestCase(config_4, R"({"device_id":"ID_4","device_prep":"EnsurePrimary","hdr_state":null,"refresh_rate":null,"resolution":null})");
 }
+
+TEST_F_S(StringSet) {
+  executeTestCase(std::set<std::string> {}, R"([])");
+  executeTestCase(std::set<std::string> { "ABC", "DEF" }, R"(["ABC","DEF"])");
+  executeTestCase(std::set<std::string> { "DEF", "ABC" }, R"(["ABC","DEF"])");
+}
+
+TEST_F_S(String) {
+  executeTestCase(std::string {}, R"("")");
+  executeTestCase(std::string { "ABC" }, R"("ABC")");
+}
+
+TEST_F_S(Bool) {
+  executeTestCase(true, R"(true)");
+  executeTestCase(false, R"(false)");
+}

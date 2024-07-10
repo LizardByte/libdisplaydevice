@@ -4,7 +4,9 @@
 #include <windows.h>
 
 // system includes
+#include <functional>
 #include <map>
+#include <set>
 
 // local includes
 #include "displaydevice/types.h"
@@ -81,6 +83,12 @@ namespace display_device {
   struct Rational {
     unsigned int m_numerator {};
     unsigned int m_denominator {};
+
+    /**
+     * @brief Comparator for strict equality.
+     */
+    friend bool
+    operator==(const Rational &lhs, const Rational &rhs);
   };
 
   /**
@@ -89,6 +97,12 @@ namespace display_device {
   struct DisplayMode {
     Resolution m_resolution {};
     Rational m_refresh_rate {};
+
+    /**
+     * @brief Comparator for strict equality.
+     */
+    friend bool
+    operator==(const DisplayMode &lhs, const DisplayMode &rhs);
   };
 
   /**
@@ -100,4 +114,70 @@ namespace display_device {
    * @brief Ordered map of [DEVICE_ID -> std::optional<HdrState>].
    */
   using HdrStateMap = std::map<std::string, std::optional<HdrState>>;
+
+  /**
+   * @brief Arbitrary data for making and undoing changes.
+   */
+  struct SingleDisplayConfigState {
+    /**
+     * @brief Data that represents the original system state and is used
+     *        as a base when trying to re-apply settings without reverting settings.
+     */
+    struct Initial {
+      ActiveTopology m_topology {};
+      std::set<std::string> m_primary_devices {};
+
+      /**
+       * @brief Comparator for strict equality.
+       */
+      friend bool
+      operator==(const Initial &lhs, const Initial &rhs);
+    };
+
+    /**
+     * @brief Data for tracking the modified changes.
+     */
+    struct Modified {
+      ActiveTopology m_topology {};
+      DeviceDisplayModeMap m_original_modes {};
+      HdrStateMap m_original_hdr_states {};
+      std::string m_original_primary_device {};
+
+      /**
+       * @brief Check if the changed topology has any other modifications.
+       * @return True if DisplayMode, HDR or primary device has been changed, false otherwise.
+       *
+       * EXAMPLES:
+       * ```cpp
+       * SingleDisplayConfigState state;
+       * const no_modifications = state.hasModifications();
+       *
+       * state.modified.original_primary_device = "DeviceId2";
+       * const has_modifications = state.hasModifications();
+       * ```
+       */
+      [[nodiscard]] bool
+      hasModifications() const;
+
+      /**
+       * @brief Comparator for strict equality.
+       */
+      friend bool
+      operator==(const Modified &lhs, const Modified &rhs);
+    };
+
+    Initial m_initial;
+    Modified m_modified;
+
+    /**
+     * @brief Comparator for strict equality.
+     */
+    friend bool
+    operator==(const SingleDisplayConfigState &lhs, const SingleDisplayConfigState &rhs);
+  };
+
+  /**
+   * @brief Default function type used for cleanup/guard functions.
+   */
+  using DdGuardFn = std::function<void()>;
 }  // namespace display_device

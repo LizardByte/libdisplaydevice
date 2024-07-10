@@ -1,4 +1,5 @@
 // local includes
+#include "displaydevice/windows/settingsutils.h"
 #include "displaydevice/windows/winapilayer.h"
 #include "displaydevice/windows/winapiutils.h"
 #include "displaydevice/windows/windisplaydevice.h"
@@ -67,7 +68,7 @@ namespace {
 }  // namespace
 
 TEST_F_S(IsPrimary) {
-  const auto flat_topology { flattenTopology(m_win_dd.getCurrentTopology()) };
+  const auto flat_topology { display_device::win_utils::flattenTopology(m_win_dd.getCurrentTopology()) };
   EXPECT_TRUE(std::ranges::any_of(flat_topology, [&](auto device_id) { return m_win_dd.isPrimary(device_id); }));
 }
 

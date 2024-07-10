@@ -17,8 +17,8 @@ namespace display_device {
     [[nodiscard]] std::optional<std::vector<std::uint8_t>>
     load() const override;
 
-    /** Does nothing. */
-    void
+    /** Always returns true. */
+    [[nodiscard]] bool
     clear() override;
   };
 }  // namespace display_device
