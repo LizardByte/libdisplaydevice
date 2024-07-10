@@ -21,7 +21,8 @@ namespace display_device {
      * @param audio_context_api [Optional] A pointer to the Audio Context interface.
      * @param persistent_state A pointer to a class for managing persistence.
      */
-    explicit SettingsManager(
+    explicit
+    SettingsManager(
       std::shared_ptr<WinDisplayDeviceInterface> dd_api,
       std::shared_ptr<AudioContextInterface> audio_context_api,
       std::unique_ptr<PersistentState> persistent_state);
@@ -52,6 +53,17 @@ namespace display_device {
      */
     [[nodiscard]] std::optional<std::tuple<SingleDisplayConfigState, std::string, std::set<std::string>>>
     prepareTopology(const SingleDisplayConfiguration &config, const ActiveTopology &topology_before_changes, bool &release_context);
+
+    /**
+     * @brief Changes or restores the primary device based on the cached state, new state and configuration.
+     * @param config Configuration to be used for preparing primary device.
+     * @param device_to_configure The main device to be used for preparation.
+     * @param guard_fn Reference to the guard function which will be set to restore original state (if needed) in case something else fails down the line.
+     * @param new_state Reference to the new state which is to be updated accordingly.
+     * @return True if no errors have occured, false otherwise.
+     */
+    [[nodiscard]] bool
+    preparePrimaryDevice(const SingleDisplayConfiguration &config, const std::string &device_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state);
 
     /**
      * @brief Try to revert the modified settings.

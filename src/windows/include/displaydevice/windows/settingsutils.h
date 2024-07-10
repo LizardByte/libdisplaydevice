@@ -26,6 +26,22 @@ namespace display_device::win_utils {
   flattenTopology(const ActiveTopology &topology);
 
   /**
+   * @brief Get one primary device from the provided topology.
+   * @param win_dd Interface for interacting with the OS.
+   * @param topology Topology to be searched.
+   * @return Id of a primary device or an empty string if not found or an error has occured.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * const WinDisplayDeviceInterface* iface = getIface(...);
+   * const ActiveTopology topology { { "DeviceId1", "DeviceId2" }, { "DeviceId3" } };
+   * const auto primary_device_id { getPrimaryDevice(*iface, topology) };
+   * ```
+   */
+  std::string
+  getPrimaryDevice(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
+
+  /**
    * @brief Compute the new intial state from arbitrary data.
    * @param prev_state Previous initial state if available.
    * @param topology_before_changes Topology before any changes were made.
@@ -127,6 +143,23 @@ namespace display_device::win_utils {
    */
   DdGuardFn
   primaryGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
+
+  /**
+   * @brief Make guard function for the primary display.
+   * @param win_dd Interface for interacting with the OS.
+   * @param primary_device Primary device to restore when the guard is executed.
+   * @return Function that once called will try to revert primary display to the one that was provided.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * WinDisplayDeviceInterface* iface = getIface(...);
+   * const std::string prev_primary_device { "MyDeviceId" };
+   *
+   * boost::scope::scope_exit guard { primaryGuardFn(*iface, prev_primary_device) };
+   * ```
+   */
+  DdGuardFn
+  primaryGuardFn(WinDisplayDeviceInterface &win_dd, const std::string &primary_device);
 
   /**
    * @brief Make guard function for the HDR states.

@@ -11,6 +11,15 @@
 #include "displaydevice/windows/settingsutils.h"
 
 namespace display_device {
+  namespace {
+    /**
+     * @brief Function that does nothing.
+     */
+    void
+    noopFn() {
+    }
+  }  // namespace
+
   SettingsManager::ApplyResult
   SettingsManager::applySettings(const SingleDisplayConfiguration &config) {
     const auto api_access { m_dd_api->isApiAccessAvailable() };
@@ -57,13 +66,19 @@ namespace display_device {
       // Error already logged
       return ApplyResult::DevicePrepFailed;
     }
-    const auto &[new_state, device_to_configure, additional_devices_to_configure] = *prepped_topology_data;
+    auto [new_state, device_to_configure, additional_devices_to_configure] = *prepped_topology_data;
+
+    DdGuardFn primary_guard_fn { noopFn };
+    boost::scope::scope_exit<DdGuardFn &> primary_guard { primary_guard_fn };
+    if (!preparePrimaryDevice(config, device_to_configure, primary_guard_fn, new_state)) {
+      // Error already logged
+      return ApplyResult::PrimaryDevicePrepFailed;
+    }
 
     // TODO:
     //
     //    Other device handling goes here that will use device_to_configure and additional_devices_to_configure:
     //
-    //      - handle primary device
     //      - handle display modes
     //      - handle HDR (need to replicate the HDR bug and find the best place for workaround)
     //
@@ -82,6 +97,7 @@ namespace display_device {
 
     // Disable all guards before returning
     topology_prep_guard.set_active(false);
+    primary_guard.set_active(false);
     return ApplyResult::Ok;
   }
 
@@ -169,5 +185,60 @@ namespace display_device {
 
     new_state.m_modified.m_topology = new_topology;
     return std::make_tuple(new_state, device_to_configure, additional_devices_to_configure);
+  }
+
+  bool
+  SettingsManager::preparePrimaryDevice(const SingleDisplayConfiguration &config, const std::string &device_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state) {
+    const auto &cached_state { m_persistence_state->getState() };
+    const auto cached_primary_device { cached_state ? cached_state->m_modified.m_original_primary_device : std::string {} };
+    const bool ensure_primary { config.m_device_prep == SingleDisplayConfiguration::DevicePreparation::EnsurePrimary };
+    const bool might_need_to_restore { !cached_primary_device.empty() };
+
+    std::string current_primary_device;
+    if (ensure_primary || might_need_to_restore) {
+      current_primary_device = win_utils::getPrimaryDevice(*m_dd_api, new_state.m_modified.m_topology);
+      if (current_primary_device.empty()) {
+        DD_LOG(error) << "Failed to get primary device for the topology! Searched topology:\n"
+                      << toJson(new_state.m_modified.m_topology);
+        return false;
+      }
+    }
+
+    const auto try_change { [&](const std::string &new_device, const auto info_preamble, const auto error_log) {
+      if (current_primary_device != new_device) {
+        DD_LOG(info) << info_preamble << toJson(new_device);
+        if (!m_dd_api->setAsPrimary(new_device)) {
+          DD_LOG(error) << error_log;
+          return false;
+        }
+
+        guard_fn = win_utils::primaryGuardFn(*m_dd_api, current_primary_device);
+      }
+
+      return true;
+    } };
+
+    if (ensure_primary) {
+      const auto original_primary_device { cached_primary_device.empty() ? current_primary_device : cached_primary_device };
+      const auto &new_primary_device { device_to_configure };
+
+      if (!try_change(new_primary_device, "Changing primary display to: ", "Failed to apply new configuration, because a new primary device could not be set!")) {
+        // Error already logged
+        return false;
+      }
+
+      // Here we preserve the data from persistence (unless there's none) as in the end that is what we want to go back to.
+      new_state.m_modified.m_original_primary_device = original_primary_device;
+      return true;
+    }
+
+    if (might_need_to_restore) {
+      if (!try_change(cached_primary_device, "Changing primary display back to: ", "Failed to restore original primary device!")) {
+        // Error already logged
+        return false;
+      }
+    }
+
+    return true;
   }
 }  // namespace display_device

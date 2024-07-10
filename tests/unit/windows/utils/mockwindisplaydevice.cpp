@@ -10,12 +10,12 @@ namespace ut_consts {
       { { { "DeviceId1" } },
         { "DeviceId1" } },
       { display_device::SingleDisplayConfigState::Modified {
-        { { "DeviceId2" }, { "DeviceId3" } },
-        { { "DeviceId2", { { 1920, 1080 }, { 120, 1 } } },
+        { { "DeviceId1" }, { "DeviceId3" } },
+        { { "DeviceId1", { { 1920, 1080 }, { 120, 1 } } },
           { "DeviceId3", { { 1920, 1080 }, { 60, 1 } } } },
-        { { "DeviceId2", { display_device::HdrState::Disabled } },
-          { "DeviceId3", std::nullopt } },
-        { "DeviceId3" },
+        { { "DeviceId1", { display_device::HdrState::Disabled } },
+          { "DeviceId3", display_device::HdrState::Enabled } },
+        { "DeviceId1" },
       } }
     };
 
@@ -26,7 +26,7 @@ namespace ut_consts {
       { { { "DeviceId1" } },
         { "DeviceId1" } },
       { display_device::SingleDisplayConfigState::Modified {
-        { { "DeviceId2" }, { "DeviceId3" } } } }
+        { { "DeviceId1" }, { "DeviceId3" } } } }
     };
 
     return state;

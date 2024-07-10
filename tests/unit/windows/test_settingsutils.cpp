@@ -245,7 +245,7 @@ TEST_F_S_MOCKED(PrimaryGuardFn, Success) {
     .WillOnce(Return(true))
     .RetiresOnSaturation();
 
-  const auto guard_fn { display_device::win_utils::primaryGuardFn(m_dd_api, { { "DeviceId1" } }) };
+  const auto guard_fn { display_device::win_utils::primaryGuardFn(m_dd_api, display_device::ActiveTopology { { "DeviceId1" } }) };
   EXPECT_NO_THROW(guard_fn());
 }
 
@@ -259,7 +259,7 @@ TEST_F_S_MOCKED(PrimaryGuardFn, Failure) {
     .WillOnce(Return(false))
     .RetiresOnSaturation();
 
-  const auto guard_fn { display_device::win_utils::primaryGuardFn(m_dd_api, { { "DeviceId1" } }) };
+  const auto guard_fn { display_device::win_utils::primaryGuardFn(m_dd_api, display_device::ActiveTopology { { "DeviceId1" } }) };
   EXPECT_NO_THROW(guard_fn());
 }
 

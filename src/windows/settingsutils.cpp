@@ -142,6 +142,18 @@ namespace display_device::win_utils {
     return flattened_topology;
   }
 
+  std::string
+  getPrimaryDevice(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology) {
+    const auto flat_topology { flattenTopology(topology) };
+    for (const auto &device_id : flat_topology) {
+      if (win_dd.isPrimary(device_id)) {
+        return device_id;
+      }
+    }
+
+    return {};
+  }
+
   std::optional<SingleDisplayConfigState::Initial>
   computeInitialState(const std::optional<SingleDisplayConfigState::Initial> &prev_state, const ActiveTopology &topology_before_changes, const EnumeratedDeviceList &devices) {
     // We first need to determine the "initial" state that will be used when reverting
@@ -279,15 +291,11 @@ namespace display_device::win_utils {
 
   DdGuardFn
   primaryGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology) {
-    std::string primary_device {};
-    const auto flat_topology { flattenTopology(topology) };
-    for (const auto &device_id : flat_topology) {
-      if (win_dd.isPrimary(device_id)) {
-        primary_device = device_id;
-        break;
-      }
-    }
+    return primaryGuardFn(win_dd, getPrimaryDevice(win_dd, topology));
+  }
 
+  DdGuardFn
+  primaryGuardFn(WinDisplayDeviceInterface &win_dd, const std::string &primary_device) {
     DD_LOG(debug) << "Got primary device in primaryGuardFn:\n"
                   << toJson(primary_device);
     return [&win_dd, primary_device]() {

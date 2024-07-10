@@ -140,6 +140,30 @@ namespace {
       }
     }
 
+    void
+    expectedIsPrimaryCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::string &device_id, const bool success = true) {
+      EXPECT_CALL(*m_dd_api, isPrimary(device_id))
+        .Times(1)
+        .WillOnce(Return(success))
+        .RetiresOnSaturation();
+    }
+
+    void
+    expectedSetAsPrimaryCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::string &device_id, const bool success = true) {
+      EXPECT_CALL(*m_dd_api, setAsPrimary(device_id))
+        .Times(1)
+        .WillOnce(Return(success))
+        .RetiresOnSaturation();
+    }
+
+    void
+    expectedPrimaryGuardCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::string &device_id) {
+      EXPECT_CALL(*m_dd_api, setAsPrimary(device_id))
+        .Times(1)
+        .WillOnce(Return(true))
+        .RetiresOnSaturation();
+    }
+
     std::shared_ptr<StrictMock<display_device::MockWinDisplayDevice>> m_dd_api { std::make_shared<StrictMock<display_device::MockWinDisplayDevice>>() };
     std::shared_ptr<StrictMock<display_device::MockSettingsPersistence>> m_settings_persistence_api { std::make_shared<StrictMock<display_device::MockSettingsPersistence>>() };
     std::shared_ptr<StrictMock<display_device::MockAudioContext>> m_audio_context_api { std::make_shared<StrictMock<display_device::MockAudioContext>>() };
@@ -378,6 +402,224 @@ TEST_F_S_MOCKED(PrepareTopology, AudioContextCaptureSkipped, NoDevicesAreGone) {
   expectedPersistenceCall(sequence, persistence_input);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId4", .m_device_prep = DevicePrep::EnsureActive }), display_device::SettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S_MOCKED(PreparePrimaryDevice, FailedToGetPrimaryDevice) {
+  using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
+  const display_device::ActiveTopology topology { { "DeviceId1", "DeviceId2" }, { "DeviceId3" }, { "DeviceId4" } };
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, topology);
+  expectedIsCapturedCall(sequence, false);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+  expectedSetTopologyCall(sequence, topology);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, topology);
+
+  expectedIsPrimaryCall(sequence, "DeviceId1", false);
+  expectedIsPrimaryCall(sequence, "DeviceId2", false);
+  expectedIsPrimaryCall(sequence, "DeviceId3", false);
+  expectedIsPrimaryCall(sequence, "DeviceId4", false);
+
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId4", .m_device_prep = DevicePrep::EnsurePrimary }), display_device::SettingsManager::ApplyResult::PrimaryDevicePrepFailed);
+}
+
+TEST_F_S_MOCKED(PreparePrimaryDevice, FailedToSetPrimaryDevice) {
+  using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
+  const display_device::ActiveTopology topology { { "DeviceId1", "DeviceId2" }, { "DeviceId3" }, { "DeviceId4" } };
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, topology);
+  expectedIsCapturedCall(sequence, false);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+  expectedSetTopologyCall(sequence, topology);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, topology);
+
+  expectedIsPrimaryCall(sequence, "DeviceId1");
+  expectedSetAsPrimaryCall(sequence, "DeviceId4", false);
+
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId4", .m_device_prep = DevicePrep::EnsurePrimary }), display_device::SettingsManager::ApplyResult::PrimaryDevicePrepFailed);
+}
+
+TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceSet) {
+  using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = { { "DeviceId1", "DeviceId2" }, { "DeviceId3" }, { "DeviceId4" } };
+  persistence_input.m_modified.m_original_primary_device = "DeviceId1";
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, persistence_input.m_modified.m_topology);
+  expectedIsCapturedCall(sequence, false);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+  expectedSetTopologyCall(sequence, persistence_input.m_modified.m_topology);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, persistence_input.m_modified.m_topology);
+
+  expectedIsPrimaryCall(sequence, "DeviceId1");
+  expectedSetAsPrimaryCall(sequence, "DeviceId4");
+  expectedPersistenceCall(sequence, persistence_input);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId4", .m_device_prep = DevicePrep::EnsurePrimary }), display_device::SettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceSet, GuardInvoked) {
+  using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = { { "DeviceId1", "DeviceId2" }, { "DeviceId3" }, { "DeviceId4" } };
+  persistence_input.m_modified.m_original_primary_device = "DeviceId1";
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, persistence_input.m_modified.m_topology);
+  expectedIsCapturedCall(sequence, false);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+  expectedSetTopologyCall(sequence, persistence_input.m_modified.m_topology);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, persistence_input.m_modified.m_topology);
+
+  expectedIsPrimaryCall(sequence, "DeviceId1");
+  expectedSetAsPrimaryCall(sequence, "DeviceId4");
+  expectedPersistenceCall(sequence, persistence_input, false);
+
+  expectedPrimaryGuardCall(sequence, "DeviceId1");
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId4", .m_device_prep = DevicePrep::EnsurePrimary }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
+}
+
+TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceSetSkipped) {
+  using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = { { "DeviceId1", "DeviceId2" }, { "DeviceId3" }, { "DeviceId4" } };
+  persistence_input.m_modified.m_original_primary_device = "DeviceId4";
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, persistence_input.m_modified.m_topology);
+  expectedIsCapturedCall(sequence, false);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+  expectedSetTopologyCall(sequence, persistence_input.m_modified.m_topology);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, persistence_input.m_modified.m_topology);
+
+  expectedIsPrimaryCall(sequence, "DeviceId1", false);
+  expectedIsPrimaryCall(sequence, "DeviceId2", false);
+  expectedIsPrimaryCall(sequence, "DeviceId3", false);
+  expectedIsPrimaryCall(sequence, "DeviceId4");
+  expectedPersistenceCall(sequence, persistence_input, false);
+
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId4", .m_device_prep = DevicePrep::EnsurePrimary }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
+}
+
+TEST_F_S_MOCKED(PreparePrimaryDevice, FailedToRestorePrimaryDevice) {
+  using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
+  auto intial_state { ut_consts::SDCS_NO_MODIFICATIONS };
+  intial_state->m_modified.m_original_primary_device = "DeviceId1";
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, intial_state->m_modified.m_topology, intial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, intial_state->m_modified.m_topology, intial_state->m_modified.m_topology);
+
+  expectedIsPrimaryCall(sequence, "DeviceId1", false);
+  expectedIsPrimaryCall(sequence, "DeviceId3");
+  expectedSetAsPrimaryCall(sequence, "DeviceId1", false);
+
+  expectedTopologyGuardTopologyCall(sequence, intial_state->m_modified.m_topology);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId3", .m_device_prep = DevicePrep::EnsureActive }), display_device::SettingsManager::ApplyResult::PrimaryDevicePrepFailed);
+}
+
+TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceRestored) {
+  using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
+  auto intial_state { ut_consts::SDCS_NO_MODIFICATIONS };
+  intial_state->m_modified.m_original_primary_device = "DeviceId1";
+
+  auto persistence_input { intial_state };
+  persistence_input->m_modified.m_original_primary_device = "";
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, intial_state->m_modified.m_topology, intial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, intial_state->m_modified.m_topology, intial_state->m_modified.m_topology);
+
+  expectedIsPrimaryCall(sequence, "DeviceId1", false);
+  expectedIsPrimaryCall(sequence, "DeviceId3");
+  expectedSetAsPrimaryCall(sequence, "DeviceId1", true);
+  expectedPersistenceCall(sequence, persistence_input);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId3", .m_device_prep = DevicePrep::EnsureActive }), display_device::SettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceRestored, GuardInvoked) {
+  using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
+  auto intial_state { ut_consts::SDCS_NO_MODIFICATIONS };
+  intial_state->m_modified.m_original_primary_device = "DeviceId1";
+
+  auto persistence_input { intial_state };
+  persistence_input->m_modified.m_original_primary_device = "";
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, intial_state->m_modified.m_topology, intial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, intial_state->m_modified.m_topology, intial_state->m_modified.m_topology);
+
+  expectedIsPrimaryCall(sequence, "DeviceId1", false);
+  expectedIsPrimaryCall(sequence, "DeviceId3");
+  expectedSetAsPrimaryCall(sequence, "DeviceId1", true);
+  expectedPersistenceCall(sequence, persistence_input, false);
+
+  expectedPrimaryGuardCall(sequence, "DeviceId3");
+  expectedTopologyGuardTopologyCall(sequence, intial_state->m_modified.m_topology);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId3", .m_device_prep = DevicePrep::EnsureActive }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
+}
+
+TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceRestoreSkipped) {
+  using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
+  auto intial_state { ut_consts::SDCS_NO_MODIFICATIONS };
+  intial_state->m_modified.m_original_primary_device = "DeviceId1";
+
+  auto persistence_input { intial_state };
+  persistence_input->m_modified.m_original_primary_device = "";
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, intial_state->m_modified.m_topology, intial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, intial_state->m_modified.m_topology, intial_state->m_modified.m_topology);
+
+  expectedIsPrimaryCall(sequence, "DeviceId1");
+  expectedPersistenceCall(sequence, persistence_input, false);
+
+  expectedTopologyGuardTopologyCall(sequence, intial_state->m_modified.m_topology);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId3", .m_device_prep = DevicePrep::EnsureActive }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
 }
 
 TEST_F_S_MOCKED(AudioContextDelayedRelease) {

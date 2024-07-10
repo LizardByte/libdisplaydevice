@@ -19,14 +19,14 @@ namespace {
   // Additional convenience global const(s)
   const display_device::ActiveTopology CURRENT_TOPOLOGY { { "DeviceId4" } };
   const display_device::HdrStateMap CURRENT_MODIFIED_HDR_STATES {
-    { "DeviceId2", { display_device::HdrState::Enabled } },
+    { "DeviceId1", { display_device::HdrState::Enabled } },
     { "DeviceId3", std::nullopt }
   };
   const display_device::DeviceDisplayModeMap CURRENT_MODIFIED_DISPLAY_MODES {
-    { "DeviceId2", { { 123, 456 }, { 120, 1 } } },
+    { "DeviceId1", { { 123, 456 }, { 120, 1 } } },
     { "DeviceId3", { { 456, 123 }, { 60, 1 } } }
   };
-  const std::string CURRENT_MODIFIED_PRIMARY_DEVICE { "DeviceId2" };
+  const std::string CURRENT_MODIFIED_PRIMARY_DEVICE { "DeviceId1" };
 
   // Test fixture(s) for this file
   class SettingsManagerRevertMocked: public BaseTest {
@@ -301,7 +301,6 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToRevertHdrStates) {
     .WillOnce(Return(false))
     .RetiresOnSaturation();
 
-  expectedDefaultHdrStateGuardCall(sequence);
   expectedDefaultTopologyGuardCall(sequence);
 
   EXPECT_FALSE(getImpl().revertSettings());
@@ -321,7 +320,6 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToRevertDisplayModes) {
     .WillOnce(Return(false))
     .RetiresOnSaturation();
 
-  expectedDefaultDisplayModeGuardCall(sequence);
   expectedDefaultTopologyGuardCall(sequence);
 
   EXPECT_FALSE(getImpl().revertSettings());
@@ -341,7 +339,6 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToRevertPrimaryDevice) {
     .WillOnce(Return(false))
     .RetiresOnSaturation();
 
-  expectedDefaultPrimaryDeviceGuardCall(sequence);
   expectedDefaultTopologyGuardCall(sequence);
 
   EXPECT_FALSE(getImpl().revertSettings());
