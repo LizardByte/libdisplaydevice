@@ -265,7 +265,7 @@ namespace display_device::win_utils {
   }
 
   DeviceDisplayModeMap
-  computeNewDisplayModes(const std::optional<Resolution> &resolution,    const std::optional<float> &refresh_rate,   const bool configuring_primary_devices,    const std::string &device_to_configure,    const std::set<std::string> &additional_devices_to_configure, const DeviceDisplayModeMap &original_modes) {
+  computeNewDisplayModes(const std::optional<Resolution> &resolution,    const std::optional<double> &refresh_rate,   const bool configuring_primary_devices,    const std::string &device_to_configure,    const std::set<std::string> &additional_devices_to_configure, const DeviceDisplayModeMap &original_modes) {
     DeviceDisplayModeMap new_modes { original_modes };
 
     if (resolution) {

@@ -483,9 +483,9 @@ namespace display_device::win_utils {
   bool
   fuzzyCompareRefreshRates(const Rational &lhs, const Rational &rhs) {
     if (lhs.m_denominator > 0 && rhs.m_denominator > 0) {
-      const float lhs_f { static_cast<float>(lhs.m_numerator) / static_cast<float>(lhs.m_denominator) };
-      const float rhs_f { static_cast<float>(rhs.m_numerator) / static_cast<float>(rhs.m_denominator) };
-      return (std::abs(lhs_f - rhs_f) <= 0.9f);
+      const double lhs_f { static_cast<double>(lhs.m_numerator) / static_cast<double>(lhs.m_denominator) };
+      const double rhs_f { static_cast<double>(rhs.m_numerator) / static_cast<double>(rhs.m_denominator) };
+      return (std::abs(lhs_f - rhs_f) <= 0.9);
     }
 
     return false;

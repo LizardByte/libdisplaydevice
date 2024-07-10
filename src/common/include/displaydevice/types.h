@@ -51,8 +51,8 @@ namespace display_device {
      */
     struct Info {
       Resolution m_resolution {}; /**< Resolution of an active device. */
-      float m_resolution_scale {}; /**< Resolution scaling of an active device. */
-      float m_refresh_rate {}; /**< Refresh rate of an active device. */
+      double m_resolution_scale {}; /**< Resolution scaling of an active device. */
+      double m_refresh_rate {}; /**< Refresh rate of an active device. */
       bool m_primary {}; /**< Indicates whether the device is a primary display. */
       Point m_origin_point {}; /**< A starting point of the display. */
       std::optional<HdrState> m_hdr_state {}; /**< HDR of an active device. */
@@ -101,7 +101,7 @@ namespace display_device {
     std::string m_device_id {}; /**< Device to perform configuration for (can be empty if primary device should be used). */
     DevicePreparation m_device_prep {}; /**< Instruction on how to prepare device. */
     std::optional<Resolution> m_resolution {}; /**< Resolution to configure. */
-    std::optional<float> m_refresh_rate {}; /**< Refresh rate to configure. */
+    std::optional<double> m_refresh_rate {}; /**< Refresh rate to configure. */
     std::optional<HdrState> m_hdr_state {}; /**< HDR state to configure (if supported by the display). */
 
     /**
