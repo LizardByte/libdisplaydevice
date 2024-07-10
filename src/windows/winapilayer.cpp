@@ -575,7 +575,7 @@ namespace display_device {
     return true;
   }
 
-  std::optional<float>
+  std::optional<double>
   WinApiLayer::getDisplayScale(const std::string &display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const {
     // Note: implementation based on https://stackoverflow.com/a/74046173
     struct EnumData {
@@ -616,7 +616,7 @@ namespace display_device {
       return std::nullopt;
     }
 
-    const auto width { static_cast<float>(*enum_data.m_width) / static_cast<float>(source_mode.width) };
-    return static_cast<float>(GetDpiForSystem()) / 96.0f / width;
+    const auto width { static_cast<double>(*enum_data.m_width) / static_cast<double>(source_mode.width) };
+    return static_cast<double>(GetDpiForSystem()) / 96. / width;
   }
 }  // namespace display_device

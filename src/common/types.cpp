@@ -3,8 +3,8 @@
 
 namespace {
   bool
-  fuzzyCompare(const float lhs, const float rhs) {
-    return std::abs(lhs - rhs) * 100000.f <= std::min(std::abs(lhs), std::abs(rhs));
+  fuzzyCompare(const double lhs, const double rhs) {
+    return std::abs(lhs - rhs) * 1000000000000. <= std::min(std::abs(lhs), std::abs(rhs));
   }
 }  // namespace
 

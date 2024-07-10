@@ -197,15 +197,13 @@ namespace display_device::win_utils {
 
         return ActiveTopology { { device_to_configure } };
       }
-      // DevicePrep::EnsureActive || DevicePrep::EnsurePrimary
-      else {
-        //  The device needs to be active at least.
-        if (!flattenTopology(initial_topology).contains(device_to_configure)) {
-          // Create an extended topology as it's probably what makes sense the most...
-          ActiveTopology new_topology { initial_topology };
-          new_topology.push_back({ device_to_configure });
-          return new_topology;
-        }
+
+      //  The device needs to be active at least for `DevicePrep::EnsureActive || DevicePrep::EnsurePrimary`.
+      if (!flattenTopology(initial_topology).contains(device_to_configure)) {
+        // Create an extended topology as it's probably what makes sense the most...
+        ActiveTopology new_topology { initial_topology };
+        new_topology.push_back({ device_to_configure });
+        return new_topology;
       }
     }
 
@@ -264,6 +262,40 @@ namespace display_device::win_utils {
     return std::make_tuple(new_topology, device_to_configure, additional_devices_to_configure);
   }
 
+  DeviceDisplayModeMap
+  computeNewDisplayModes(const std::optional<Resolution> &resolution, const std::optional<double> &refresh_rate, const bool configuring_primary_devices, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, const DeviceDisplayModeMap &original_modes) {
+    DeviceDisplayModeMap new_modes { original_modes };
+
+    if (resolution) {
+      // For duplicate devices the resolution must match no matter what, otherwise
+      // they cannot be duplicated, which breaks Windows' rules. Therefore
+      // we change resolution for all devices.
+      const auto devices { joinConfigurableDevices(device_to_configure, additional_devices_to_configure) };
+      for (const auto &device_id : devices) {
+        new_modes[device_id].m_resolution = *resolution;
+      }
+    }
+
+    if (refresh_rate) {
+      if (configuring_primary_devices) {
+        // No device has been specified, so if they're all are primary devices
+        // we need to apply the refresh rate change to all duplicates.
+        const auto devices { joinConfigurableDevices(device_to_configure, additional_devices_to_configure) };
+        for (const auto &device_id : devices) {
+          new_modes[device_id].m_refresh_rate = Rational::fromFloatingPoint(*refresh_rate);
+        }
+      }
+      else {
+        // Even if we have duplicate devices, their refresh rate may differ
+        // and since the device was specified, let's apply the refresh
+        // rate only to the specified device.
+        new_modes[device_to_configure].m_refresh_rate = Rational::fromFloatingPoint(*refresh_rate);
+      }
+    }
+
+    return new_modes;
+  }
+
   DdGuardFn
   topologyGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology) {
     DD_LOG(debug) << "Got topology in topologyGuardFn:\n"
@@ -278,7 +310,11 @@ namespace display_device::win_utils {
 
   DdGuardFn
   modeGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology) {
-    const auto modes = win_dd.getCurrentDisplayModes(flattenTopology(topology));
+    return modeGuardFn(win_dd, win_dd.getCurrentDisplayModes(flattenTopology(topology)));
+  }
+
+  DdGuardFn
+  modeGuardFn(WinDisplayDeviceInterface &win_dd, const DeviceDisplayModeMap &modes) {
     DD_LOG(debug) << "Got modes in modeGuardFn:\n"
                   << toJson(modes);
     return [&win_dd, modes]() {

@@ -85,6 +85,12 @@ namespace display_device {
     unsigned int m_denominator {};
 
     /**
+     * @brief Contruct rational struct from double precission floating point.
+     */
+    static Rational
+    fromFloatingPoint(double value);
+
+    /**
      * @brief Comparator for strict equality.
      */
     friend bool

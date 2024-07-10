@@ -1,9 +1,9 @@
 // local includes
 #include "displaydevice/windows/settingsmanager.h"
+#include "displaydevice/windows/settingsutils.h"
 #include "fixtures/fixtures.h"
 #include "fixtures/mockaudiocontext.h"
 #include "fixtures/mocksettingspersistence.h"
-#include "utils/comparison.h"
 #include "utils/helpers.h"
 #include "utils/mockwindisplaydevice.h"
 
@@ -28,6 +28,11 @@ namespace {
     { .m_device_id = "DeviceId2", .m_info = display_device::EnumeratedDevice::Info { .m_primary = false } },
     { .m_device_id = "DeviceId3", .m_info = display_device::EnumeratedDevice::Info { .m_primary = false } },
     { .m_device_id = "DeviceId4" }
+  };
+  const display_device::DeviceDisplayModeMap DEFAULT_CURRENT_MODES {
+    { "DeviceId1", { { 1080, 720 }, { 120, 1 } } },
+    { "DeviceId2", { { 1920, 1080 }, { 60, 1 } } },
+    { "DeviceId3", { { 2560, 1440 }, { 30, 1 } } }
   };
   const display_device::SingleDisplayConfigState DEFAULT_PERSISTENCE_INPUT_BASE { { DEFAULT_CURRENT_TOPOLOGY, { "DeviceId1", "DeviceId2" } } };
 
@@ -159,6 +164,30 @@ namespace {
     void
     expectedPrimaryGuardCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::string &device_id) {
       EXPECT_CALL(*m_dd_api, setAsPrimary(device_id))
+        .Times(1)
+        .WillOnce(Return(true))
+        .RetiresOnSaturation();
+    }
+
+    void
+    expectedSetDisplayModesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::DeviceDisplayModeMap &modes, const bool success = true) {
+      EXPECT_CALL(*m_dd_api, setDisplayModes(modes))
+        .Times(1)
+        .WillOnce(Return(success))
+        .RetiresOnSaturation();
+    }
+
+    void
+    expectedGetCurrentDisplayModesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::set<std::string> &devices, const display_device::DeviceDisplayModeMap &modes) {
+      EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(devices))
+        .Times(1)
+        .WillOnce(Return(modes))
+        .RetiresOnSaturation();
+    }
+
+    void
+    expectedSetDisplayModesGuardCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::DeviceDisplayModeMap &modes) {
+      EXPECT_CALL(*m_dd_api, setDisplayModes(modes))
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
@@ -593,7 +622,7 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceRestored) {
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId3", .m_device_prep = DevicePrep::EnsureActive }), display_device::SettingsManager::ApplyResult::Ok);
 }
 
-TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceRestored, GuardInvoked) {
+TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceRestored, PersistenceFailed) {
   using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
   auto intial_state { ut_consts::SDCS_NO_MODIFICATIONS };
   intial_state->m_modified.m_original_primary_device = "DeviceId1";
@@ -619,7 +648,7 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceRestored, GuardInvoked) {
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId3", .m_device_prep = DevicePrep::EnsureActive }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
 }
 
-TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceRestoreSkipped) {
+TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceRestoreSkipped, PersistenceFailed) {
   using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
   auto intial_state { ut_consts::SDCS_NO_MODIFICATIONS };
   intial_state->m_modified.m_original_primary_device = "DeviceId1";
@@ -640,6 +669,282 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceRestoreSkipped) {
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId3", .m_device_prep = DevicePrep::EnsureActive }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
+}
+
+TEST_F_S_MOCKED(PrepareDisplayModes, FailedToGetDisplayModes) {
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), {});
+
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_resolution = { { 1920, 1080 } } }), display_device::SettingsManager::ApplyResult::DisplayModePrepFailed);
+}
+
+TEST_F_S_MOCKED(PrepareDisplayModes, FailedToSetDisplayModes) {
+  auto new_modes { DEFAULT_CURRENT_MODES };
+  new_modes["DeviceId1"].m_resolution = { 1920, 1080 };
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+  expectedSetDisplayModesCall(sequence, new_modes, false);
+
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_resolution = { { 1920, 1080 } } }), display_device::SettingsManager::ApplyResult::DisplayModePrepFailed);
+}
+
+TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, ResolutionOnly) {
+  auto new_modes { DEFAULT_CURRENT_MODES };
+  new_modes["DeviceId1"].m_resolution = { 1920, 1080 };
+
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  persistence_input.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+  expectedSetDisplayModesCall(sequence, new_modes);
+  expectedPersistenceCall(sequence, persistence_input);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_resolution = { { 1920, 1080 } } }), display_device::SettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, RefreshRateOnly) {
+  auto new_modes { DEFAULT_CURRENT_MODES };
+  new_modes["DeviceId1"].m_refresh_rate = { 308500, 10000 };
+
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  persistence_input.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+  expectedSetDisplayModesCall(sequence, new_modes);
+  expectedPersistenceCall(sequence, persistence_input);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_refresh_rate = { { 30.85 } } }), display_device::SettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, ResolutionAndRefreshRate) {
+  auto new_modes { DEFAULT_CURRENT_MODES };
+  new_modes["DeviceId1"].m_resolution = { 1920, 1080 };
+  new_modes["DeviceId1"].m_refresh_rate = { 308500, 10000 };
+
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  persistence_input.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+  expectedSetDisplayModesCall(sequence, new_modes);
+  expectedPersistenceCall(sequence, persistence_input);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_resolution = { { 1920, 1080 } }, .m_refresh_rate = { { 30.85 } } }), display_device::SettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, ResolutionAndRefreshRate, PrimaryDeviceSpecified) {
+  auto new_modes { DEFAULT_CURRENT_MODES };
+  new_modes["DeviceId1"].m_resolution = { 1920, 1080 };
+  new_modes["DeviceId1"].m_refresh_rate = { 308500, 10000 };
+  new_modes["DeviceId2"].m_resolution = { 1920, 1080 };
+  new_modes["DeviceId2"].m_refresh_rate = { 308500, 10000 };
+
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  persistence_input.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+  expectedSetDisplayModesCall(sequence, new_modes);
+  expectedPersistenceCall(sequence, persistence_input);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_resolution = { { 1920, 1080 } }, .m_refresh_rate = { { 30.85 } } }), display_device::SettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, CachedModesReused) {
+  auto new_modes { DEFAULT_CURRENT_MODES };
+  new_modes["DeviceId1"].m_resolution = { 1920, 1080 };
+
+  auto initial_state { DEFAULT_PERSISTENCE_INPUT_BASE };
+  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  initial_state.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+  expectedSetDisplayModesCall(sequence, new_modes);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_resolution = { { 1920, 1080 } } }), display_device::SettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, GuardInvoked) {
+  auto new_modes { DEFAULT_CURRENT_MODES };
+  new_modes["DeviceId1"].m_resolution = { 1920, 1080 };
+
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  persistence_input.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+  expectedSetDisplayModesCall(sequence, new_modes);
+  expectedPersistenceCall(sequence, persistence_input, false);
+
+  expectedSetDisplayModesGuardCall(sequence, DEFAULT_CURRENT_MODES);
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_resolution = { { 1920, 1080 } } }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
+}
+
+TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSetSkipped) {
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  persistence_input.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+  expectedPersistenceCall(sequence, persistence_input);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId3", .m_resolution = { { 2560, 1440 } } }), display_device::SettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S_MOCKED(PrepareDisplayModes, FailedToRestoreDisplayModes) {
+  auto initial_state { DEFAULT_PERSISTENCE_INPUT_BASE };
+  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  initial_state.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+  initial_state.m_modified.m_original_modes["DeviceId1"].m_resolution = { 1920, 1080 };
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+  expectedSetDisplayModesCall(sequence, initial_state.m_modified.m_original_modes, false);
+
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1" }), display_device::SettingsManager::ApplyResult::DisplayModePrepFailed);
+}
+
+TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesRestored) {
+  auto initial_state { DEFAULT_PERSISTENCE_INPUT_BASE };
+  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  initial_state.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+  initial_state.m_modified.m_original_modes["DeviceId1"].m_resolution = { 1920, 1080 };
+
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+  expectedSetDisplayModesCall(sequence, initial_state.m_modified.m_original_modes);
+  expectedPersistenceCall(sequence, persistence_input);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1" }), display_device::SettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesRestored, PersistenceFailed) {
+  auto initial_state { DEFAULT_PERSISTENCE_INPUT_BASE };
+  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  initial_state.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+  initial_state.m_modified.m_original_modes["DeviceId1"].m_resolution = { 1920, 1080 };
+
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+  expectedSetDisplayModesCall(sequence, initial_state.m_modified.m_original_modes);
+  expectedPersistenceCall(sequence, persistence_input, false);
+
+  expectedSetDisplayModesGuardCall(sequence, DEFAULT_CURRENT_MODES);
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1" }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
+}
+
+TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesRestoreSkipped, PersistenceFailed) {
+  auto initial_state { DEFAULT_PERSISTENCE_INPUT_BASE };
+  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  initial_state.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+  expectedPersistenceCall(sequence, persistence_input, false);
+
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1" }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
 }
 
 TEST_F_S_MOCKED(AudioContextDelayedRelease) {
