@@ -21,8 +21,7 @@ namespace display_device {
      * @param audio_context_api [Optional] A pointer to the Audio Context interface.
      * @param persistent_state A pointer to a class for managing persistence.
      */
-    explicit
-    SettingsManager(
+    explicit SettingsManager(
       std::shared_ptr<WinDisplayDeviceInterface> dd_api,
       std::shared_ptr<AudioContextInterface> audio_context_api,
       std::unique_ptr<PersistentState> persistent_state);
