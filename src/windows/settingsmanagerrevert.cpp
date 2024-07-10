@@ -10,6 +10,15 @@
 #include "displaydevice/windows/settingsutils.h"
 
 namespace display_device {
+  namespace {
+    /**
+     * @brief Function that does nothing.
+     */
+    void
+    noopFn() {
+    }
+  }  // namespace
+
   bool
   SettingsManager::revertSettings() {
     const auto &cached_state { m_persistence_state->getState() };
@@ -84,40 +93,40 @@ namespace display_device {
       return false;
     }
 
-    DdGuardFn hdr_guard_fn;
-    boost::scope::scope_exit<DdGuardFn &> hdr_guard { hdr_guard_fn, false };
+    DdGuardFn hdr_guard_fn { noopFn };
+    boost::scope::scope_exit<DdGuardFn &> hdr_guard { hdr_guard_fn };
     if (!cached_state->m_modified.m_original_hdr_states.empty()) {
       hdr_guard_fn = win_utils::hdrStateGuardFn(*m_dd_api, cached_state->m_modified.m_topology);
-      hdr_guard.set_active(true);
       DD_LOG(info) << "Trying to change back the HDR states to:\n"
                    << toJson(cached_state->m_modified.m_original_hdr_states);
       if (!m_dd_api->setHdrStates(cached_state->m_modified.m_original_hdr_states)) {
         // Error already logged
+        hdr_guard.set_active(false);
         return false;
       }
     }
 
-    DdGuardFn mode_guard_fn;
-    boost::scope::scope_exit<DdGuardFn &> mode_guard { mode_guard_fn, false };
+    DdGuardFn mode_guard_fn { noopFn };
+    boost::scope::scope_exit<DdGuardFn &> mode_guard { mode_guard_fn };
     if (!cached_state->m_modified.m_original_modes.empty()) {
       mode_guard_fn = win_utils::modeGuardFn(*m_dd_api, cached_state->m_modified.m_topology);
-      mode_guard.set_active(true);
       DD_LOG(info) << "Trying to change back the display modes to:\n"
                    << toJson(cached_state->m_modified.m_original_modes);
       if (!m_dd_api->setDisplayModes(cached_state->m_modified.m_original_modes)) {
         // Error already logged
+        mode_guard.set_active(false);
         return false;
       }
     }
 
-    DdGuardFn primary_guard_fn;
-    boost::scope::scope_exit<DdGuardFn &> primary_guard { primary_guard_fn, false };
+    DdGuardFn primary_guard_fn { noopFn };
+    boost::scope::scope_exit<DdGuardFn &> primary_guard { primary_guard_fn };
     if (!cached_state->m_modified.m_original_primary_device.empty()) {
       primary_guard_fn = win_utils::primaryGuardFn(*m_dd_api, cached_state->m_modified.m_topology);
-      primary_guard.set_active(true);
       DD_LOG(info) << "Trying to change back the original primary device to: " << toJson(cached_state->m_modified.m_original_primary_device);
       if (!m_dd_api->setAsPrimary(cached_state->m_modified.m_original_primary_device)) {
         // Error already logged
+        primary_guard.set_active(false);
         return false;
       }
     }

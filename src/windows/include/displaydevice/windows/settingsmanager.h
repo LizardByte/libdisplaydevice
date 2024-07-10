@@ -54,6 +54,17 @@ namespace display_device {
     prepareTopology(const SingleDisplayConfiguration &config, const ActiveTopology &topology_before_changes, bool &release_context);
 
     /**
+     * @brief Changes or restores the primary device based on the cached state, new state and configuration.
+     * @param config Configuration to be used for preparing primary device.
+     * @param device_to_configure The main device to be used for preparation.
+     * @param guard_fn Reference to the guard function which will be set to restore original state (if needed) in case something else fails down the line.
+     * @param new_state Reference to the new state which is to be updated accordingly.
+     * @return True if no errors have occured, false otherwise.
+     */
+    [[nodiscard]] bool
+    preparePrimaryDevice(const SingleDisplayConfiguration &config, const std::string &device_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state);
+
+    /**
      * @brief Try to revert the modified settings.
      * @returns True on success, false otherwise.
      * @warning The method assumes that the caller will ensure restoring the topology
