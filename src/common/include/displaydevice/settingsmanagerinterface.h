@@ -17,6 +17,7 @@ namespace display_device {
       ApiTemporarilyUnavailable,
       DevicePrepFailed,
       PrimaryDevicePrepFailed,
+      DisplayModePrepFailed,
       PersistenceSaveFailed,
     };
 

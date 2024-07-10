@@ -65,6 +65,18 @@ namespace display_device {
     preparePrimaryDevice(const SingleDisplayConfiguration &config, const std::string &device_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state);
 
     /**
+     * @brief Changes or restores the display modes based on the cached state, new state and configuration.
+     * @param config Configuration to be used for preparing display modes.
+     * @param device_to_configure The main device to be used for preparation.
+     * @param additional_devices_to_configure Additional devices that should be configured.
+     * @param guard_fn Reference to the guard function which will be set to restore original state (if needed) in case something else fails down the line.
+     * @param new_state Reference to the new state which is to be updated accordingly.
+     * @return True if no errors have occured, false otherwise.
+     */
+    [[nodiscard]] bool
+    prepareDisplayModes(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state);
+
+    /**
      * @brief Try to revert the modified settings.
      * @returns True on success, false otherwise.
      * @warning The method assumes that the caller will ensure restoring the topology

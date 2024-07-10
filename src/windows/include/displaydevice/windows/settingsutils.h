@@ -72,7 +72,7 @@ namespace display_device::win_utils {
   stripInitialState(const SingleDisplayConfigState::Initial &initial_state, const EnumeratedDeviceList &devices);
 
   /**
-   * @brief Compute new topology from arbitrary.
+   * @brief Compute new topology from arbitrary data.
    * @param device_prep Specify how to to compute the new topology.
    * @param configuring_primary_devices Specify whether the `device_to_configure` was unspecified (primary device was selected).
    * @param device_to_configure Main device to be configured.
@@ -98,6 +98,24 @@ namespace display_device::win_utils {
   computeNewTopologyAndMetadata(SingleDisplayConfiguration::DevicePreparation device_prep,
     const std::string &device_id,
     const SingleDisplayConfigState::Initial &initial_state);
+
+  /**
+   * @brief Compute new display modes from arbitrary data.
+   * @param resolution Specify resolution that should be used to override the original modes.
+   * @param refresh_rate Specify refresh rate that should be used to override the original modes.
+   * @param configuring_primary_devices Specify whether the `device_to_configure` was unspecified (primary device was selected).
+   * @param device_to_configure Main device to be configured.
+   * @param additional_devices_to_configure Additional devices that belong to the same group as `device_to_configure`.
+   * @param original_modes Display modes to be used as a base onto which changes are made.
+   * @return New display modes that should be set.
+   */
+  DeviceDisplayModeMap
+  computeNewDisplayModes(const std::optional<Resolution> &resolution,
+    const std::optional<float> &refresh_rate,
+    bool configuring_primary_devices,
+    const std::string &device_to_configure,
+    const std::set<std::string> &additional_devices_to_configure,
+    const DeviceDisplayModeMap &original_modes);
 
   /**
    * @brief Make guard function for the topology.
@@ -128,6 +146,23 @@ namespace display_device::win_utils {
    */
   DdGuardFn
   modeGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
+
+  /**
+   * @brief Make guard function for the display modes.
+   * @param win_dd Interface for interacting with the OS.
+   * @param modes Display modes to restore when the guard is executed.
+   * @return Function that once called will try to revert display modes to the ones that were provided.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * WinDisplayDeviceInterface* iface = getIface(...);
+   * const DeviceDisplayModeMap modes { };
+   *
+   * boost::scope::scope_exit guard { modeGuardFn(*iface, modes) };
+   * ```
+   */
+  DdGuardFn
+  modeGuardFn(WinDisplayDeviceInterface &win_dd, const DeviceDisplayModeMap &modes);
 
   /**
    * @brief Make guard function for the primary display.
