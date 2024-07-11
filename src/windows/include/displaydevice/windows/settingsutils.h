@@ -118,6 +118,22 @@ namespace display_device::win_utils {
     const DeviceDisplayModeMap &original_modes);
 
   /**
+   * @brief Compute new HDR states from arbitrary data.
+   * @param hdr_state Specify state that should be used to override the original states.
+   * @param configuring_primary_devices Specify whether the `device_to_configure` was unspecified (primary device was selected).
+   * @param device_to_configure Main device to be configured.
+   * @param additional_devices_to_configure Additional devices that belong to the same group as `device_to_configure`.
+   * @param original_states HDR states to be used as a base onto which changes are made.
+   * @return New HDR states that should be set.
+   */
+  HdrStateMap
+  computeNewHdrStates(const std::optional<HdrState> &hdr_state,
+    bool configuring_primary_devices,
+    const std::string &device_to_configure,
+    const std::set<std::string> &additional_devices_to_configure,
+    const HdrStateMap &original_states);
+
+  /**
    * @brief Make guard function for the topology.
    * @param win_dd Interface for interacting with the OS.
    * @param topology Topology to be used when making a guard.
@@ -210,4 +226,21 @@ namespace display_device::win_utils {
    */
   DdGuardFn
   hdrStateGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
+
+  /**
+   * @brief Make guard function for the HDR states.
+   * @param win_dd Interface for interacting with the OS.
+   * @param states HDR states to restore when the guard is executed.
+   * @return Function that once called will try to revert HDR states to the ones that were provided.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * WinDisplayDeviceInterface* iface = getIface(...);
+   * const HdrStateMap states { };
+   *
+   * boost::scope::scope_exit guard { hdrStateGuardFn(*iface, states) };
+   * ```
+   */
+  DdGuardFn
+  hdrStateGuardFn(WinDisplayDeviceInterface &win_dd, const HdrStateMap &states);
 }  // namespace display_device::win_utils

@@ -296,6 +296,39 @@ namespace display_device::win_utils {
     return new_modes;
   }
 
+  HdrStateMap
+  computeNewHdrStates(const std::optional<HdrState> &hdr_state, bool configuring_primary_devices, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, const HdrStateMap &original_states) {
+    HdrStateMap new_states { original_states };
+
+    if (hdr_state) {
+      const auto try_update_new_state = [&new_states, &hdr_state](const std::string &device_id) {
+        const auto current_state { new_states[device_id] };
+        if (!current_state) {
+          return;
+        }
+
+        new_states[device_id] = *hdr_state;
+      };
+
+      if (configuring_primary_devices) {
+        // No device has been specified, so if they're all are primary devices
+        // we need to update state for all duplicates.
+        const auto devices { joinConfigurableDevices(device_to_configure, additional_devices_to_configure) };
+        for (const auto &device_id : devices) {
+          try_update_new_state(device_id);
+        }
+      }
+      else {
+        // Even if we have duplicate devices, their HDR states may differ
+        // and since the device was specified, let's apply the HDR state
+        // only to the specified device.
+        try_update_new_state(device_to_configure);
+      }
+    }
+
+    return new_states;
+  }
+
   DdGuardFn
   topologyGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology) {
     DD_LOG(debug) << "Got topology in topologyGuardFn:\n"
@@ -344,7 +377,11 @@ namespace display_device::win_utils {
 
   DdGuardFn
   hdrStateGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology) {
-    const auto states = win_dd.getCurrentHdrStates(flattenTopology(topology));
+    return hdrStateGuardFn(win_dd, win_dd.getCurrentHdrStates(flattenTopology(topology)));
+  }
+
+  DdGuardFn
+  hdrStateGuardFn(WinDisplayDeviceInterface &win_dd, const HdrStateMap &states) {
     DD_LOG(debug) << "Got states in hdrStateGuardFn:\n"
                   << toJson(states);
     return [&win_dd, states]() {

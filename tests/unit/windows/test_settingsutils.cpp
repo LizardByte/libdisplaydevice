@@ -26,6 +26,11 @@ namespace {
     { "DeviceId2", { { 1920, 1080 }, { 60, 1 } } },
     { "DeviceId3", { { 2560, 1440 }, { 30, 1 } } }
   };
+  const display_device::HdrStateMap DEFAULT_CURRENT_HDR_STATES {
+    { "DeviceId1", { display_device::HdrState::Disabled } },
+    { "DeviceId2", { display_device::HdrState::Disabled } },
+    { "DeviceId3", std::nullopt }
+  };
 }  // namespace
 
 TEST_F_S_MOCKED(FlattenTopology) {
@@ -99,6 +104,21 @@ TEST_F_S_MOCKED(ComputeNewDisplayModes, NonPrimaryDevices) {
   expected_modes["DeviceId2"] = { { 1920, 1080 }, expected_modes["DeviceId2"].m_refresh_rate };
 
   EXPECT_EQ(display_device::win_utils::computeNewDisplayModes({ { 1920, 1080 } }, { 120. }, false, "DeviceId1", { "DeviceId2" }, DEFAULT_CURRENT_MODES), expected_modes);
+}
+
+TEST_F_S_MOCKED(ComputeNewHdrStates, PrimaryDevices) {
+  auto expected_states { DEFAULT_CURRENT_HDR_STATES };
+  expected_states["DeviceId1"] = display_device::HdrState::Enabled;
+  expected_states["DeviceId2"] = display_device::HdrState::Enabled;
+
+  EXPECT_EQ(display_device::win_utils::computeNewHdrStates(display_device::HdrState::Enabled, true, "DeviceId1", { "DeviceId2", "DeviceId3" }, DEFAULT_CURRENT_HDR_STATES), expected_states);
+}
+
+TEST_F_S_MOCKED(ComputeNewHdrStates, NonPrimaryDevices) {
+  auto expected_states { DEFAULT_CURRENT_HDR_STATES };
+  expected_states["DeviceId1"] = display_device::HdrState::Enabled;
+
+  EXPECT_EQ(display_device::win_utils::computeNewHdrStates(display_device::HdrState::Enabled, false, "DeviceId1", { "DeviceId2", "DeviceId3" }, DEFAULT_CURRENT_HDR_STATES), expected_states);
 }
 
 TEST_F_S_MOCKED(StripInitialState, NoStripIsPerformed) {

@@ -82,12 +82,12 @@ namespace display_device {
       return ApplyResult::DisplayModePrepFailed;
     }
 
-    // TODO:
-    //
-    //    Other device handling goes here that will use device_to_configure and additional_devices_to_configure:
-    //
-    //      - handle HDR (need to replicate the HDR bug and find the best place for workaround)
-    //
+    DdGuardFn hdr_state_guard_fn { noopFn };
+    boost::scope::scope_exit<DdGuardFn &> hdr_state_guard { hdr_state_guard_fn };
+    if (!prepareHdrStates(config, device_to_configure, additional_devices_to_configure, hdr_state_guard_fn, new_state)) {
+      // Error already logged
+      return ApplyResult::HdrStatePrepFailed;
+    }
 
     // We will always keep the new state persistently, even if there are no new meaningful changes, because
     // we want to preserve the initial state for consistency.
@@ -105,6 +105,7 @@ namespace display_device {
     topology_prep_guard.set_active(false);
     primary_guard.set_active(false);
     mode_guard.set_active(false);
+    hdr_state_guard.set_active(false);
     return ApplyResult::Ok;
   }
 
@@ -297,6 +298,61 @@ namespace display_device {
 
     if (might_need_to_restore) {
       if (!try_change(cached_display_modes, "Changing display modes back to: ", "Failed to restore original display modes!")) {
+        // Error already logged
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  [[nodiscard]] bool
+  SettingsManager::prepareHdrStates(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state) {
+    const auto &cached_state { m_persistence_state->getState() };
+    const auto cached_hdr_states { cached_state ? cached_state->m_modified.m_original_hdr_states : HdrStateMap {} };
+    const bool change_required { config.m_hdr_state };
+    const bool might_need_to_restore { !cached_hdr_states.empty() };
+
+    HdrStateMap current_hdr_states;
+    if (change_required || might_need_to_restore) {
+      current_hdr_states = m_dd_api->getCurrentHdrStates(win_utils::flattenTopology(new_state.m_modified.m_topology));
+      if (current_hdr_states.empty()) {
+        DD_LOG(error) << "Failed to get current HDR states!";
+        return false;
+      }
+    }
+
+    const auto try_change { [&](const HdrStateMap &new_states, const auto info_preamble, const auto error_log) {
+      if (current_hdr_states != new_states) {
+        DD_LOG(info) << info_preamble << toJson(new_states);
+        if (!m_dd_api->setHdrStates(new_states)) {
+          DD_LOG(error) << error_log;
+          return false;
+        }
+
+        guard_fn = win_utils::hdrStateGuardFn(*m_dd_api, current_hdr_states);
+      }
+
+      return true;
+    } };
+
+    if (change_required) {
+      const bool configuring_primary_devices { config.m_device_id.empty() };
+      const auto original_hdr_states { cached_hdr_states.empty() ? current_hdr_states : cached_hdr_states };
+      const auto new_hdr_states { win_utils::computeNewHdrStates(config.m_hdr_state, configuring_primary_devices, device_to_configure, additional_devices_to_configure, original_hdr_states) };
+
+      if (!try_change(new_hdr_states, "Changing HDR states to: ", "Failed to apply new configuration, because new HDR states could not be set!")) {
+        // Error already logged
+        return false;
+      }
+
+      // Here we preserve the data from persistence (unless there's none) as in the end that is what we want to go back to.
+      new_state.m_modified.m_original_hdr_states = original_hdr_states;
+      return true;
+    }
+
+    if (might_need_to_restore) {
+      if (!try_change(cached_hdr_states, "Changing HDR states back to: ", "Failed to restore original HDR states!")) {
         // Error already logged
         return false;
       }
