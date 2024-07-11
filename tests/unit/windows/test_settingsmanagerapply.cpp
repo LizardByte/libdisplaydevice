@@ -34,6 +34,11 @@ namespace {
     { "DeviceId2", { { 1920, 1080 }, { 60, 1 } } },
     { "DeviceId3", { { 2560, 1440 }, { 30, 1 } } }
   };
+  const display_device::HdrStateMap DEFAULT_CURRENT_HDR_STATES {
+    { "DeviceId1", display_device::HdrState::Disabled },
+    { "DeviceId2", display_device::HdrState::Disabled },
+    { "DeviceId3", std::nullopt }
+  };
   const display_device::SingleDisplayConfigState DEFAULT_PERSISTENCE_INPUT_BASE { { DEFAULT_CURRENT_TOPOLOGY, { "DeviceId1", "DeviceId2" } } };
 
   // Test fixture(s) for this file
@@ -188,6 +193,30 @@ namespace {
     void
     expectedSetDisplayModesGuardCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::DeviceDisplayModeMap &modes) {
       EXPECT_CALL(*m_dd_api, setDisplayModes(modes))
+        .Times(1)
+        .WillOnce(Return(true))
+        .RetiresOnSaturation();
+    }
+
+    void
+    expectedSetHdrStatesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::HdrStateMap &states, const bool success = true) {
+      EXPECT_CALL(*m_dd_api, setHdrStates(states))
+        .Times(1)
+        .WillOnce(Return(success))
+        .RetiresOnSaturation();
+    }
+
+    void
+    expectedGetCurrentHdrStatesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::set<std::string> &devices, const display_device::HdrStateMap &states) {
+      EXPECT_CALL(*m_dd_api, getCurrentHdrStates(devices))
+        .Times(1)
+        .WillOnce(Return(states))
+        .RetiresOnSaturation();
+    }
+
+    void
+    expectedSetHdrStatesGuardCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::HdrStateMap &states) {
+      EXPECT_CALL(*m_dd_api, setHdrStates(states))
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
@@ -939,6 +968,237 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesRestoreSkipped, PersistenceFail
   expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
 
   expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+  expectedPersistenceCall(sequence, persistence_input, false);
+
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1" }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
+}
+
+TEST_F_S_MOCKED(PrepareHdrStates, FailedToGetHdrStates) {
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), {});
+
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_hdr_state = display_device::HdrState::Enabled }), display_device::SettingsManager::ApplyResult::HdrStatePrepFailed);
+}
+
+TEST_F_S_MOCKED(PrepareHdrStates, FailedToSetHdrStates) {
+  auto new_states { DEFAULT_CURRENT_HDR_STATES };
+  new_states["DeviceId1"] = display_device::HdrState::Enabled;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
+  expectedSetHdrStatesCall(sequence, new_states, false);
+
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_hdr_state = display_device::HdrState::Enabled }), display_device::SettingsManager::ApplyResult::HdrStatePrepFailed);
+}
+
+TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSet) {
+  auto new_states { DEFAULT_CURRENT_HDR_STATES };
+  new_states["DeviceId1"] = display_device::HdrState::Enabled;
+
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  persistence_input.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
+  expectedSetHdrStatesCall(sequence, new_states);
+  expectedPersistenceCall(sequence, persistence_input);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_hdr_state = display_device::HdrState::Enabled }), display_device::SettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSet, PrimaryDeviceSpecified) {
+  auto new_states { DEFAULT_CURRENT_HDR_STATES };
+  new_states["DeviceId1"] = display_device::HdrState::Enabled;
+  new_states["DeviceId2"] = display_device::HdrState::Enabled;
+
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  persistence_input.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
+  expectedSetHdrStatesCall(sequence, new_states);
+  expectedPersistenceCall(sequence, persistence_input);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_hdr_state = display_device::HdrState::Enabled }), display_device::SettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSet, CachedModesReused) {
+  auto new_states { DEFAULT_CURRENT_HDR_STATES };
+  new_states["DeviceId1"] = display_device::HdrState::Enabled;
+
+  auto initial_state { DEFAULT_PERSISTENCE_INPUT_BASE };
+  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  initial_state.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
+  expectedSetHdrStatesCall(sequence, new_states);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_hdr_state = display_device::HdrState::Enabled }), display_device::SettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSet, GuardInvoked) {
+  auto new_states { DEFAULT_CURRENT_HDR_STATES };
+  new_states["DeviceId1"] = display_device::HdrState::Enabled;
+
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  persistence_input.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
+  expectedSetHdrStatesCall(sequence, new_states);
+  expectedPersistenceCall(sequence, persistence_input, false);
+
+  expectedSetHdrStatesGuardCall(sequence, DEFAULT_CURRENT_HDR_STATES);
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_hdr_state = display_device::HdrState::Enabled }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
+}
+
+TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSetSkipped) {
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  persistence_input.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
+  expectedPersistenceCall(sequence, persistence_input);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId3", .m_hdr_state = display_device::HdrState::Enabled }), display_device::SettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S_MOCKED(PrepareHdrStates, FailedToRestoreHdrStates) {
+  auto initial_state { DEFAULT_PERSISTENCE_INPUT_BASE };
+  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  initial_state.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
+  initial_state.m_modified.m_original_hdr_states["DeviceId1"] = display_device::HdrState::Enabled;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
+  expectedSetHdrStatesCall(sequence, initial_state.m_modified.m_original_hdr_states, false);
+
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1" }), display_device::SettingsManager::ApplyResult::HdrStatePrepFailed);
+}
+
+TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesRestored) {
+  auto initial_state { DEFAULT_PERSISTENCE_INPUT_BASE };
+  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  initial_state.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
+  initial_state.m_modified.m_original_hdr_states["DeviceId1"] = display_device::HdrState::Enabled;
+
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
+  expectedSetHdrStatesCall(sequence, initial_state.m_modified.m_original_hdr_states);
+  expectedPersistenceCall(sequence, persistence_input);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1" }), display_device::SettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesRestored, PersistenceFailed) {
+  auto initial_state { DEFAULT_PERSISTENCE_INPUT_BASE };
+  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  initial_state.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
+  initial_state.m_modified.m_original_hdr_states["DeviceId1"] = display_device::HdrState::Enabled;
+
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
+  expectedSetHdrStatesCall(sequence, initial_state.m_modified.m_original_hdr_states);
+  expectedPersistenceCall(sequence, persistence_input, false);
+
+  expectedSetHdrStatesGuardCall(sequence, DEFAULT_CURRENT_HDR_STATES);
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1" }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
+}
+
+TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesRestoreSkipped, PersistenceFailed) {
+  auto initial_state { DEFAULT_PERSISTENCE_INPUT_BASE };
+  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  initial_state.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
+
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
   expectedPersistenceCall(sequence, persistence_input, false);
 
   expectedTopologyGuardTopologyCall(sequence);

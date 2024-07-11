@@ -18,6 +18,7 @@ namespace display_device {
       DevicePrepFailed,
       PrimaryDevicePrepFailed,
       DisplayModePrepFailed,
+      HdrStatePrepFailed,
       PersistenceSaveFailed,
     };
 
