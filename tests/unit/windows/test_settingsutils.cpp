@@ -119,6 +119,12 @@ TEST_F_S_MOCKED(ComputeNewHdrStates, NonPrimaryDevices) {
   expected_states["DeviceId1"] = display_device::HdrState::Enabled;
 
   EXPECT_EQ(display_device::win_utils::computeNewHdrStates(display_device::HdrState::Enabled, false, "DeviceId1", { "DeviceId2", "DeviceId3" }, DEFAULT_CURRENT_HDR_STATES), expected_states);
+  EXPECT_EQ(display_device::win_utils::computeNewHdrStates(std::nullopt, false, "DeviceId1", { "DeviceId2", "DeviceId3" }, DEFAULT_CURRENT_HDR_STATES), DEFAULT_CURRENT_HDR_STATES);
+}
+
+TEST_F_S_MOCKED(ComputeNewHdrStates, NoStateProvided) {
+  EXPECT_EQ(display_device::win_utils::computeNewHdrStates(std::nullopt, true, "DeviceId1", { "DeviceId2", "DeviceId3" }, DEFAULT_CURRENT_HDR_STATES), DEFAULT_CURRENT_HDR_STATES);
+  EXPECT_EQ(display_device::win_utils::computeNewHdrStates(std::nullopt, false, "DeviceId1", { "DeviceId2", "DeviceId3" }, DEFAULT_CURRENT_HDR_STATES), DEFAULT_CURRENT_HDR_STATES);
 }
 
 TEST_F_S_MOCKED(StripInitialState, NoStripIsPerformed) {
