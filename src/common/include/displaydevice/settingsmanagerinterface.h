@@ -88,27 +88,29 @@ namespace display_device {
 
     /**
      * @brief Reset the persistence in case the settings cannot be reverted.
+     * @returns True if persistence was reset, false otherwise.
      *
      * In case the settings cannot be reverted, because the display is turned or some other reason,
-     * this allows to "accept" the current state and start from scratch.
+     * this allows to "accept" the current state and start from scratch, but only if the persistence was
+     * cleared successfuly.
      *
      * EXAMPLES:
      * ```cpp
      * SettingsManagerInterface* iface = getIface(...);
-     * const auto result = iface->applySettings(config);
+     * auto result = iface->applySettings(config);
      * if (result == ApplyResult::Ok) {
      *   // Wait for some time
      *   if (!iface->revertSettings()) {
      *     // Wait for user input
      *     const bool user_wants_reset { true };
      *     if (user_wants_reset) {
-     *       iface->resetPersistence();
+     *       result = iface->resetPersistence();
      *     }
      *   }
      * }
      * ```
      */
-    // virtual void
-    // resetPersistence() = 0;
+    [[nodiscard]] virtual bool
+    resetPersistence() = 0;
   };
 }  // namespace display_device

@@ -90,3 +90,62 @@ TEST_F_S_MOCKED(GetDisplayName) {
 
   EXPECT_EQ(getImpl().getDisplayName("DeviceId1"), "DeviceName1");
 }
+
+TEST_F_S_MOCKED(ResetPersistence, NoPersistence) {
+  EXPECT_CALL(*m_settings_persistence_api, load())
+    .Times(1)
+    .WillOnce(Return(serializeState(ut_consts::SDCS_EMPTY)));
+
+  EXPECT_TRUE(getImpl().resetPersistence());
+}
+
+TEST_F_S_MOCKED(ResetPersistence, FailedToReset) {
+  EXPECT_CALL(*m_settings_persistence_api, load())
+    .Times(1)
+    .WillOnce(Return(serializeState(ut_consts::SDCS_FULL)));
+  EXPECT_CALL(*m_dd_api, isApiAccessAvailable())
+    .Times(1)
+    .WillOnce(Return(false));
+  EXPECT_CALL(*m_settings_persistence_api, clear())
+    .Times(1)
+    .WillOnce(Return(false));
+
+  EXPECT_FALSE(getImpl().resetPersistence());
+}
+
+TEST_F_S_MOCKED(ResetPersistence, PersistenceReset, NoCapturedDevice) {
+  EXPECT_CALL(*m_settings_persistence_api, load())
+    .Times(1)
+    .WillOnce(Return(serializeState(ut_consts::SDCS_FULL)));
+  EXPECT_CALL(*m_dd_api, isApiAccessAvailable())
+    .Times(1)
+    .WillOnce(Return(false));
+  EXPECT_CALL(*m_settings_persistence_api, clear())
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_audio_context_api, isCaptured())
+    .Times(1)
+    .WillOnce(Return(false))
+    .RetiresOnSaturation();
+
+  EXPECT_TRUE(getImpl().resetPersistence());
+}
+
+TEST_F_S_MOCKED(ResetPersistence, PersistenceReset, WithCapturedDevice) {
+  EXPECT_CALL(*m_settings_persistence_api, load())
+    .Times(1)
+    .WillOnce(Return(serializeState(ut_consts::SDCS_FULL)));
+  EXPECT_CALL(*m_dd_api, isApiAccessAvailable())
+    .Times(1)
+    .WillOnce(Return(false));
+  EXPECT_CALL(*m_settings_persistence_api, clear())
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_audio_context_api, isCaptured())
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_audio_context_api, release())
+    .Times(1);
+
+  EXPECT_TRUE(getImpl().resetPersistence());
+}
