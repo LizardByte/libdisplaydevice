@@ -42,6 +42,10 @@ namespace display_device {
     [[nodiscard]] bool
     revertSettings() override;
 
+    /** For details @see SettingsManagerInterface::resetPersistence */
+    [[nodiscard]] bool
+    resetPersistence() override;
+
   protected:
     /**
      * @brief Preps the topology so that the further settings could be applied.

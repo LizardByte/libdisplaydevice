@@ -35,4 +35,23 @@ namespace display_device {
   SettingsManager::getDisplayName(const std::string &device_id) const {
     return m_dd_api->getDisplayName(device_id);
   }
+
+  bool
+  SettingsManager::resetPersistence() {
+    // Trying to revert one more time in case we succeed.
+    if (revertSettings()) {
+      return true;
+    }
+
+    DD_LOG(info) << "Trying to reset persistent display device settings.";
+    if (!m_persistence_state->persistState(std::nullopt)) {
+      DD_LOG(error) << "Failed to clear persistence!";
+      return false;
+    }
+
+    if (m_audio_context_api->isCaptured()) {
+      m_audio_context_api->release();
+    }
+    return true;
+  }
 }  // namespace display_device
