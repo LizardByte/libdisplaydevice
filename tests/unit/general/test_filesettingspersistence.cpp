@@ -13,8 +13,7 @@ namespace {
   // Test fixture(s) for this file
   class FileSettingsPersistenceTest: public BaseTest {
   public:
-    ~
-    FileSettingsPersistenceTest() override {
+    ~FileSettingsPersistenceTest() override {
       std::filesystem::remove(m_filepath);
     }
 
