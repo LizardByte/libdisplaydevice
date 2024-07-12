@@ -48,6 +48,7 @@ namespace display_device {
 
     /**
      * @brief Clear the persistent settings data.
+     * @returns True if data was cleared, false otherwise.
      *
      * EXAMPLES:
      * ```cpp
