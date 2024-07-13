@@ -106,7 +106,7 @@ namespace display_device {
      *          in case of a failure!
      */
     [[nodiscard]] bool
-    revertModifiedSettings(const ActiveTopology& current_topology, bool &system_settings_touched);
+    revertModifiedSettings(const ActiveTopology &current_topology, bool &system_settings_touched);
 
     std::shared_ptr<WinDisplayDeviceInterface> m_dd_api;
     std::shared_ptr<AudioContextInterface> m_audio_context_api;
