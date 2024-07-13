@@ -286,7 +286,7 @@ namespace display_device {
         }
 
         // It is possible that the display modes will not actually change even though the "current != new" condition is true.
-        // This is because of some additional internal check that determine whether the change is actually needed.
+        // This is because of some additional internal checks that determine whether the change is actually needed.
         // Therefore we should check the current display modes after the fact!
         if (current_display_modes != m_dd_api->getCurrentDisplayModes(win_utils::flattenTopology(new_state.m_modified.m_topology))) {
           system_settings_touched = true;

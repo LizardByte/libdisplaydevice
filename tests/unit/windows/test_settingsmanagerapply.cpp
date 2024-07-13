@@ -222,6 +222,19 @@ namespace {
         .RetiresOnSaturation();
     }
 
+    void
+    expectedHdrWorkaroundCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */) {
+      // Using the "failure" path, to keep it simple
+      EXPECT_CALL(*m_dd_api, getCurrentTopology())
+        .Times(1)
+        .WillOnce(Return(display_device::ActiveTopology {}))
+        .RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, isTopologyValid(display_device::ActiveTopology {}))
+        .Times(1)
+        .WillOnce(Return(false))
+        .RetiresOnSaturation();
+    }
+
     std::shared_ptr<StrictMock<display_device::MockWinDisplayDevice>> m_dd_api { std::make_shared<StrictMock<display_device::MockWinDisplayDevice>>() };
     std::shared_ptr<StrictMock<display_device::MockSettingsPersistence>> m_settings_persistence_api { std::make_shared<StrictMock<display_device::MockSettingsPersistence>>() };
     std::shared_ptr<StrictMock<display_device::MockAudioContext>> m_audio_context_api { std::make_shared<StrictMock<display_device::MockAudioContext>>() };
@@ -398,6 +411,7 @@ TEST_F_S_MOCKED(PrepareTopology, TopologyChangeFailed) {
 
   expectedTopologyGuardTopologyCall(sequence);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, true);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_device_prep = DevicePrep::EnsureOnlyDisplay }), display_device::SettingsManager::ApplyResult::DevicePrepFailed);
 }
@@ -418,6 +432,7 @@ TEST_F_S_MOCKED(PrepareTopology, AudioContextCaptured) {
   expectedSetTopologyCall(sequence, { { "DeviceId1" } });
   expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, { { "DeviceId1" } });
   expectedPersistenceCall(sequence, persistence_input);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_device_prep = DevicePrep::EnsureOnlyDisplay }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -439,6 +454,7 @@ TEST_F_S_MOCKED(PrepareTopology, AudioContextCaptureSkipped, NotInitialTopologyS
   expectedSetTopologyCall(sequence, { { "DeviceId1" } });
   expectedIsTopologyTheSameCall(sequence, ut_consts::SDCS_FULL->m_initial.m_topology, { { "DeviceId1" } });
   expectedPersistenceCall(sequence, persistence_input);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_device_prep = DevicePrep::EnsureOnlyDisplay }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -458,6 +474,7 @@ TEST_F_S_MOCKED(PrepareTopology, AudioContextCaptureSkipped, NoDevicesAreGone) {
   expectedSetTopologyCall(sequence, persistence_input.m_modified.m_topology);
   expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, persistence_input.m_modified.m_topology);
   expectedPersistenceCall(sequence, persistence_input);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId4", .m_device_prep = DevicePrep::EnsureActive }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -483,6 +500,7 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, FailedToGetPrimaryDevice) {
 
   expectedTopologyGuardTopologyCall(sequence);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId4", .m_device_prep = DevicePrep::EnsurePrimary }), display_device::SettingsManager::ApplyResult::PrimaryDevicePrepFailed);
 }
@@ -506,6 +524,7 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, FailedToSetPrimaryDevice) {
 
   expectedTopologyGuardTopologyCall(sequence);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId4", .m_device_prep = DevicePrep::EnsurePrimary }), display_device::SettingsManager::ApplyResult::PrimaryDevicePrepFailed);
 }
@@ -529,6 +548,7 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceSet) {
   expectedIsPrimaryCall(sequence, "DeviceId1");
   expectedSetAsPrimaryCall(sequence, "DeviceId4");
   expectedPersistenceCall(sequence, persistence_input);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId4", .m_device_prep = DevicePrep::EnsurePrimary }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -549,6 +569,7 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceSet, CachedDeviceReused) {
   expectedIsPrimaryCall(sequence, "DeviceId2", false);
   expectedIsPrimaryCall(sequence, "DeviceId3");
   expectedSetAsPrimaryCall(sequence, "DeviceId4");
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId4", .m_device_prep = DevicePrep::EnsurePrimary }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -576,6 +597,7 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceSet, GuardInvoked) {
   expectedPrimaryGuardCall(sequence, "DeviceId1");
   expectedTopologyGuardTopologyCall(sequence);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId4", .m_device_prep = DevicePrep::EnsurePrimary }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
 }
@@ -604,6 +626,7 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceSetSkipped) {
 
   expectedTopologyGuardTopologyCall(sequence);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId4", .m_device_prep = DevicePrep::EnsurePrimary }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
 }
@@ -625,6 +648,7 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, FailedToRestorePrimaryDevice) {
 
   expectedTopologyGuardTopologyCall(sequence, intial_state->m_modified.m_topology);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId3", .m_device_prep = DevicePrep::EnsureActive }), display_device::SettingsManager::ApplyResult::PrimaryDevicePrepFailed);
 }
@@ -647,6 +671,7 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceRestored) {
   expectedIsPrimaryCall(sequence, "DeviceId3");
   expectedSetAsPrimaryCall(sequence, "DeviceId1", true);
   expectedPersistenceCall(sequence, persistence_input);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId3", .m_device_prep = DevicePrep::EnsureActive }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -673,6 +698,7 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceRestored, PersistenceFailed) 
   expectedPrimaryGuardCall(sequence, "DeviceId3");
   expectedTopologyGuardTopologyCall(sequence, intial_state->m_modified.m_topology);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId3", .m_device_prep = DevicePrep::EnsureActive }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
 }
@@ -730,6 +756,7 @@ TEST_F_S_MOCKED(PrepareDisplayModes, FailedToSetDisplayModes) {
 
   expectedTopologyGuardTopologyCall(sequence);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_resolution = { { 1920, 1080 } } }), display_device::SettingsManager::ApplyResult::DisplayModePrepFailed);
 }
@@ -750,7 +777,9 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, ResolutionOnly) {
 
   expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
   expectedSetDisplayModesCall(sequence, new_modes);
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), new_modes);
   expectedPersistenceCall(sequence, persistence_input);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_resolution = { { 1920, 1080 } } }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -771,7 +800,9 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, RefreshRateOnly) {
 
   expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
   expectedSetDisplayModesCall(sequence, new_modes);
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), new_modes);
   expectedPersistenceCall(sequence, persistence_input);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_refresh_rate = { { 30.85 } } }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -793,7 +824,9 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, ResolutionAndRefreshRate) 
 
   expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
   expectedSetDisplayModesCall(sequence, new_modes);
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), new_modes);
   expectedPersistenceCall(sequence, persistence_input);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_resolution = { { 1920, 1080 } }, .m_refresh_rate = { { 30.85 } } }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -817,7 +850,9 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, ResolutionAndRefreshRate, 
 
   expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
   expectedSetDisplayModesCall(sequence, new_modes);
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), new_modes);
   expectedPersistenceCall(sequence, persistence_input);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_resolution = { { 1920, 1080 } }, .m_refresh_rate = { { 30.85 } } }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -838,6 +873,8 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, CachedModesReused) {
 
   expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
   expectedSetDisplayModesCall(sequence, new_modes);
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), new_modes);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_resolution = { { 1920, 1080 } } }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -858,9 +895,36 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, GuardInvoked) {
 
   expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
   expectedSetDisplayModesCall(sequence, new_modes);
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), new_modes);
   expectedPersistenceCall(sequence, persistence_input, false);
 
   expectedSetDisplayModesGuardCall(sequence, DEFAULT_CURRENT_MODES);
+  expectedTopologyGuardTopologyCall(sequence);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
+
+  EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_resolution = { { 1920, 1080 } } }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
+}
+
+TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, GuardNotInvoked) {
+  auto new_modes { DEFAULT_CURRENT_MODES };
+  new_modes["DeviceId1"].m_resolution = { 1920, 1080 };
+
+  auto persistence_input { DEFAULT_PERSISTENCE_INPUT_BASE };
+  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  persistence_input.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence);
+  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+  expectedSetDisplayModesCall(sequence, new_modes);
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+  expectedPersistenceCall(sequence, persistence_input, false);
+
   expectedTopologyGuardTopologyCall(sequence);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
 
@@ -901,6 +965,7 @@ TEST_F_S_MOCKED(PrepareDisplayModes, FailedToRestoreDisplayModes) {
 
   expectedTopologyGuardTopologyCall(sequence);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1" }), display_device::SettingsManager::ApplyResult::DisplayModePrepFailed);
 }
@@ -922,7 +987,9 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesRestored) {
 
   expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
   expectedSetDisplayModesCall(sequence, initial_state.m_modified.m_original_modes);
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), initial_state.m_modified.m_original_modes);
   expectedPersistenceCall(sequence, persistence_input);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1" }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -944,11 +1011,13 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesRestored, PersistenceFailed) {
 
   expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
   expectedSetDisplayModesCall(sequence, initial_state.m_modified.m_original_modes);
+  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), initial_state.m_modified.m_original_modes);
   expectedPersistenceCall(sequence, persistence_input, false);
 
   expectedSetDisplayModesGuardCall(sequence, DEFAULT_CURRENT_MODES);
   expectedTopologyGuardTopologyCall(sequence);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1" }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
 }
@@ -1006,6 +1075,7 @@ TEST_F_S_MOCKED(PrepareHdrStates, FailedToSetHdrStates) {
 
   expectedTopologyGuardTopologyCall(sequence);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_hdr_state = display_device::HdrState::Enabled }), display_device::SettingsManager::ApplyResult::HdrStatePrepFailed);
 }
@@ -1027,6 +1097,7 @@ TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSet) {
   expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
   expectedSetHdrStatesCall(sequence, new_states);
   expectedPersistenceCall(sequence, persistence_input);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_hdr_state = display_device::HdrState::Enabled }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -1049,6 +1120,7 @@ TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSet, PrimaryDeviceSpecified) {
   expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
   expectedSetHdrStatesCall(sequence, new_states);
   expectedPersistenceCall(sequence, persistence_input);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_hdr_state = display_device::HdrState::Enabled }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -1069,6 +1141,7 @@ TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSet, CachedModesReused) {
 
   expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
   expectedSetHdrStatesCall(sequence, new_states);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_hdr_state = display_device::HdrState::Enabled }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -1094,6 +1167,7 @@ TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSet, GuardInvoked) {
   expectedSetHdrStatesGuardCall(sequence, DEFAULT_CURRENT_HDR_STATES);
   expectedTopologyGuardTopologyCall(sequence);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_hdr_state = display_device::HdrState::Enabled }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
 }
@@ -1132,6 +1206,7 @@ TEST_F_S_MOCKED(PrepareHdrStates, FailedToRestoreHdrStates) {
 
   expectedTopologyGuardTopologyCall(sequence);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1" }), display_device::SettingsManager::ApplyResult::HdrStatePrepFailed);
 }
@@ -1154,6 +1229,7 @@ TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesRestored) {
   expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
   expectedSetHdrStatesCall(sequence, initial_state.m_modified.m_original_hdr_states);
   expectedPersistenceCall(sequence, persistence_input);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1" }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -1180,6 +1256,7 @@ TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesRestored, PersistenceFailed) {
   expectedSetHdrStatesGuardCall(sequence, DEFAULT_CURRENT_HDR_STATES);
   expectedTopologyGuardTopologyCall(sequence);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1" }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
 }
@@ -1224,6 +1301,7 @@ TEST_F_S_MOCKED(AudioContextDelayedRelease) {
   expectedIsTopologyTheSameCall(sequence, ut_consts::SDCS_FULL->m_initial.m_topology, { { "DeviceId1" } });
   expectedPersistenceCall(sequence, persistence_input);
   expectedReleaseCall(sequence);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_device_prep = DevicePrep::EnsureOnlyDisplay }), display_device::SettingsManager::ApplyResult::Ok);
 }
@@ -1266,6 +1344,7 @@ TEST_F_S_MOCKED(AudioContextDelayedRelease, ViaGuard) {
   expectedTopologyGuardTopologyCall(sequence, DEFAULT_CURRENT_TOPOLOGY, false);
   expectedReleaseCall(sequence);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_device_prep = DevicePrep::EnsureOnlyDisplay }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
 }
@@ -1290,6 +1369,7 @@ TEST_F_S_MOCKED(AudioContextDelayedRelease, SkippedDueToFailure) {
 
   expectedTopologyGuardTopologyCall(sequence, DEFAULT_CURRENT_TOPOLOGY, true);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({ .m_device_id = "DeviceId1", .m_device_prep = DevicePrep::EnsureOnlyDisplay }), display_device::SettingsManager::ApplyResult::PersistenceSaveFailed);
 }
