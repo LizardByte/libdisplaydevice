@@ -26,7 +26,7 @@ namespace {
     { "DeviceId1", { { 123, 456 }, { 120, 1 } } },
     { "DeviceId3", { { 456, 123 }, { 60, 1 } } }
   };
-  const std::string CURRENT_MODIFIED_PRIMARY_DEVICE { "DeviceId1" };
+  const std::string CURRENT_MODIFIED_PRIMARY_DEVICE { "DeviceId3" };
 
   // Test fixture(s) for this file
   class SettingsManagerRevertMocked: public BaseTest {
@@ -71,6 +71,10 @@ namespace {
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, ut_consts::SDCS_FULL->m_modified.m_topology))
+        .Times(1)
+        .WillOnce(Return(false))
+        .RetiresOnSaturation();
       EXPECT_CALL(*m_dd_api, setTopology(ut_consts::SDCS_FULL->m_modified.m_topology))
         .Times(1)
         .WillOnce(Return(true))
@@ -111,6 +115,10 @@ namespace {
 
     void
     expectedDefaultPrimaryDeviceGuardInitCall(InSequence & /* To ensure that sequence is created outside this scope */) {
+      EXPECT_CALL(*m_dd_api, isPrimary("DeviceId1"))
+        .Times(1)
+        .WillOnce(Return(false))
+        .RetiresOnSaturation();
       EXPECT_CALL(*m_dd_api, isPrimary(CURRENT_MODIFIED_PRIMARY_DEVICE))
         .Times(1)
         .WillOnce(Return(true))
@@ -134,10 +142,14 @@ namespace {
     }
 
     void
-    expectedDefaultDisplayModeCall(InSequence & /* To ensure that sequence is created outside this scope */) {
+    expectedDefaultDisplayModeCall(InSequence & /* To ensure that sequence is created outside this scope */, bool has_changed = true) {
       EXPECT_CALL(*m_dd_api, setDisplayModes(ut_consts::SDCS_FULL->m_modified.m_original_modes))
         .Times(1)
         .WillOnce(Return(true))
+        .RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(display_device::win_utils::flattenTopology(ut_consts::SDCS_FULL->m_modified.m_topology)))
+        .Times(1)
+        .WillOnce(Return(has_changed ? ut_consts::SDCS_FULL->m_modified.m_original_modes : CURRENT_MODIFIED_DISPLAY_MODES))
         .RetiresOnSaturation();
     }
 
@@ -173,6 +185,10 @@ namespace {
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, ut_consts::SDCS_FULL->m_initial.m_topology))
+        .Times(1)
+        .WillOnce(Return(false))
+        .RetiresOnSaturation();
       EXPECT_CALL(*m_dd_api, setTopology(ut_consts::SDCS_FULL->m_initial.m_topology))
         .Times(1)
         .WillOnce(Return(true))
@@ -206,6 +222,19 @@ namespace {
       EXPECT_CALL(*m_dd_api, setTopology(CURRENT_TOPOLOGY))
         .Times(1)
         .WillOnce(Return(true))
+        .RetiresOnSaturation();
+    }
+
+    void
+    expectedHdrWorkaroundCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */) {
+      // Using the "failure" path, to keep it simple
+      EXPECT_CALL(*m_dd_api, getCurrentTopology())
+        .Times(1)
+        .WillOnce(Return(display_device::ActiveTopology {}))
+        .RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, isTopologyValid(display_device::ActiveTopology {}))
+        .Times(1)
+        .WillOnce(Return(false))
         .RetiresOnSaturation();
     }
 
@@ -279,10 +308,14 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToSetModifiedTopology) {
   EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_modified.m_topology))
     .Times(1)
     .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, ut_consts::SDCS_FULL->m_modified.m_topology))
+    .Times(1)
+    .WillOnce(Return(false));
   EXPECT_CALL(*m_dd_api, setTopology(ut_consts::SDCS_FULL->m_modified.m_topology))
     .Times(1)
     .WillOnce(Return(false));
   expectedDefaultTopologyGuardCall(sequence);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_FALSE(getImpl().revertSettings());
 }
@@ -302,6 +335,7 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToRevertHdrStates) {
     .RetiresOnSaturation();
 
   expectedDefaultTopologyGuardCall(sequence);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_FALSE(getImpl().revertSettings());
 }
@@ -321,6 +355,31 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToRevertDisplayModes) {
     .RetiresOnSaturation();
 
   expectedDefaultTopologyGuardCall(sequence);
+  expectedHdrWorkaroundCalls(sequence);
+
+  EXPECT_FALSE(getImpl().revertSettings());
+}
+
+TEST_F_S_MOCKED(RevertModifiedSettings, RevertedDisplayModes, PersistenceFailed, GuardNotInvoked) {
+  auto sdcs_stripped { ut_consts::SDCS_FULL };
+  sdcs_stripped->m_modified.m_original_hdr_states.clear();
+  sdcs_stripped->m_modified.m_original_primary_device.clear();
+
+  auto expected_persistent_input { ut_consts::SDCS_FULL };
+  expected_persistent_input->m_modified = { expected_persistent_input->m_modified.m_topology };
+
+  InSequence sequence;
+  expectedDefaultCallsUntilModifiedSettings(sequence, sdcs_stripped);
+  expectedDefaultMofifiedTopologyCalls(sequence);
+  expectedDefaultDisplayModeGuardInitCall(sequence);
+  expectedDefaultDisplayModeCall(sequence, false);
+  EXPECT_CALL(*m_settings_persistence_api, store(*serializeState(expected_persistent_input)))
+    .Times(1)
+    .WillOnce(Return(false))
+    .RetiresOnSaturation();
+
+  expectedDefaultTopologyGuardCall(sequence);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_FALSE(getImpl().revertSettings());
 }
@@ -340,6 +399,7 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToRevertPrimaryDevice) {
     .RetiresOnSaturation();
 
   expectedDefaultTopologyGuardCall(sequence);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_FALSE(getImpl().revertSettings());
 }
@@ -366,6 +426,7 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToSetPersistence) {
   expectedDefaultDisplayModeGuardCall(sequence);
   expectedDefaultHdrStateGuardCall(sequence);
   expectedDefaultTopologyGuardCall(sequence);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_FALSE(getImpl().revertSettings());
 }
@@ -380,6 +441,7 @@ TEST_F_S_MOCKED(InvalidInitialTopology) {
     .RetiresOnSaturation();
 
   expectedDefaultTopologyGuardCall(sequence);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_FALSE(getImpl().revertSettings());
 }
@@ -392,12 +454,17 @@ TEST_F_S_MOCKED(FailedToSetInitialTopology) {
     .Times(1)
     .WillOnce(Return(true))
     .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, ut_consts::SDCS_FULL->m_initial.m_topology))
+    .Times(1)
+    .WillOnce(Return(false))
+    .RetiresOnSaturation();
   EXPECT_CALL(*m_dd_api, setTopology(ut_consts::SDCS_FULL->m_initial.m_topology))
     .Times(1)
     .WillOnce(Return(false))
     .RetiresOnSaturation();
 
   expectedDefaultTopologyGuardCall(sequence);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_FALSE(getImpl().revertSettings());
 }
@@ -413,6 +480,7 @@ TEST_F_S_MOCKED(FailedToClearPersistence) {
     .RetiresOnSaturation();
 
   expectedDefaultTopologyGuardCall(sequence);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_FALSE(getImpl().revertSettings());
 }
@@ -424,6 +492,7 @@ TEST_F_S_MOCKED(SuccesfullyReverted, WithAudioCapture) {
   expectedDefaultInitialTopologyCalls(sequence);
   expectedDefaultFinalPersistenceCalls(sequence);
   expectedDefaultAudioContextCalls(sequence, true);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_TRUE(getImpl().revertSettings());
   EXPECT_TRUE(getImpl().revertSettings());  // Seconds call after success is NOOP
@@ -436,6 +505,7 @@ TEST_F_S_MOCKED(SuccesfullyReverted, NoAudioCapture) {
   expectedDefaultInitialTopologyCalls(sequence);
   expectedDefaultFinalPersistenceCalls(sequence);
   expectedDefaultAudioContextCalls(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_TRUE(getImpl().revertSettings());
   EXPECT_TRUE(getImpl().revertSettings());  // Seconds call after success is NOOP
@@ -451,11 +521,42 @@ TEST_F_S_MOCKED(RevertModifiedSettings, CachedSettingsAreUpdated) {
     .RetiresOnSaturation();
 
   expectedDefaultTopologyGuardCall(sequence);
+  expectedHdrWorkaroundCalls(sequence);
   EXPECT_FALSE(getImpl().revertSettings());
 
   expectedDefaultCallsUntilModifiedSettingsNoPersistence(sequence);
   // No need for expectedDefaultRevertModifiedSettingsCall anymore.
   expectedDefaultInitialTopologyCalls(sequence);
+  expectedDefaultFinalPersistenceCalls(sequence);
+  expectedDefaultAudioContextCalls(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
+
+  EXPECT_TRUE(getImpl().revertSettings());
+}
+
+TEST_F_S_MOCKED(CurrentSettingsMatchPersistentOnes) {
+  display_device::SingleDisplayConfigState state {
+    { CURRENT_TOPOLOGY,
+      { "DeviceId4" } },
+    { CURRENT_TOPOLOGY,
+      CURRENT_MODIFIED_DISPLAY_MODES,
+      CURRENT_MODIFIED_HDR_STATES,
+      "DeviceId4" }
+  };
+
+  InSequence sequence;
+  expectedDefaultCallsUntilModifiedSettings(sequence, state);
+  EXPECT_CALL(*m_dd_api, isTopologyValid(state.m_modified.m_topology)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, state.m_modified.m_topology)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, getCurrentHdrStates(display_device::win_utils::flattenTopology(state.m_modified.m_topology))).Times(1).WillOnce(Return(CURRENT_MODIFIED_HDR_STATES)).RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(display_device::win_utils::flattenTopology(state.m_modified.m_topology))).Times(1).WillOnce(Return(CURRENT_MODIFIED_DISPLAY_MODES)).RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, isPrimary(state.m_modified.m_original_primary_device)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+
+  auto cleared_modifications { state };
+  cleared_modifications.m_modified = { cleared_modifications.m_modified.m_topology };
+  EXPECT_CALL(*m_settings_persistence_api, store(*serializeState(cleared_modifications))).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, isTopologyValid(state.m_initial.m_topology)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, state.m_initial.m_topology)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
   expectedDefaultFinalPersistenceCalls(sequence);
   expectedDefaultAudioContextCalls(sequence, false);
 

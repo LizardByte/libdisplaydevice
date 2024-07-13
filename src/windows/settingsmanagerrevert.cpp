@@ -60,8 +60,9 @@ namespace display_device {
       return false;
     }
 
-    system_settings_touched = system_settings_touched || !m_dd_api->isTopologyTheSame(cached_state->m_initial.m_topology, current_topology);
-    if (!m_dd_api->setTopology(cached_state->m_initial.m_topology)) {
+    const bool is_topology_the_same { m_dd_api->isTopologyTheSame(current_topology, cached_state->m_initial.m_topology) };
+    system_settings_touched = system_settings_touched || !is_topology_the_same;
+    if (!is_topology_the_same && !m_dd_api->setTopology(cached_state->m_initial.m_topology)) {
       DD_LOG(error) << "Failed to change topology to:\n"
                     << toJson(cached_state->m_initial.m_topology);
       return false;
@@ -95,7 +96,7 @@ namespace display_device {
     }
 
     const bool is_topology_the_same { m_dd_api->isTopologyTheSame(current_topology, cached_state->m_modified.m_topology) };
-    system_settings_touched = system_settings_touched || !is_topology_the_same;
+    system_settings_touched = !is_topology_the_same;
     if (!is_topology_the_same && !m_dd_api->setTopology(cached_state->m_modified.m_topology)) {
       DD_LOG(error) << "Failed to change topology to:\n"
                     << toJson(cached_state->m_modified.m_topology);
@@ -134,7 +135,7 @@ namespace display_device {
         }
 
         // It is possible that the display modes will not actually change even though the "current != new" condition is true.
-        // This is because of some additional internal check that determine whether the change is actually needed.
+        // This is because of some additional internal checks that determine whether the change is actually needed.
         // Therefore we should check the current display modes after the fact!
         if (current_modes != m_dd_api->getCurrentDisplayModes(win_utils::flattenTopology(cached_state->m_modified.m_topology))) {
           system_settings_touched = true;
