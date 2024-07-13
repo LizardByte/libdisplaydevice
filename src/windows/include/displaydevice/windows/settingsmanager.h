@@ -1,6 +1,7 @@
 #pragma once
 
 // system includes
+#include <chrono>
 #include <memory>
 
 // local includes
@@ -52,10 +53,11 @@ namespace display_device {
      * @param config Configuration to be used for preparing topology.
      * @param topology_before_changes The current topology before any changes.
      * @param release_context Specifies whether the audio context should be released at the very end IF everything else has succeeded.
+     * @param system_settings_touched Inticates whether a "write" operation could have been performed on the OS.
      * @return A tuple of (new_state that is to be updated/persisted, device_to_configure, additional_devices_to_configure).
      */
     [[nodiscard]] std::optional<std::tuple<SingleDisplayConfigState, std::string, std::set<std::string>>>
-    prepareTopology(const SingleDisplayConfiguration &config, const ActiveTopology &topology_before_changes, bool &release_context);
+    prepareTopology(const SingleDisplayConfiguration &config, const ActiveTopology &topology_before_changes, bool &release_context, bool &system_settings_touched);
 
     /**
      * @brief Changes or restores the primary device based on the cached state, new state and configuration.
@@ -63,10 +65,11 @@ namespace display_device {
      * @param device_to_configure The main device to be used for preparation.
      * @param guard_fn Reference to the guard function which will be set to restore original state (if needed) in case something else fails down the line.
      * @param new_state Reference to the new state which is to be updated accordingly.
+     * @param system_settings_touched Inticates whether a "write" operation could have been performed on the OS.
      * @return True if no errors have occured, false otherwise.
      */
     [[nodiscard]] bool
-    preparePrimaryDevice(const SingleDisplayConfiguration &config, const std::string &device_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state);
+    preparePrimaryDevice(const SingleDisplayConfiguration &config, const std::string &device_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched);
 
     /**
      * @brief Changes or restores the display modes based on the cached state, new state and configuration.
@@ -75,10 +78,11 @@ namespace display_device {
      * @param additional_devices_to_configure Additional devices that should be configured.
      * @param guard_fn Reference to the guard function which will be set to restore original state (if needed) in case something else fails down the line.
      * @param new_state Reference to the new state which is to be updated accordingly.
+     * @param system_settings_touched Inticates whether a "write" operation could have been performed on the OS.
      * @return True if no errors have occured, false otherwise.
      */
     [[nodiscard]] bool
-    prepareDisplayModes(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state);
+    prepareDisplayModes(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched);
 
     /**
      * @brief Changes or restores the HDR states based on the cached state, new state and configuration.
@@ -87,22 +91,29 @@ namespace display_device {
      * @param additional_devices_to_configure Additional devices that should be configured.
      * @param guard_fn Reference to the guard function which will be set to restore original state (if needed) in case something else fails down the line.
      * @param new_state Reference to the new state which is to be updated accordingly.
+     * @param system_settings_touched Inticates whether a "write" operation could have been performed on the OS.
      * @return True if no errors have occured, false otherwise.
      */
     [[nodiscard]] bool
-    prepareHdrStates(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state);
+    prepareHdrStates(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched);
 
     /**
      * @brief Try to revert the modified settings.
+     * @param current_topology Topology before this method is called.
+     * @param system_settings_touched Inticates whether a "write" operation could have been performed on the OS.
      * @returns True on success, false otherwise.
      * @warning The method assumes that the caller will ensure restoring the topology
      *          in case of a failure!
      */
     [[nodiscard]] bool
-    revertModifiedSettings();
+    revertModifiedSettings(const ActiveTopology &current_topology, bool &system_settings_touched);
 
     std::shared_ptr<WinDisplayDeviceInterface> m_dd_api;
     std::shared_ptr<AudioContextInterface> m_audio_context_api;
     std::unique_ptr<PersistentState> m_persistence_state;
+
+  private:
+    /** @see win_utils::blankHdrStates for more details. */
+    std::chrono::milliseconds m_hdr_blank_delay { 500 };  // 500ms should be more than enough...
   };
 }  // namespace display_device

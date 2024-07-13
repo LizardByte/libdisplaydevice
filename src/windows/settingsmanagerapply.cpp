@@ -40,6 +40,13 @@ namespace display_device {
     DD_LOG(info) << "Active topology before any changes:\n"
                  << toJson(topology_before_changes);
 
+    bool system_settings_touched { false };
+    boost::scope::scope_exit hdr_blank_always_executed_guard { [this, &system_settings_touched]() {
+      if (system_settings_touched) {
+        win_utils::blankHdrStates(*m_dd_api, m_hdr_blank_delay);
+      }
+    } };
+
     bool release_context { false };
     boost::scope::scope_exit topology_prep_guard { [this, topology = topology_before_changes, was_captured = m_audio_context_api->isCaptured(), &release_context]() {
       // It is possible that during topology preparation, some settings will be reverted for the modified topology.
@@ -61,7 +68,7 @@ namespace display_device {
       }
     } };
 
-    const auto &prepped_topology_data { prepareTopology(config, topology_before_changes, release_context) };
+    const auto &prepped_topology_data { prepareTopology(config, topology_before_changes, release_context, system_settings_touched) };
     if (!prepped_topology_data) {
       // Error already logged
       return ApplyResult::DevicePrepFailed;
@@ -70,21 +77,21 @@ namespace display_device {
 
     DdGuardFn primary_guard_fn { noopFn };
     boost::scope::scope_exit<DdGuardFn &> primary_guard { primary_guard_fn };
-    if (!preparePrimaryDevice(config, device_to_configure, primary_guard_fn, new_state)) {
+    if (!preparePrimaryDevice(config, device_to_configure, primary_guard_fn, new_state, system_settings_touched)) {
       // Error already logged
       return ApplyResult::PrimaryDevicePrepFailed;
     }
 
     DdGuardFn mode_guard_fn { noopFn };
     boost::scope::scope_exit<DdGuardFn &> mode_guard { mode_guard_fn };
-    if (!prepareDisplayModes(config, device_to_configure, additional_devices_to_configure, mode_guard_fn, new_state)) {
+    if (!prepareDisplayModes(config, device_to_configure, additional_devices_to_configure, mode_guard_fn, new_state, system_settings_touched)) {
       // Error already logged
       return ApplyResult::DisplayModePrepFailed;
     }
 
     DdGuardFn hdr_state_guard_fn { noopFn };
     boost::scope::scope_exit<DdGuardFn &> hdr_state_guard { hdr_state_guard_fn };
-    if (!prepareHdrStates(config, device_to_configure, additional_devices_to_configure, hdr_state_guard_fn, new_state)) {
+    if (!prepareHdrStates(config, device_to_configure, additional_devices_to_configure, hdr_state_guard_fn, new_state, system_settings_touched)) {
       // Error already logged
       return ApplyResult::HdrStatePrepFailed;
     }
@@ -110,7 +117,7 @@ namespace display_device {
   }
 
   std::optional<std::tuple<SingleDisplayConfigState, std::string, std::set<std::string>>>
-  SettingsManager::prepareTopology(const SingleDisplayConfiguration &config, const ActiveTopology &topology_before_changes, bool &release_context) {
+  SettingsManager::prepareTopology(const SingleDisplayConfiguration &config, const ActiveTopology &topology_before_changes, bool &release_context, bool &system_settings_touched) {
     const EnumeratedDeviceList devices { m_dd_api->enumAvailableDevices() };
     if (devices.empty()) {
       DD_LOG(error) << "Failed to enumerate display devices!";
@@ -161,7 +168,7 @@ namespace display_device {
     if (change_is_needed) {
       if (cached_state && !m_dd_api->isTopologyTheSame(cached_state->m_modified.m_topology, new_topology)) {
         DD_LOG(warning) << "To apply new display device settings, previous modifications must be undone! Trying to undo them now.";
-        if (!revertModifiedSettings()) {
+        if (!revertModifiedSettings(topology_before_changes, system_settings_touched)) {
           DD_LOG(error) << "Failed to apply new configuration, because the previous settings could not be reverted!";
           return std::nullopt;
         }
@@ -182,6 +189,7 @@ namespace display_device {
         }
       }
 
+      system_settings_touched = true;
       if (!m_dd_api->setTopology(new_topology)) {
         DD_LOG(error) << "Failed to apply new configuration, because a new topology could not be set!";
         return std::nullopt;
@@ -196,7 +204,7 @@ namespace display_device {
   }
 
   bool
-  SettingsManager::preparePrimaryDevice(const SingleDisplayConfiguration &config, const std::string &device_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state) {
+  SettingsManager::preparePrimaryDevice(const SingleDisplayConfiguration &config, const std::string &device_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched) {
     const auto &cached_state { m_persistence_state->getState() };
     const auto cached_primary_device { cached_state ? cached_state->m_modified.m_original_primary_device : std::string {} };
     const bool ensure_primary { config.m_device_prep == SingleDisplayConfiguration::DevicePreparation::EnsurePrimary };
@@ -214,6 +222,8 @@ namespace display_device {
 
     const auto try_change { [&](const std::string &new_device, const auto info_preamble, const auto error_log) {
       if (current_primary_device != new_device) {
+        system_settings_touched = true;
+
         DD_LOG(info) << info_preamble << toJson(new_device);
         if (!m_dd_api->setAsPrimary(new_device)) {
           DD_LOG(error) << error_log;
@@ -251,7 +261,7 @@ namespace display_device {
   }
 
   bool
-  SettingsManager::prepareDisplayModes(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state) {
+  SettingsManager::prepareDisplayModes(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched) {
     const auto &cached_state { m_persistence_state->getState() };
     const auto cached_display_modes { cached_state ? cached_state->m_modified.m_original_modes : DeviceDisplayModeMap {} };
     const bool change_required { config.m_resolution || config.m_refresh_rate };
@@ -270,11 +280,18 @@ namespace display_device {
       if (current_display_modes != new_modes) {
         DD_LOG(info) << info_preamble << toJson(new_modes);
         if (!m_dd_api->setDisplayModes(new_modes)) {
+          system_settings_touched = true;
           DD_LOG(error) << error_log;
           return false;
         }
 
-        guard_fn = win_utils::modeGuardFn(*m_dd_api, current_display_modes);
+        // It is possible that the display modes will not actually change even though the "current != new" condition is true.
+        // This is because of some additional internal checks that determine whether the change is actually needed.
+        // Therefore we should check the current display modes after the fact!
+        if (current_display_modes != m_dd_api->getCurrentDisplayModes(win_utils::flattenTopology(new_state.m_modified.m_topology))) {
+          system_settings_touched = true;
+          guard_fn = win_utils::modeGuardFn(*m_dd_api, current_display_modes);
+        }
       }
 
       return true;
@@ -307,7 +324,7 @@ namespace display_device {
   }
 
   [[nodiscard]] bool
-  SettingsManager::prepareHdrStates(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state) {
+  SettingsManager::prepareHdrStates(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched) {
     const auto &cached_state { m_persistence_state->getState() };
     const auto cached_hdr_states { cached_state ? cached_state->m_modified.m_original_hdr_states : HdrStateMap {} };
     const bool change_required { config.m_hdr_state };
@@ -324,6 +341,8 @@ namespace display_device {
 
     const auto try_change { [&](const HdrStateMap &new_states, const auto info_preamble, const auto error_log) {
       if (current_hdr_states != new_states) {
+        system_settings_touched = true;
+
         DD_LOG(info) << info_preamble << toJson(new_states);
         if (!m_dd_api->setHdrStates(new_states)) {
           DD_LOG(error) << error_log;
