@@ -1,6 +1,7 @@
 #pragma once
 
 // system includes
+#include <chrono>
 #include <tuple>
 
 // local includes
@@ -132,6 +133,29 @@ namespace display_device::win_utils {
     const std::string &device_to_configure,
     const std::set<std::string> &additional_devices_to_configure,
     const HdrStateMap &original_states);
+
+  /**
+   * @brief Toggle enabled HDR states off and on again if quick succession.
+   *
+   * This is a workaround for a HDR highcontrast color bug which prominently
+   * happens for IDD HDR displays, but also sometimes (very VERY rarely) for
+   * dongles.
+   *
+   * The bug is cause my more or less any change to the display settings, such as
+   * enabling HDR display, enabling HDR state, changing display mode of OTHER
+   * device and so on.
+   *
+   * The workaround is to simply turn of HDR, wait a little and then turn it back
+   * on.
+   *
+   * This is what this function does, but only if there are HDR enabled displays
+   * at the moment.
+   *
+   * @param win_dd Interface for interacting with the OS.
+   * @param delay Delay between OFF and ON states (ON -> OFF -> DELAY -> ON).
+   */
+  void
+  blankHdrStates(WinDisplayDeviceInterface &win_dd, std::chrono::milliseconds delay);
 
   /**
    * @brief Make guard function for the topology.
