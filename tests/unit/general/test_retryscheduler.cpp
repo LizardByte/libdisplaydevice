@@ -104,6 +104,15 @@ TEST_F_S(Schedule, SchedulerInteruptAndReplacement) {
   EXPECT_EQ(counter_a_last_value, counter_a);
 }
 
+TEST_F_S(Schedule, StoppedImmediately) {
+  m_impl.schedule([&](auto, auto &stop_token) {
+    stop_token.requestStop();
+  },
+    1000ms);
+
+  EXPECT_FALSE(m_impl.isScheduled());
+}
+
 TEST_F_S(Schedule, ImmediateExecution) {
   const auto calling_thread_id { std::this_thread::get_id() };
   std::optional<std::thread::id> first_call_scheduler_thread_id;

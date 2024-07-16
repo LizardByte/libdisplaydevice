@@ -116,16 +116,14 @@ namespace display_device {
               continue;
             }
 
-            if (m_retry_function) {
-              try {
-                SchedulerStopToken scheduler_stop_token { [&]() { clearThreadLoopUnlocked(); } };
-                m_retry_function(*m_iface, scheduler_stop_token);
-                continue;
-              }
-              catch (const std::exception &error) {
-                DD_LOG(error) << "Exception thrown in the RetryScheduler thread. Stopping scheduler. Error:\n"
-                              << error.what();
-              }
+            try {
+              SchedulerStopToken scheduler_stop_token { [&]() { clearThreadLoopUnlocked(); } };
+              m_retry_function(*m_iface, scheduler_stop_token);
+              continue;
+            }
+            catch (const std::exception &error) {
+              DD_LOG(error) << "Exception thrown in the RetryScheduler thread. Stopping scheduler. Error:\n"
+                            << error.what();
             }
 
             clearThreadLoopUnlocked();
