@@ -34,7 +34,7 @@ BaseTest::TearDown() {
   display_device::Logger::get().setCustomCallback(nullptr);
 
   // Restore cout buffer and print the suppressed output out in case we have failed :/
-  if (!isOutputSuppressed()) {
+  if (isOutputSuppressed()) {
     std::cout.rdbuf(m_sbuf);
     m_sbuf = nullptr;
 
