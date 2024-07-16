@@ -347,7 +347,7 @@ TEST_F_S(Stop) {
   EXPECT_FALSE(m_impl.isScheduled());
 }
 
-TEST_F_S(ThreadCleanupInDesctructor) {
+TEST_F_S(ThreadCleanupInDestructor) {
   int counter { 0 };
   {
     display_device::RetryScheduler<TestIface> scheduler { std::make_unique<TestIface>() };
