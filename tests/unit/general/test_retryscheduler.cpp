@@ -102,6 +102,9 @@ TEST_F_S(Schedule, SchedulerInteruptAndReplacement) {
 
   // Counter A no longer incremented since the function was replaced
   EXPECT_EQ(counter_a_last_value, counter_a);
+
+  // Stop the scheduler to avoid SEGFAULTS
+  m_impl.stop();
 }
 
 TEST_F_S(Schedule, StoppedImmediately) {
@@ -133,6 +136,7 @@ TEST_F_S(Schedule, ImmediateExecution) {
     std::this_thread::sleep_for(1ms);
   }
 
+  EXPECT_FALSE(m_impl.isScheduled());
   EXPECT_TRUE(first_call_scheduler_thread_id);
   EXPECT_TRUE(second_call_scheduler_thread_id);
 
@@ -168,6 +172,9 @@ TEST_F_S(Schedule, ExceptionThrown, DuringImmediateCall) {
   while (counter_b < 3) {
     std::this_thread::sleep_for(1ms);
   }
+
+  // Stop the scheduler to avoid SEGFAULTS
+  m_impl.stop();
 }
 
 TEST_F_S(Schedule, ExceptionThrown, DuringScheduledCall) {
@@ -199,6 +206,9 @@ TEST_F_S(Schedule, ExceptionThrown, DuringScheduledCall) {
   while (counter < 3) {
     std::this_thread::sleep_for(1ms);
   }
+
+  // Stop the scheduler to avoid SEGFAULTS
+  m_impl.stop();
 }
 
 TEST_F_S(Execute, NullptrCallbackProvided) {
@@ -227,6 +237,9 @@ TEST_F_S(Execute, SchedulerNotStopped) {
 
   EXPECT_EQ(counter_before_sleep, counter_after_sleep);
   EXPECT_GT(counter, counter_after_sleep);
+
+  // Stop the scheduler to avoid SEGFAULTS
+  m_impl.stop();
 }
 
 TEST_F_S(Execute, SchedulerStopped) {
@@ -260,6 +273,9 @@ TEST_F_S(Execute, SchedulerStopped, ExceptThatItWasNotRunning) {
   while (counter < 3) {
     std::this_thread::sleep_for(1ms);
   }
+
+  // Stop the scheduler to avoid SEGFAULTS
+  m_impl.stop();
 }
 
 TEST_F_S(Execute, ExceptionThrown) {
@@ -275,6 +291,9 @@ TEST_F_S(Execute, ExceptionThrown) {
     ThrowsMessage<std::runtime_error>(HasSubstr("Get rekt!")));
 
   EXPECT_TRUE(m_impl.isScheduled());
+
+  // Stop the scheduler to avoid SEGFAULTS
+  m_impl.stop();
 }
 
 TEST_F_S(Execute, ExceptionThrown, BeforeStopToken) {
@@ -291,6 +310,9 @@ TEST_F_S(Execute, ExceptionThrown, BeforeStopToken) {
     ThrowsMessage<std::runtime_error>(HasSubstr("Get rekt!")));
 
   EXPECT_TRUE(m_impl.isScheduled());
+
+  // Stop the scheduler to avoid SEGFAULTS
+  m_impl.stop();
 }
 
 TEST_F_S(Execute, ExceptionThrown, AfterStopToken) {
@@ -323,6 +345,24 @@ TEST_F_S(Stop) {
   EXPECT_TRUE(m_impl.isScheduled());
   m_impl.stop();
   EXPECT_FALSE(m_impl.isScheduled());
+}
+
+TEST_F_S(ThreadCleanupInDesctructor) {
+  int counter { 0 };
+  {
+    display_device::RetryScheduler<TestIface> scheduler { std::make_unique<TestIface>() };
+
+    scheduler.schedule([&](auto, auto) { counter++; }, 1ms);
+    while (counter < 3) {
+      std::this_thread::sleep_for(1ms);
+    }
+  }
+
+  const int counter_before_sleep { counter };
+  std::this_thread::sleep_for(100ms);
+  const int counter_after_sleep { counter };
+
+  EXPECT_EQ(counter_before_sleep, counter_after_sleep);
 }
 
 TEST_F_S(SchedulerStopToken, DestructorNoThrow) {
