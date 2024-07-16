@@ -317,18 +317,18 @@ TEST_F_S(Stop) {
 }
 
 TEST_F_S(SchedulerStopToken, DestructorNoThrow) {
-  EXPECT_NO_THROW([]() {
-    display_device::SchedulerStopToken token{[](){}};
+  EXPECT_NO_THROW({
+    display_device::SchedulerStopToken token { []() {} };
     token.requestStop();
   });
-  EXPECT_NO_THROW([]() {
-    display_device::SchedulerStopToken token{[](){}};
+  EXPECT_NO_THROW({
+    display_device::SchedulerStopToken token { []() {} };
   });
-  EXPECT_NO_THROW([]() {
-    display_device::SchedulerStopToken token{{}};
+  EXPECT_NO_THROW({
+    display_device::SchedulerStopToken token { {} };
     token.requestStop();
   });
-  EXPECT_NO_THROW([]() {
-    display_device::SchedulerStopToken token{{}};
+  EXPECT_NO_THROW({
+    display_device::SchedulerStopToken token { {} };
   });
 }
