@@ -304,7 +304,7 @@ namespace display_device {
 
     std::unique_ptr<T> m_iface; /**< Interface to be passed around to the executor functions. */
     std::chrono::milliseconds m_sleep_duration { 0 }; /**< A retry time for the timer. */
-    std::function<void(T&, SchedulerStopToken&)> m_retry_function { nullptr }; /**< Function to be executed until it succeeds. */
+    std::function<void(T &, SchedulerStopToken &)> m_retry_function { nullptr }; /**< Function to be executed until it succeeds. */
 
     std::mutex m_mutex {}; /**< A mutext for synchronizing thread and "external" access. */
     std::condition_variable m_sleep_cv {}; /**< Condition variable for waking up thread. */
