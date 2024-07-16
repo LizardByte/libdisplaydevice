@@ -98,9 +98,9 @@ namespace display_device {
      */
     explicit RetryScheduler(std::unique_ptr<T> iface):
         m_iface { iface ? std::move(iface) : throw std::logic_error { "Nullptr interface provided in RetryScheduler!" } },
-        m_thread { [this](const std::stop_token &stop_token) {
+        m_thread { [this]() {
           std::unique_lock lock { m_mutex };
-          while (!stop_token.stop_requested()) {
+          while (m_keep_alive) {
             m_syncing_thread = false;
             if (m_sleep_duration > std::chrono::milliseconds::zero()) {
               // We're going to sleep until manually woken up or the time elapses.
@@ -139,7 +139,7 @@ namespace display_device {
     ~RetryScheduler() {
       {
         std::lock_guard lock { m_mutex };
-        m_thread.request_stop();
+        m_keep_alive = false;
         syncThreadUnlocked();
       }
 
@@ -309,8 +309,9 @@ namespace display_device {
     std::mutex m_mutex {}; /**< A mutext for synchronizing thread and "external" access. */
     std::condition_variable m_sleep_cv {}; /**< Condition variable for waking up thread. */
     bool m_syncing_thread { false }; /**< Safeguard for the condition variable to prevent sporadic thread wake ups. */
+    bool m_keep_alive { true }; /**< When set to false, scheduler thread will exit. */
 
     // Always the last in the list so that all the members are already initialized!
-    std::jthread m_thread; /**< A scheduler thread. */
+    std::thread m_thread; /**< A scheduler thread. */
   };
 }  // namespace display_device
