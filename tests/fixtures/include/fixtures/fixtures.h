@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 // local includes
+#include "displaydevice/logging.h"
 #include "testutils.h"
 
 // Undefine the original TEST macro
@@ -38,19 +39,9 @@
  * @brief Base class for tests.
  *
  * This class provides a base test fixture for all tests.
- *
- * ``cout``, ``stderr``, and ``stdout`` are redirected to a buffer, and the buffer is printed if the test fails.
- *
- * @todo Retain the color of the original output.
  */
 class BaseTest: public ::testing::Test {
 protected:
-  // https://stackoverflow.com/a/58369622/11214013
-
-  // we can possibly use some internal googletest functions to capture stdout and stderr, but I have not tested this
-  // https://stackoverflow.com/a/33186201/11214013
-
-  BaseTest();
   ~BaseTest() override = default;
 
   void
@@ -58,6 +49,30 @@ protected:
 
   void
   TearDown() override;
+
+  /**
+   * @brief Get available command line arguments.
+   * @return Command line args from GTest.
+   */
+  [[nodiscard]] virtual const std::vector<std::string> &
+  getArgs() const;
+
+  /**
+   * @brief Get the command line argument that matches the pattern.
+   * @param pattern Pattern to look for.
+   * @param remove_match Specify if the matched pattern should be removed before returning argument.
+   * @return Matching command line argument or null optional if nothing matched.
+   */
+  [[nodiscard]] virtual std::optional<std::string>
+  getArgWithMatchingPattern(const std::string &pattern, bool remove_match) const;
+
+  /**
+   * @brief Check if the test output is to be redirected and printed out only if test fails.
+   * @return True if output is to be suppressed, false otherwise.
+   * @note It is useful for suppressing noise in automatic tests, but not so much in manual ones.
+   */
+  [[nodiscard]] virtual bool
+  isOutputSuppressed() const;
 
   /**
    * @brief Check if the test interacts/modifies with the system settings.
@@ -74,38 +89,17 @@ protected:
   [[nodiscard]] virtual std::string
   skipTest() const;
 
-  int
-  exec(const char *cmd);
+  /**
+   * @brief Get the default log level for the test base.
+   * @returns A log level set in the env OR null optional if fallback should be used (verbose).
+   * @note By setting LOG_LEVEL=<level> env you can change the level (e.g. LOG_LEVEL=error).
+   */
+  [[nodiscard]] virtual std::optional<display_device::Logger::LogLevel>
+  getDefaultLogLevel() const;
 
-  // functions and variables
-  std::vector<std::string> m_test_args;  // CLI arguments used
-  std::filesystem::path m_test_binary;  // full path of this binary
-  std::filesystem::path m_test_binary_dir;  // full directory of this binary
-  std::stringstream m_cout_buffer;  // declare cout_buffer
-  std::stringstream m_stdout_buffer;  // declare stdout_buffer
-  std::stringstream m_stderr_buffer;  // declare stderr_buffer
-  std::streambuf *m_sbuf;
-  FILE *m_pipe_stdout;
-  FILE *m_pipe_stderr;
+  std::stringstream m_cout_buffer; /**< Stores the cout in case the output is suppressed. */
 
 private:
-  bool m_test_skipped_at_setup { false };
-};
-
-class LinuxTest: public BaseTest {
-protected:
-  [[nodiscard]] std::string
-  skipTest() const override;
-};
-
-class MacOSTest: public BaseTest {
-protected:
-  [[nodiscard]] std::string
-  skipTest() const override;
-};
-
-class WindowsTest: public BaseTest {
-protected:
-  [[nodiscard]] std::string
-  skipTest() const override;
+  std::streambuf *m_sbuf { nullptr }; /**< Stores the handle to the original cout stream. */
+  bool m_test_skipped_at_setup { false }; /**< Indicates whether the SetUp method was skipped. */
 };
