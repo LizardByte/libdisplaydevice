@@ -44,7 +44,7 @@
 
 namespace display_device {
   /**
-   * Holds information for serializing variants.
+   * @brief Holds information for serializing variants.
    */
   namespace detail {
     template <class T>
