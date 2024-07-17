@@ -212,7 +212,7 @@ namespace display_device {
      * const auto scale = iface->getDisplayScale(iface->getDisplayName(path), source_mode);
      * ```
      */
-    [[nodiscard]] virtual std::optional<double>
+    [[nodiscard]] virtual std::optional<Rational>
     getDisplayScale(const std::string &display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const = 0;
   };
 }  // namespace display_device

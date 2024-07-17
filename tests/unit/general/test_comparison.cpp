@@ -13,6 +13,12 @@ TEST_S(Point) {
   EXPECT_NE(display_device::Point({ 1, 1 }), display_device::Point({ 1, 0 }));
 }
 
+TEST_S(Rational) {
+  EXPECT_EQ(display_device::Rational({ 1, 1 }), display_device::Rational({ 1, 1 }));
+  EXPECT_NE(display_device::Rational({ 1, 1 }), display_device::Rational({ 0, 1 }));
+  EXPECT_NE(display_device::Rational({ 1, 1 }), display_device::Rational({ 1, 0 }));
+}
+
 TEST_S(Resolution) {
   EXPECT_EQ(display_device::Resolution({ 1, 1 }), display_device::Resolution({ 1, 1 }));
   EXPECT_NE(display_device::Resolution({ 1, 1 }), display_device::Resolution({ 0, 1 }));
@@ -20,8 +26,19 @@ TEST_S(Resolution) {
 }
 
 TEST_S(EnumeratedDevice, Info) {
+  using Rat = display_device::Rational;
   EXPECT_EQ(display_device::EnumeratedDevice::Info({ { 1, 1 }, 1., 1., true, { 1, 1 }, std::nullopt }),
     display_device::EnumeratedDevice::Info({ { 1, 1 }, 1., 1., true, { 1, 1 }, std::nullopt }));
+  EXPECT_EQ(display_device::EnumeratedDevice::Info({ { 1, 1 }, Rat { 1, 1 }, Rat { 1, 1 }, true, { 1, 1 }, std::nullopt }),
+    display_device::EnumeratedDevice::Info({ { 1, 1 }, Rat { 1, 1 }, Rat { 1, 1 }, true, { 1, 1 }, std::nullopt }));
+  EXPECT_EQ(display_device::EnumeratedDevice::Info({ { 1, 1 }, 1., Rat { 1, 1 }, true, { 1, 1 }, std::nullopt }),
+    display_device::EnumeratedDevice::Info({ { 1, 1 }, 1., Rat { 1, 1 }, true, { 1, 1 }, std::nullopt }));
+  EXPECT_EQ(display_device::EnumeratedDevice::Info({ { 1, 1 }, Rat { 1, 1 }, 1., true, { 1, 1 }, std::nullopt }),
+    display_device::EnumeratedDevice::Info({ { 1, 1 }, Rat { 1, 1 }, 1., true, { 1, 1 }, std::nullopt }));
+  EXPECT_NE(display_device::EnumeratedDevice::Info({ { 1, 1 }, 1., Rat { 1, 1 }, true, { 1, 1 }, std::nullopt }),
+    display_device::EnumeratedDevice::Info({ { 1, 1 }, Rat { 1, 1 }, Rat { 1, 1 }, true, { 1, 1 }, std::nullopt }));
+  EXPECT_NE(display_device::EnumeratedDevice::Info({ { 1, 1 }, Rat { 1, 1 }, 1., true, { 1, 1 }, std::nullopt }),
+    display_device::EnumeratedDevice::Info({ { 1, 1 }, Rat { 1, 1 }, Rat { 1, 1 }, true, { 1, 1 }, std::nullopt }));
   EXPECT_NE(display_device::EnumeratedDevice::Info({ { 1, 1 }, 1., 1., true, { 1, 1 }, std::nullopt }),
     display_device::EnumeratedDevice::Info({ { 1, 0 }, 1., 1., true, { 1, 1 }, std::nullopt }));
   EXPECT_NE(display_device::EnumeratedDevice::Info({ { 1, 1 }, 1., 1., true, { 1, 1 }, std::nullopt }),
@@ -51,8 +68,13 @@ TEST_S(EnumeratedDevice) {
 
 TEST_S(SingleDisplayConfiguration) {
   using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
+  using Rat = display_device::Rational;
   EXPECT_EQ(display_device::SingleDisplayConfiguration({ "1", DevicePrep::EnsureActive, { { 1, 1 } }, 1., display_device::HdrState::Disabled }),
     display_device::SingleDisplayConfiguration({ "1", DevicePrep::EnsureActive, { { 1, 1 } }, 1., display_device::HdrState::Disabled }));
+  EXPECT_EQ(display_device::SingleDisplayConfiguration({ "1", DevicePrep::EnsureActive, { { 1, 1 } }, Rat { 1, 1 }, display_device::HdrState::Disabled }),
+    display_device::SingleDisplayConfiguration({ "1", DevicePrep::EnsureActive, { { 1, 1 } }, Rat { 1, 1 }, display_device::HdrState::Disabled }));
+  EXPECT_NE(display_device::SingleDisplayConfiguration({ "1", DevicePrep::EnsureActive, { { 1, 1 } }, 1., display_device::HdrState::Disabled }),
+    display_device::SingleDisplayConfiguration({ "1", DevicePrep::EnsureActive, { { 1, 1 } }, Rat { 1, 1 }, display_device::HdrState::Disabled }));
   EXPECT_NE(display_device::SingleDisplayConfiguration({ "1", DevicePrep::EnsureActive, { { 1, 1 } }, 1., display_device::HdrState::Disabled }),
     display_device::SingleDisplayConfiguration({ "0", DevicePrep::EnsureActive, { { 1, 1 } }, 1., display_device::HdrState::Disabled }));
   EXPECT_NE(display_device::SingleDisplayConfiguration({ "1", DevicePrep::EnsureActive, { { 1, 1 } }, 1., display_device::HdrState::Disabled }),

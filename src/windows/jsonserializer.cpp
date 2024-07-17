@@ -7,7 +7,6 @@
 
 namespace display_device {
   // Structs
-  DD_JSON_DEFINE_SERIALIZE_STRUCT(Rational, numerator, denominator)
   DD_JSON_DEFINE_SERIALIZE_STRUCT(DisplayMode, resolution, refresh_rate)
   DD_JSON_DEFINE_SERIALIZE_STRUCT(SingleDisplayConfigState::Initial, topology, primary_devices)
   DD_JSON_DEFINE_SERIALIZE_STRUCT(SingleDisplayConfigState::Modified, topology, original_modes, original_hdr_states, original_primary_device)

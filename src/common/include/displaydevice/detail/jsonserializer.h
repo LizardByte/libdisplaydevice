@@ -11,6 +11,7 @@ namespace display_device {
 
   // Structs
   DD_JSON_DECLARE_SERIALIZE_TYPE(Resolution)
+  DD_JSON_DECLARE_SERIALIZE_TYPE(Rational)
   DD_JSON_DECLARE_SERIALIZE_TYPE(Point)
   DD_JSON_DECLARE_SERIALIZE_TYPE(EnumeratedDevice::Info)
   DD_JSON_DECLARE_SERIALIZE_TYPE(EnumeratedDevice)

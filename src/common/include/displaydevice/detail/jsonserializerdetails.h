@@ -26,26 +26,55 @@
   // Coverage has trouble with getEnumMap() function since it has a lot of "fallthrough"
   // branches when creating a map, therefore the macro has baked in pattern to disable branch coverage
   // in GCOVR
-  #define DD_JSON_DEFINE_SERIALIZE_ENUM_GCOVR_EXCL_BR_LINE(Type, ...)                                                                                                   \
-    const std::map<Type, nlohmann::json> &                                                                                                                              \
-    getEnumMap(const Type &) {                                                                                                                                          \
-      static_assert(std::is_enum<Type>::value, #Type " must be an enum!");                                                                                              \
-      static const std::map<Type, nlohmann::json> map = __VA_ARGS__;                                                                                                    \
-      return map;                                                                                                                                                       \
-    }                                                                                                                                                                   \
-                                                                                                                                                                        \
-    void to_json(nlohmann::json &nlohmann_json_j, const Type &nlohmann_json_t) {                                                                                        \
-      nlohmann_json_j = findInEnumMap<Type>(#Type " is missing enum mapping!", [nlohmann_json_t](const auto &pair) { return pair.first == nlohmann_json_t; })->second;  \
-    }                                                                                                                                                                   \
-                                                                                                                                                                        \
-    void from_json(const nlohmann::json &nlohmann_json_j, Type &nlohmann_json_t) {                                                                                      \
-      nlohmann_json_t = findInEnumMap<Type>(#Type " is missing enum mapping!", [&nlohmann_json_j](const auto &pair) { return pair.second == nlohmann_json_j; })->first; \
+  #define DD_JSON_DEFINE_SERIALIZE_ENUM_GCOVR_EXCL_BR_LINE(Type, ...)                                                                                                     \
+    const std::map<Type, nlohmann::json> &                                                                                                                                \
+    getEnumMap(const Type &) {                                                                                                                                            \
+      static_assert(std::is_enum<Type>::value, #Type " must be an enum!");                                                                                                \
+      static const std::map<Type, nlohmann::json> map = __VA_ARGS__;                                                                                                      \
+      return map;                                                                                                                                                         \
+    }                                                                                                                                                                     \
+                                                                                                                                                                          \
+    void to_json(nlohmann::json &nlohmann_json_j, const Type &nlohmann_json_t) {                                                                                          \
+      nlohmann_json_j = findInEnumMap<Type>(#Type " is missing enum mapping!", [nlohmann_json_t](const auto &pair) { return pair.first == nlohmann_json_t; }) -> second;  \
+    }                                                                                                                                                                     \
+                                                                                                                                                                          \
+    void from_json(const nlohmann::json &nlohmann_json_j, Type &nlohmann_json_t) {                                                                                        \
+      nlohmann_json_t = findInEnumMap<Type>(#Type " is missing enum mapping!", [&nlohmann_json_j](const auto &pair) { return pair.second == nlohmann_json_j; }) -> first; \
     }
 
 namespace display_device {
+  /**
+   * Holds information for serializing variants.
+   */
+  namespace detail {
+    template <class T>
+    struct JsonTypeName;
+
+    template <>
+    struct JsonTypeName<double> {
+      static constexpr std::string_view m_name { "double" };
+    };
+
+    template <>
+    struct JsonTypeName<Rational> {
+      static constexpr std::string_view m_name { "rational" };
+    };
+
+    template <class T, class... Ts>
+    bool
+    variantFromJson(const nlohmann::json &nlohmann_json_j, std::variant<Ts...> &value) {
+      if (nlohmann_json_j.at("type").get<std::string_view>() != JsonTypeName<T>::m_name) {
+        return false;
+      }
+
+      value = nlohmann_json_j.at("value").get<T>();
+      return true;
+    }
+  }  // namespace detail
+
   // A shared function for enums to find values in the map. Extracted here for UTs + coverage
   template <class T, class Predicate>
-  std::map<T, nlohmann::json>::const_iterator
+  typename std::map<T, nlohmann::json>::const_iterator
   findInEnumMap(const char *error_msg, Predicate predicate) {
     const auto &map { getEnumMap(T {}) };
     auto it { std::find_if(std::begin(map), std::end(map), predicate) };
@@ -58,7 +87,7 @@ namespace display_device {
 
 namespace nlohmann {
   // Specialization for optional types until they actually implement it.
-  template <typename T>
+  template <class T>
   struct adl_serializer<std::optional<T>> {
     static void
     to_json(json &nlohmann_json_j, const std::optional<T> &nlohmann_json_t) {
@@ -77,6 +106,31 @@ namespace nlohmann {
       }
       else {
         nlohmann_json_t = nlohmann_json_j.template get<T>();
+      }
+    }
+  };
+
+  // Specialization for variant type.
+  // See https://github.com/nlohmann/json/issues/1261#issuecomment-2048770747
+  template <typename... Ts>
+  struct adl_serializer<std::variant<Ts...>> {
+    static void
+    to_json(json &nlohmann_json_j, const std::variant<Ts...> &nlohmann_json_t) {
+      std::visit(
+        [&nlohmann_json_j]<class T>(const T &value) {
+          nlohmann_json_j["type"] = display_device::detail::JsonTypeName<std::decay_t<T>>::m_name;
+          nlohmann_json_j["value"] = value;
+        },
+        nlohmann_json_t);
+    }
+
+    static void
+    from_json(const json &nlohmann_json_j, std::variant<Ts...> &nlohmann_json_t) {
+      // Call variant_from_json for all types, only one will succeed
+      const bool found { (display_device::detail::variantFromJson<Ts>(nlohmann_json_j, nlohmann_json_t) || ...) };
+      if (!found) {
+        const std::string error { "Could not parse variant from type " + nlohmann_json_j.at("type").get<std::string>() + "!" };
+        throw std::runtime_error(error);
       }
     }
   };

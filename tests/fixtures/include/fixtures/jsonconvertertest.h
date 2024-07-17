@@ -14,8 +14,11 @@ public:
     EXPECT_TRUE(success);
     EXPECT_EQ(json_string, expected_string);
 
+    std::string error_message{};
     T defaulted_input {};
-    EXPECT_TRUE(display_device::fromJson(json_string, defaulted_input));
+    if (!display_device::fromJson(json_string, defaulted_input, &error_message)) {
+      GTEST_FAIL() << error_message;
+    }
     EXPECT_EQ(input, defaulted_input);
   }
 };

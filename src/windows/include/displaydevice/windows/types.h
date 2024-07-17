@@ -78,26 +78,6 @@ namespace display_device {
   using ActiveTopology = std::vector<std::vector<std::string>>;
 
   /**
-   * @brief Floating point stored in a "numerator/denominator" form.
-   */
-  struct Rational {
-    unsigned int m_numerator {};
-    unsigned int m_denominator {};
-
-    /**
-     * @brief Contruct rational struct from double precission floating point.
-     */
-    static Rational
-    fromFloatingPoint(double value);
-
-    /**
-     * @brief Comparator for strict equality.
-     */
-    friend bool
-    operator==(const Rational &lhs, const Rational &rhs);
-  };
-
-  /**
    * @brief Display's mode (resolution + refresh rate).
    */
   struct DisplayMode {
