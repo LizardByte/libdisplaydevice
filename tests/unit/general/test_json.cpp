@@ -2,8 +2,8 @@
 #define DD_JSON_DETAIL
 // clang-format off
 #include "displaydevice/json.h"
-#include "displaydevice/detail/jsonserializer.h"
-#include "displaydevice/detail/jsonconverter.h"
+#include "displaydevice/detail/json_serializer.h"
+#include "displaydevice/detail/json_converter.h"
 // clang-format on
 
 // local includes
