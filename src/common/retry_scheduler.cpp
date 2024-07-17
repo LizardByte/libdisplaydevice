@@ -1,5 +1,5 @@
 // header include
-#include "displaydevice/retry_scheduler.h"
+#include "display_device/retry_scheduler.h"
 
 namespace display_device {
   SchedulerStopToken::SchedulerStopToken(std::function<void()> cleanup):

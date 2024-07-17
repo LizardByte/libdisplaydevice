@@ -4,7 +4,7 @@
 #include <boost/scope/scope_exit.hpp>
 
 // local includes
-#include "displaydevice/windows/win_display_device_interface.h"
+#include "display_device/windows/win_display_device_interface.h"
 #include "helpers.h"
 
 // Helper functions to make guards for restoring previous state

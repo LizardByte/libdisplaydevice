@@ -2,7 +2,7 @@
 #include "guards.h"
 
 // local includes
-#include "displaydevice/windows/settings_utils.h"
+#include "display_device/windows/settings_utils.h"
 
 boost::scope::scope_exit<display_device::DdGuardFn>
 makeTopologyGuard(display_device::WinDisplayDeviceInterface &win_dd) {

@@ -1,5 +1,5 @@
 // local includes
-#include "displaydevice/windows/win_api_layer.h"
+#include "display_device/windows/win_api_layer.h"
 #include "fixtures/fixtures.h"
 
 namespace {

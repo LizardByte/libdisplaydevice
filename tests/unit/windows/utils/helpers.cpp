@@ -1,6 +1,6 @@
 // local includes
 #include "helpers.h"
-#include "displaydevice/windows/json.h"
+#include "display_device/windows/json.h"
 
 std::optional<std::vector<std::string>>
 getAvailableDevices(display_device::WinApiLayer &layer, const bool only_valid_output) {

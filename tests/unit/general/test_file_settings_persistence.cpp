@@ -3,7 +3,7 @@
 #include <gmock/gmock.h>
 
 // local includes
-#include "displaydevice/file_settings_persistence.h"
+#include "display_device/file_settings_persistence.h"
 #include "fixtures/fixtures.h"
 
 namespace {

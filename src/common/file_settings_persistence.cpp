@@ -1,5 +1,5 @@
 // class header include
-#include "displaydevice/file_settings_persistence.h"
+#include "display_device/file_settings_persistence.h"
 
 // system includes
 #include <algorithm>
@@ -7,7 +7,7 @@
 #include <iterator>
 
 // local includes
-#include "displaydevice/logging.h"
+#include "display_device/logging.h"
 
 namespace display_device {
   FileSettingsPersistence::FileSettingsPersistence(std::filesystem::path filepath):

@@ -1,5 +1,5 @@
 // header include
-#include "displaydevice/windows/settings_utils.h"
+#include "display_device/windows/settings_utils.h"
 
 // system includes
 #include <algorithm>
@@ -7,8 +7,8 @@
 #include <thread>
 
 // local includes
-#include "displaydevice/logging.h"
-#include "displaydevice/windows/json.h"
+#include "display_device/logging.h"
+#include "display_device/windows/json.h"
 
 namespace display_device::win_utils {
   namespace {

@@ -1,5 +1,5 @@
 // local includes
-#include "displaydevice/windows/win_api_utils.h"
+#include "display_device/windows/win_api_utils.h"
 #include "fixtures/fixtures.h"
 #include "utils/comparison.h"
 #include "utils/mock_win_api_layer.h"

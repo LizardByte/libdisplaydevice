@@ -1,13 +1,13 @@
 // class header include
-#include "displaydevice/windows/win_display_device.h"
+#include "display_device/windows/win_display_device.h"
 
 // system includes
 #include <algorithm>
 #include <unordered_set>
 
 // local includes
-#include "displaydevice/logging.h"
-#include "displaydevice/windows/win_api_utils.h"
+#include "display_device/logging.h"
+#include "display_device/windows/win_api_utils.h"
 
 namespace display_device {
   namespace {

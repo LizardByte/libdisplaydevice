@@ -1,5 +1,5 @@
 // local includes
-#include "displaydevice/windows/json.h"
+#include "display_device/windows/json.h"
 #include "fixtures/json_converter_test.h"
 #include "utils/comparison.h"
 

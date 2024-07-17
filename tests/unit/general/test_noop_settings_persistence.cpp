@@ -1,5 +1,5 @@
 // local includes
-#include "displaydevice/noop_settings_persistence.h"
+#include "display_device/noop_settings_persistence.h"
 #include "fixtures/fixtures.h"
 
 namespace {

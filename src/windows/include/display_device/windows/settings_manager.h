@@ -5,9 +5,9 @@
 #include <memory>
 
 // local includes
-#include "displaydevice/audio_context_interface.h"
-#include "displaydevice/settings_manager_interface.h"
-#include "displaydevice/windows/win_display_device_interface.h"
+#include "display_device/audio_context_interface.h"
+#include "display_device/settings_manager_interface.h"
+#include "display_device/windows/win_display_device_interface.h"
 #include "persistent_state.h"
 
 namespace display_device {

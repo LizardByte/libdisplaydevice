@@ -1,9 +1,9 @@
 // class header include
-#include "displaydevice/windows/settings_manager.h"
+#include "display_device/windows/settings_manager.h"
 
 // local includes
-#include "displaydevice/logging.h"
-#include "displaydevice/noop_audio_context.h"
+#include "display_device/logging.h"
+#include "display_device/noop_audio_context.h"
 
 namespace display_device {
   SettingsManager::SettingsManager(

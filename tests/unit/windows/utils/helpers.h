@@ -4,8 +4,8 @@
 #include <cstdint>
 
 // local includes
-#include "displaydevice/windows/types.h"
-#include "displaydevice/windows/win_api_layer.h"
+#include "display_device/windows/types.h"
+#include "display_device/windows/win_api_layer.h"
 
 // Generic helper functions
 std::optional<std::vector<std::string>>

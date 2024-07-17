@@ -1,7 +1,7 @@
 #pragma once
 
 // local includes
-#include "displaydevice/detail/json_serializer.h"
+#include "display_device/detail/json_serializer.h"
 
 #ifdef DD_JSON_DETAIL
 namespace display_device {

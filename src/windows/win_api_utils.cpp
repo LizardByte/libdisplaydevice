@@ -1,11 +1,11 @@
 // header include
-#include "displaydevice/windows/win_api_utils.h"
+#include "display_device/windows/win_api_utils.h"
 
 // system includes
 #include <unordered_set>
 
 // local includes
-#include "displaydevice/logging.h"
+#include "display_device/logging.h"
 
 namespace {
   /**

@@ -16,4 +16,4 @@ endif()
 add_subdirectory(platf)
 
 # This is the main library
-add_subdirectory(displaydevice)
+add_subdirectory(display_device)

@@ -1,5 +1,5 @@
 // local includes
-#include "displaydevice/noop_audio_context.h"
+#include "display_device/noop_audio_context.h"
 #include "fixtures/fixtures.h"
 
 namespace {
