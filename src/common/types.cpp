@@ -1,5 +1,5 @@
 // header include
-#include "displaydevice/types.h"
+#include "display_device/types.h"
 
 namespace {
   bool

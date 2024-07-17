@@ -2,7 +2,7 @@
 #include <gmock/gmock.h>
 
 // local includes
-#include "displaydevice/retry_scheduler.h"
+#include "display_device/retry_scheduler.h"
 #include "fixtures/fixtures.h"
 
 namespace {

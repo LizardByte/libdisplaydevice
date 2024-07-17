@@ -1,13 +1,13 @@
 // class header include
-#include "displaydevice/windows/settings_manager.h"
+#include "display_device/windows/settings_manager.h"
 
 // system includes
 #include <boost/scope/scope_exit.hpp>
 
 // local includes
-#include "displaydevice/logging.h"
-#include "displaydevice/windows/json.h"
-#include "displaydevice/windows/settings_utils.h"
+#include "display_device/logging.h"
+#include "display_device/windows/json.h"
+#include "display_device/windows/settings_utils.h"
 
 namespace display_device {
   namespace {

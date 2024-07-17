@@ -1,5 +1,5 @@
 // class header include
-#include "displaydevice/windows/win_api_layer.h"
+#include "display_device/windows/win_api_layer.h"
 
 // system includes
 #include <boost/algorithm/string.hpp>
@@ -12,7 +12,7 @@
 #include <iomanip>
 
 // local includes
-#include "displaydevice/logging.h"
+#include "display_device/logging.h"
 
 // Windows includes after "windows.h"
 #include <SetupApi.h>

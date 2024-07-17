@@ -1,7 +1,7 @@
 // local includes
-#include "displaydevice/noop_audio_context.h"
-#include "displaydevice/noop_settings_persistence.h"
-#include "displaydevice/windows/settings_manager.h"
+#include "display_device/noop_audio_context.h"
+#include "display_device/noop_settings_persistence.h"
+#include "display_device/windows/settings_manager.h"
 #include "fixtures/fixtures.h"
 #include "fixtures/mock_audio_context.h"
 #include "fixtures/mock_settings_persistence.h"

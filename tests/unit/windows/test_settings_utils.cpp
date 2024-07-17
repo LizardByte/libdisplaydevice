@@ -1,5 +1,5 @@
 // local includes
-#include "displaydevice/windows/settings_utils.h"
+#include "display_device/windows/settings_utils.h"
 #include "fixtures/fixtures.h"
 #include "utils/comparison.h"
 #include "utils/mock_win_display_device.h"

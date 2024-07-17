@@ -1,5 +1,5 @@
 // local includes
-#include "displaydevice/types.h"
+#include "display_device/types.h"
 #include "fixtures/fixtures.h"
 
 namespace {

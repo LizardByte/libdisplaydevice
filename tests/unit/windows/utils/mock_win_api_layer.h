@@ -4,7 +4,7 @@
 #include <gmock/gmock.h>
 
 // local includes
-#include "displaydevice/windows/win_api_layer_interface.h"
+#include "display_device/windows/win_api_layer_interface.h"
 
 namespace display_device {
   class MockWinApiLayer: public WinApiLayerInterface {

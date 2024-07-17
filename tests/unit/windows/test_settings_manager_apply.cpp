@@ -1,6 +1,6 @@
 // local includes
-#include "displaydevice/windows/settings_manager.h"
-#include "displaydevice/windows/settings_utils.h"
+#include "display_device/windows/settings_manager.h"
+#include "display_device/windows/settings_utils.h"
 #include "fixtures/fixtures.h"
 #include "fixtures/mock_audio_context.h"
 #include "fixtures/mock_settings_persistence.h"

@@ -1,7 +1,7 @@
 #pragma once
 
 // local includes
-#include "displaydevice/windows/types.h"
+#include "display_device/windows/types.h"
 
 // Helper comparison operators
 bool

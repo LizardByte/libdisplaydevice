@@ -1,10 +1,10 @@
 // class header include
-#include "displaydevice/windows/persistent_state.h"
+#include "display_device/windows/persistent_state.h"
 
 // local includes
-#include "displaydevice/logging.h"
-#include "displaydevice/noop_settings_persistence.h"
-#include "displaydevice/windows/json.h"
+#include "display_device/logging.h"
+#include "display_device/noop_settings_persistence.h"
+#include "display_device/windows/json.h"
 
 namespace display_device {
   PersistentState::PersistentState(std::shared_ptr<SettingsPersistenceInterface> settings_persistence_api, const std::optional<SingleDisplayConfigState> &fallback_state):

@@ -4,7 +4,7 @@
 #include <gmock/gmock.h>
 
 // local includes
-#include "displaydevice/settings_persistence_interface.h"
+#include "display_device/settings_persistence_interface.h"
 
 namespace display_device {
   class MockSettingsPersistence: public SettingsPersistenceInterface {

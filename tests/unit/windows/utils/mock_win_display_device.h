@@ -4,7 +4,7 @@
 #include <gmock/gmock.h>
 
 // local includes
-#include "displaydevice/windows/win_display_device.h"
+#include "display_device/windows/win_display_device.h"
 
 namespace display_device {
   class MockWinDisplayDevice: public WinDisplayDeviceInterface {

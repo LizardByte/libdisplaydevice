@@ -1,7 +1,7 @@
 #pragma once
 
 // local includes
-#include "displaydevice/json.h"
+#include "display_device/json.h"
 #include "types.h"
 
 // Windows' converters (add as needed)

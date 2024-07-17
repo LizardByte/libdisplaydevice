@@ -4,7 +4,7 @@
 #include <gmock/gmock.h>
 
 // local includes
-#include "displaydevice/audio_context_interface.h"
+#include "display_device/audio_context_interface.h"
 
 namespace display_device {
   class MockAudioContext: public AudioContextInterface {

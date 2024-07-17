@@ -1,8 +1,8 @@
 // special ordered include of details
 #define DD_JSON_DETAIL
 // clang-format off
-#include "displaydevice/windows/types.h"
-#include "displaydevice/windows/detail/json_serializer.h"
+#include "display_device/windows/types.h"
+#include "display_device/windows/detail/json_serializer.h"
 // clang-format on
 
 namespace display_device {

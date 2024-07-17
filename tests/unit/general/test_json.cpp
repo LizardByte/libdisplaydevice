@@ -1,9 +1,9 @@
 // special ordered include of details
 #define DD_JSON_DETAIL
 // clang-format off
-#include "displaydevice/json.h"
-#include "displaydevice/detail/json_serializer.h"
-#include "displaydevice/detail/json_converter.h"
+#include "display_device/json.h"
+#include "display_device/detail/json_serializer.h"
+#include "display_device/detail/json_converter.h"
 // clang-format on
 
 // local includes

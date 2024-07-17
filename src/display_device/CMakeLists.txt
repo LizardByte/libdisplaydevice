@@ -2,7 +2,7 @@
 set(MODULE libdisplaydevice)
 
 # Globing headers (so that they appear in some IDEs) and sources
-file(GLOB HEADER_LIST CONFIGURE_DEPENDS "include/displaydevice/*.h")
+file(GLOB HEADER_LIST CONFIGURE_DEPENDS "include/display_device/*.h")
 file(GLOB SOURCE_LIST CONFIGURE_DEPENDS "*.cpp")
 
 # Automatic library - will be static or dynamic based on user setting

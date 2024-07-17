@@ -4,8 +4,8 @@
 #include <memory>
 
 // local includes
-#include "displaydevice/settings_persistence_interface.h"
-#include "displaydevice/windows/win_display_device_interface.h"
+#include "display_device/settings_persistence_interface.h"
+#include "display_device/windows/win_display_device_interface.h"
 
 namespace display_device {
   /**

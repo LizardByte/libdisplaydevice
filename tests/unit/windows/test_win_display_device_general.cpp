@@ -1,8 +1,8 @@
 // local includes
-#include "displaydevice/windows/settings_utils.h"
-#include "displaydevice/windows/win_api_layer.h"
-#include "displaydevice/windows/win_api_utils.h"
-#include "displaydevice/windows/win_display_device.h"
+#include "display_device/windows/settings_utils.h"
+#include "display_device/windows/win_api_layer.h"
+#include "display_device/windows/win_api_utils.h"
+#include "display_device/windows/win_display_device.h"
 #include "fixtures/fixtures.h"
 #include "utils/comparison.h"
 #include "utils/helpers.h"
