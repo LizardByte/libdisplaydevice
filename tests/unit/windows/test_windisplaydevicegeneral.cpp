@@ -160,7 +160,7 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
     .RetiresOnSaturation();
   EXPECT_CALL(*m_layer, getDisplayScale(_, _))
     .Times(1)
-    .WillOnce(Return(1.75))
+    .WillOnce(Return(display_device::Rational { 175, 100 }))
     .RetiresOnSaturation();
   EXPECT_CALL(*m_layer, getHdrState(_))
     .Times(1)
@@ -178,8 +178,8 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
       "FriendlyName1",
       display_device::EnumeratedDevice::Info {
         { 1920, 1080 },
-        0.,
-        0.,
+        display_device::Rational { 0, 1 },
+        display_device::Rational { 0, 1 },
         true,
         { 0, 0 },
         std::nullopt } },
@@ -188,8 +188,8 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
       "FriendlyName2",
       display_device::EnumeratedDevice::Info {
         { 1920, 2160 },
-        1.75,
-        119.995,
+        display_device::Rational { 175, 100 },
+        display_device::Rational { 119995, 1000 },
         false,
         { 1921, 0 },
         display_device::HdrState::Enabled } },

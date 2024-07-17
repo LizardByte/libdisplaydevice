@@ -25,6 +25,8 @@ namespace display_device {
     Nested m_b {};
   };
 
+  using TestVariant = std::variant<double, Rational>;
+
   bool
   operator==(const TestStruct::Nested &lhs, const TestStruct::Nested &rhs) {
     return lhs.m_c == rhs.m_c;
@@ -41,6 +43,7 @@ namespace display_device {
 
   DD_JSON_DEFINE_CONVERTER(TestEnum)
   DD_JSON_DEFINE_CONVERTER(TestStruct)
+  DD_JSON_DEFINE_CONVERTER(TestVariant)
 }  // namespace display_device
 
 namespace {
@@ -165,4 +168,27 @@ TEST_S(FromJson, Enum, MissingMappingValue) {
 
   EXPECT_FALSE(display_device::fromJson(R"("OtherValue")", value, &error_message));
   EXPECT_EQ(error_message, "TestEnum is missing enum mapping!");
+}
+
+TEST_S(ToJson, TestVariant) {
+  EXPECT_EQ(toJson(display_device::TestVariant { 123. }, std::nullopt, nullptr), R"({"type":"double","value":123.0})");
+  EXPECT_EQ(toJson(display_device::TestVariant { display_device::Rational { 1, 2 } }, std::nullopt, nullptr), R"({"type":"rational","value":{"denominator":2,"numerator":1}})");
+}
+
+TEST_S(FromJson, TestVariant) {
+  display_device::TestVariant variant {};
+
+  EXPECT_TRUE(display_device::fromJson(R"({"type":"double","value":123.0})", variant, nullptr));
+  EXPECT_EQ(std::get<double>(variant), 123.0);  // Relying on GTest to properly compare floats
+
+  EXPECT_TRUE(display_device::fromJson(R"({"type":"rational","value":{"denominator":2,"numerator":1}})", variant, nullptr));
+  EXPECT_EQ(std::get<display_device::Rational>(variant), display_device::Rational({ 1, 2 }));
+}
+
+TEST_S(FromJson, TestVariant, UnknownVariantType) {
+  display_device::TestVariant variant {};
+  std::string error_message {};
+
+  EXPECT_FALSE(display_device::fromJson(R"({"type":"SomeUnknownType","value":123.0})", variant, &error_message));
+  EXPECT_EQ(error_message, "Could not parse variant from type SomeUnknownType!");
 }

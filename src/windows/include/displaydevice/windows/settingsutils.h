@@ -112,7 +112,7 @@ namespace display_device::win_utils {
    */
   DeviceDisplayModeMap
   computeNewDisplayModes(const std::optional<Resolution> &resolution,
-    const std::optional<double> &refresh_rate,
+    const std::optional<FloatingPoint> &refresh_rate,
     bool configuring_primary_devices,
     const std::string &device_to_configure,
     const std::set<std::string> &additional_devices_to_configure,

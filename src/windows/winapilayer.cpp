@@ -7,6 +7,7 @@
 #include <boost/uuid/name_generator_sha1.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <cmath>
 #include <cstdint>
 #include <iomanip>
 
@@ -575,7 +576,7 @@ namespace display_device {
     return true;
   }
 
-  std::optional<double>
+  std::optional<Rational>
   WinApiLayer::getDisplayScale(const std::string &display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const {
     // Note: implementation based on https://stackoverflow.com/a/74046173
     struct EnumData {
@@ -617,6 +618,6 @@ namespace display_device {
     }
 
     const auto width { static_cast<double>(*enum_data.m_width) / static_cast<double>(source_mode.width) };
-    return static_cast<double>(GetDpiForSystem()) / 96. / width;
+    return Rational { static_cast<unsigned int>(std::round((static_cast<double>(GetDpiForSystem()) / 96. / width) * 100)), 100 };
   }
 }  // namespace display_device

@@ -59,15 +59,15 @@ namespace display_device {
         }
 
         const auto display_name { m_w_api->getDisplayName(best_path) };
-        const double refresh_rate { best_path.targetInfo.refreshRate.Denominator > 0 ?
-                                      static_cast<double>(best_path.targetInfo.refreshRate.Numerator) / static_cast<double>(best_path.targetInfo.refreshRate.Denominator) :
-                                      0. };
+        const Rational refresh_rate { best_path.targetInfo.refreshRate.Denominator > 0 ?
+                                        Rational { best_path.targetInfo.refreshRate.Numerator, best_path.targetInfo.refreshRate.Denominator } :
+                                        Rational { 0, 1 } };
         const EnumeratedDevice::Info info {
           { source_mode->width, source_mode->height },
-          m_w_api->getDisplayScale(display_name, *source_mode).value_or(0.),
+          m_w_api->getDisplayScale(display_name, *source_mode).value_or(Rational { 0, 1 }),
           refresh_rate,
           win_utils::isPrimary(*source_mode),
-          { source_mode->position.x, source_mode->position.y },
+          { static_cast<int>(source_mode->position.x), static_cast<int>(source_mode->position.y) },
           m_w_api->getHdrState(best_path)
         };
 

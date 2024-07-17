@@ -91,7 +91,7 @@ TEST_F_S_MOCKED(ComputeNewTopology, EnsurePrimary) {
     (display_device::ActiveTopology { { "DeviceId3" }, { "DeviceId4" } }));
 }
 
-TEST_F_S_MOCKED(ComputeNewDisplayModes, PrimaryDevices) {
+TEST_F_S_MOCKED(ComputeNewDisplayModes, PrimaryDevices, DoubleFloatType) {
   auto expected_modes { DEFAULT_CURRENT_MODES };
   expected_modes["DeviceId1"] = { { 1920, 1080 }, { 1200000, 10000 } };
   expected_modes["DeviceId2"] = { { 1920, 1080 }, { 1200000, 10000 } };
@@ -99,12 +99,28 @@ TEST_F_S_MOCKED(ComputeNewDisplayModes, PrimaryDevices) {
   EXPECT_EQ(display_device::win_utils::computeNewDisplayModes({ { 1920, 1080 } }, { 120. }, true, "DeviceId1", { "DeviceId2" }, DEFAULT_CURRENT_MODES), expected_modes);
 }
 
-TEST_F_S_MOCKED(ComputeNewDisplayModes, NonPrimaryDevices) {
+TEST_F_S_MOCKED(ComputeNewDisplayModes, NonPrimaryDevices, DoubleFloatType) {
   auto expected_modes { DEFAULT_CURRENT_MODES };
   expected_modes["DeviceId1"] = { { 1920, 1080 }, { 1200000, 10000 } };
   expected_modes["DeviceId2"] = { { 1920, 1080 }, expected_modes["DeviceId2"].m_refresh_rate };
 
   EXPECT_EQ(display_device::win_utils::computeNewDisplayModes({ { 1920, 1080 } }, { 120. }, false, "DeviceId1", { "DeviceId2" }, DEFAULT_CURRENT_MODES), expected_modes);
+}
+
+TEST_F_S_MOCKED(ComputeNewDisplayModes, PrimaryDevices, RationalFloatType) {
+  auto expected_modes { DEFAULT_CURRENT_MODES };
+  expected_modes["DeviceId1"] = { { 1920, 1080 }, { 120, 1 } };
+  expected_modes["DeviceId2"] = { { 1920, 1080 }, { 120, 1 } };
+
+  EXPECT_EQ(display_device::win_utils::computeNewDisplayModes({ { 1920, 1080 } }, { display_device::Rational { 120, 1 } }, true, "DeviceId1", { "DeviceId2" }, DEFAULT_CURRENT_MODES), expected_modes);
+}
+
+TEST_F_S_MOCKED(ComputeNewDisplayModes, NonPrimaryDevices, RationalFloatType) {
+  auto expected_modes { DEFAULT_CURRENT_MODES };
+  expected_modes["DeviceId1"] = { { 1920, 1080 }, { 120, 1 } };
+  expected_modes["DeviceId2"] = { { 1920, 1080 }, expected_modes["DeviceId2"].m_refresh_rate };
+
+  EXPECT_EQ(display_device::win_utils::computeNewDisplayModes({ { 1920, 1080 } }, { display_device::Rational { 120, 1 } }, false, "DeviceId1", { "DeviceId2" }, DEFAULT_CURRENT_MODES), expected_modes);
 }
 
 TEST_F_S_MOCKED(ComputeNewHdrStates, PrimaryDevices) {

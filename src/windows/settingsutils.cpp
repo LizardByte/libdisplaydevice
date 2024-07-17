@@ -3,6 +3,7 @@
 
 // system includes
 #include <algorithm>
+#include <cmath>
 #include <thread>
 
 // local includes
@@ -264,7 +265,7 @@ namespace display_device::win_utils {
   }
 
   DeviceDisplayModeMap
-  computeNewDisplayModes(const std::optional<Resolution> &resolution, const std::optional<double> &refresh_rate, const bool configuring_primary_devices, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, const DeviceDisplayModeMap &original_modes) {
+  computeNewDisplayModes(const std::optional<Resolution> &resolution, const std::optional<FloatingPoint> &refresh_rate, const bool configuring_primary_devices, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, const DeviceDisplayModeMap &original_modes) {
     DeviceDisplayModeMap new_modes { original_modes };
 
     if (resolution) {
@@ -278,19 +279,32 @@ namespace display_device::win_utils {
     }
 
     if (refresh_rate) {
+      const auto from_floating_point { [](const FloatingPoint &value) {
+        if (const auto *rational_value { std::get_if<Rational>(&value) }; rational_value) {
+          return *rational_value;
+        }
+
+        // It's hard to deal with floating values, so we just multiply it
+        // to keep 4 decimal places (if any) and let Windows deal with it!
+        // Genius idea if I'm being honest.
+        constexpr auto multiplier { static_cast<unsigned int>(std::pow(10, 4)) };
+        const double transformed_value { std::round(std::get<double>(value) * multiplier) };
+        return Rational { static_cast<unsigned int>(transformed_value), multiplier };
+      } };
+
       if (configuring_primary_devices) {
         // No device has been specified, so if they're all are primary devices
         // we need to apply the refresh rate change to all duplicates.
         const auto devices { joinConfigurableDevices(device_to_configure, additional_devices_to_configure) };
         for (const auto &device_id : devices) {
-          new_modes[device_id].m_refresh_rate = Rational::fromFloatingPoint(*refresh_rate);
+          new_modes[device_id].m_refresh_rate = from_floating_point(*refresh_rate);
         }
       }
       else {
         // Even if we have duplicate devices, their refresh rate may differ
         // and since the device was specified, let's apply the refresh
         // rate only to the specified device.
-        new_modes[device_to_configure].m_refresh_rate = Rational::fromFloatingPoint(*refresh_rate);
+        new_modes[device_to_configure].m_refresh_rate = from_floating_point(*refresh_rate);
       }
     }
 

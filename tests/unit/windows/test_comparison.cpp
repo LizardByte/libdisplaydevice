@@ -7,12 +7,6 @@ namespace {
 #define TEST_S(...) DD_MAKE_TEST(TEST, TypeComparison, __VA_ARGS__)
 }  // namespace
 
-TEST_S(Rational) {
-  EXPECT_EQ(display_device::Rational({ 1, 1 }), display_device::Rational({ 1, 1 }));
-  EXPECT_NE(display_device::Rational({ 1, 1 }), display_device::Rational({ 0, 1 }));
-  EXPECT_NE(display_device::Rational({ 1, 1 }), display_device::Rational({ 1, 0 }));
-}
-
 TEST_S(DisplayMode) {
   EXPECT_EQ(display_device::DisplayMode({ 1, 1 }, { 1, 1 }), display_device::DisplayMode({ 1, 1 }, { 1, 1 }));
   EXPECT_NE(display_device::DisplayMode({ 1, 1 }, { 1, 1 }), display_device::DisplayMode({ 1, 0 }, { 1, 1 }));

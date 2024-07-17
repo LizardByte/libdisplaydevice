@@ -46,7 +46,7 @@ namespace display_device {
     setHdrState(const DISPLAYCONFIG_PATH_INFO &path, HdrState state) override;
 
     /** For details @see WinApiLayerInterface::getDisplayScale */
-    [[nodiscard]] std::optional<double>
+    [[nodiscard]] std::optional<Rational>
     getDisplayScale(const std::string &display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const override;
   };
 }  // namespace display_device
