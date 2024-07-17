@@ -5,7 +5,7 @@
 
 // local includes
 #include "displaydevice/windows/types.h"
-#include "displaydevice/windows/winapilayer.h"
+#include "displaydevice/windows/win_api_layer.h"
 
 // Generic helper functions
 std::optional<std::vector<std::string>>

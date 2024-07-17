@@ -10,7 +10,7 @@
 
 // local includes
 #include "displaydevice/logging.h"
-#include "testutils.h"
+#include "test_utils.h"
 
 // Undefine the original TEST macro
 #undef TEST
