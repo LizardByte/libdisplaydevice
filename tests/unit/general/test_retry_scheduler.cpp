@@ -132,11 +132,10 @@ TEST_F_S(Schedule, ImmediateExecution) {
   },
     1ms);
 
-  while (!first_call_scheduler_thread_id || !second_call_scheduler_thread_id) {
+  while (m_impl.isScheduled()) {
     std::this_thread::sleep_for(1ms);
   }
 
-  EXPECT_FALSE(m_impl.isScheduled());
   EXPECT_TRUE(first_call_scheduler_thread_id);
   EXPECT_TRUE(second_call_scheduler_thread_id);
 
