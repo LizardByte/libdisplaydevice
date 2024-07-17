@@ -58,10 +58,10 @@ protected:
   getArgs() const;
 
   /**
-   * @brief
-   * @param pattern
-   * @param remove_match
-   * @return
+   * @brief Get the command line argument that matches the pattern.
+   * @param pattern Pattern to look for.
+   * @param remove_match Specify if the matched pattern should be removed before returning argument.
+   * @return Matching command line argument or null optional if nothing matched.
    */
   [[nodiscard]] virtual std::optional<std::string>
   getArgWithMatchingPattern(const std::string &pattern, bool remove_match) const;
