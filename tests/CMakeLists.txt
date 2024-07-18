@@ -57,7 +57,7 @@ add_executable(${TEST_BINARY} ${sources})
 target_link_libraries(${TEST_BINARY}
         PUBLIC
         gmock_main  # if we use this we don't need our own main function
-        libdisplaydevice::display_device # this target includes common + platform specific targets
+        libdisplaydevice::display_device  # this target includes common + platform specific targets
         libfixtures # these are our fixtures/helpers for the tests
         ${libraries} # additional libraries if needed
 )
