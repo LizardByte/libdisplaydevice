@@ -12,7 +12,7 @@ set(REQUIRED_HEADER_LIBRARIES
         uuid
 )
 
-find_package(Boost 1.85 QUIET GLOBAL)
+find_package(Boost 1.85 CONFIG QUIET GLOBAL)
 if(NOT Boost_FOUND)
     message(STATUS "Boost v1.85.x package not found in the system. Falling back to FetchContent.")
     include(FetchContent)
