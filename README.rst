@@ -55,7 +55,9 @@ Install dependencies:
         mingw-w64-ucrt-x86_64-binutils \
         mingw-w64-ucrt-x86_64-cmake \
         mingw-w64-ucrt-x86_64-ninja \
-        mingw-w64-ucrt-x86_64-toolchain
+        mingw-w64-ucrt-x86_64-toolchain \
+        mingw-w64-ucrt-x86_64-boost \
+        mingw-w64-ucrt-x86_64-nlohmann-json
 
 Build
 ~~~~~

@@ -21,5 +21,5 @@ target_link_libraries(${MODULE}
 
         PRIVATE
         gtest
-        libcommon
+        libdisplaydevice::common
 )

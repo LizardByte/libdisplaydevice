@@ -42,14 +42,17 @@ jobs:
           sudo apt-get install -y \
             build-essential \
             cmake \
-            ninja-build
+            ninja-build \
+            nlohmann-json3-dev
 
       - name: Setup Dependencies macOS
         if: runner.os == 'macOS'
         run: |
           brew install \
             cmake \
-            ninja
+            ninja \
+            boost \
+            nlohmann-json
 
       - name: Setup Dependencies Windows
         if: runner.os == 'Windows'
@@ -62,6 +65,8 @@ jobs:
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-ninja
             mingw-w64-ucrt-x86_64-toolchain
+            mingw-w64-ucrt-x86_64-boost
+            mingw-w64-ucrt-x86_64-nlohmann-json
 
       - name: Prepare tests
         id: prepare-tests
