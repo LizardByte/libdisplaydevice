@@ -11,7 +11,8 @@ sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
 sudo apt-get install -y \
   build-essential \
   cmake \
-  ninja-build
+  ninja-build \
+  nlohmann-json3-dev
 
 # clean apt cache
 sudo apt-get clean

@@ -4,7 +4,9 @@ set -e
 # install dependencies
 brew install \
   cmake \
-  ninja
+  ninja \
+  boost \
+  nlohmann-json
 
 # build
 mkdir -p build
