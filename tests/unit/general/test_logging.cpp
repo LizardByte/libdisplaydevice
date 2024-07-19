@@ -18,6 +18,7 @@ TEST_S(LogLevelVerbose) {
   EXPECT_EQ(logger.isLogLevelEnabled(level::info), true);
   EXPECT_EQ(logger.isLogLevelEnabled(level::warning), true);
   EXPECT_EQ(logger.isLogLevelEnabled(level::error), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::fatal), true);
 }
 
 TEST_S(LogLevelDebug) {
@@ -31,6 +32,7 @@ TEST_S(LogLevelDebug) {
   EXPECT_EQ(logger.isLogLevelEnabled(level::info), true);
   EXPECT_EQ(logger.isLogLevelEnabled(level::warning), true);
   EXPECT_EQ(logger.isLogLevelEnabled(level::error), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::fatal), true);
 }
 
 TEST_S(LogLevelInfo) {
@@ -44,6 +46,7 @@ TEST_S(LogLevelInfo) {
   EXPECT_EQ(logger.isLogLevelEnabled(level::info), true);
   EXPECT_EQ(logger.isLogLevelEnabled(level::warning), true);
   EXPECT_EQ(logger.isLogLevelEnabled(level::error), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::fatal), true);
 }
 
 TEST_S(LogLevelWarning) {
@@ -57,6 +60,7 @@ TEST_S(LogLevelWarning) {
   EXPECT_EQ(logger.isLogLevelEnabled(level::info), false);
   EXPECT_EQ(logger.isLogLevelEnabled(level::warning), true);
   EXPECT_EQ(logger.isLogLevelEnabled(level::error), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::fatal), true);
 }
 
 TEST_S(LogLevelError) {
@@ -70,6 +74,21 @@ TEST_S(LogLevelError) {
   EXPECT_EQ(logger.isLogLevelEnabled(level::info), false);
   EXPECT_EQ(logger.isLogLevelEnabled(level::warning), false);
   EXPECT_EQ(logger.isLogLevelEnabled(level::error), true);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::fatal), true);
+}
+
+TEST_S(LogLevelFatal) {
+  using level = display_device::Logger::LogLevel;
+  auto &logger { display_device::Logger::get() };
+
+  logger.setLogLevel(level::fatal);
+
+  EXPECT_EQ(logger.isLogLevelEnabled(level::verbose), false);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::debug), false);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::info), false);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::warning), false);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::error), false);
+  EXPECT_EQ(logger.isLogLevelEnabled(level::fatal), true);
 }
 
 TEST_S(DefaultLogger) {
@@ -89,6 +108,7 @@ TEST_S(DefaultLogger) {
   EXPECT_TRUE(testRegex(write_and_get_cout(level::info, "Hello World!"),    R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] INFO:    Hello World!\n)"));
   EXPECT_TRUE(testRegex(write_and_get_cout(level::warning, "Hello World!"), R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] WARNING: Hello World!\n)"));
   EXPECT_TRUE(testRegex(write_and_get_cout(level::error, "Hello World!"),   R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] ERROR:   Hello World!\n)"));
+  EXPECT_TRUE(testRegex(write_and_get_cout(level::fatal, "Hello World!"),   R"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}\] FATAL:   Hello World!\n)"));
   // clang-format on
 }
 
@@ -121,6 +141,10 @@ TEST_S(CustomCallback) {
 
   logger.write(level::error, "Hello World!");
   EXPECT_EQ(output, "4 Hello World!");
+  EXPECT_TRUE(m_cout_buffer.str().empty());
+
+  logger.write(level::fatal, "Hello World!");
+  EXPECT_EQ(output, "5 Hello World!");
   EXPECT_TRUE(m_cout_buffer.str().empty());
 }
 
