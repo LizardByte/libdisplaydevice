@@ -26,7 +26,8 @@ namespace display_device {
       debug,
       info,
       warning,
-      error
+      error,
+      fatal
     };
 
     /**

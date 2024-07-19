@@ -26,7 +26,7 @@ namespace display_device {
         return false;
       }
 
-      std::ranges::copy(data, std::ostreambuf_iterator<char> { stream });
+      std::copy(std::begin(data), std::end(data), std::ostreambuf_iterator<char> { stream });
       return true;
     }
     catch (const std::exception &error) {
