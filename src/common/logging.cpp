@@ -1,5 +1,5 @@
 #if !defined(_MSC_VER) && !defined(_POSIX_THREAD_SAFE_FUNCTIONS)
-  #define _POSIX_THREAD_SAFE_FUNCTIONS // For localtime_r
+  #define _POSIX_THREAD_SAFE_FUNCTIONS  // For localtime_r
 #endif
 
 // class header include
@@ -64,7 +64,7 @@ namespace display_device {
 
     std::stringstream stream;
     {
-      // Time (limited by GCC 10, so it's not pretty and no timezones are supported...)
+      // Time (limited by GCC 10, so it's not pretty...)
       {
         const auto now { std::chrono::system_clock::now() };
         const auto now_ms { std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) };
@@ -98,7 +98,7 @@ namespace display_device {
           break;
         case LogLevel::fatal:
           stream << "FATAL:   ";
-        break;
+          break;
       }
 
       // Value
