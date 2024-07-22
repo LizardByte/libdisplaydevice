@@ -144,6 +144,17 @@ namespace display_device::win_utils {
     return flattened_topology;
   }
 
+  ActiveTopology
+  stripTopologyOfUnavailableDevices(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology) {
+    const auto devices { win_dd.enumAvailableDevices() };
+    if (devices.empty()) {
+      DD_LOG(error) << "Failed to enumerate available devices for stripping topology!";
+      return {};
+    }
+
+    return stripTopology(topology, devices);
+  }
+
   std::string
   getPrimaryDevice(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology) {
     const auto flat_topology { flattenTopology(topology) };

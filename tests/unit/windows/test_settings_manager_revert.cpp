@@ -27,6 +27,11 @@ namespace {
     { "DeviceId3", { { 456, 123 }, { 60, 1 } } }
   };
   const std::string CURRENT_MODIFIED_PRIMARY_DEVICE { "DeviceId3" };
+  const display_device::EnumeratedDeviceList CURRENT_DEVICES {
+    { .m_device_id = "DeviceId1" },
+    { .m_device_id = "DeviceId3" },
+    { .m_device_id = "DeviceId4" }
+  };
 
   // Test fixture(s) for this file
   class SettingsManagerRevertMocked: public BaseTest {
@@ -219,7 +224,19 @@ namespace {
 
     void
     expectedDefaultTopologyGuardCall(InSequence & /* To ensure that sequence is created outside this scope */) {
-      EXPECT_CALL(*m_dd_api, setTopology(CURRENT_TOPOLOGY))
+      EXPECT_CALL(*m_dd_api, enumAvailableDevices())
+        .Times(1)
+        .WillOnce(Return(CURRENT_DEVICES))
+        .RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_initial.m_topology))
+        .Times(1)
+        .WillOnce(Return(true))
+        .RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, ut_consts::SDCS_FULL->m_initial.m_topology))
+        .Times(1)
+        .WillOnce(Return(CURRENT_TOPOLOGY == ut_consts::SDCS_FULL->m_initial.m_topology))
+        .RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, setTopology(ut_consts::SDCS_FULL->m_initial.m_topology))
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
@@ -297,6 +314,7 @@ TEST_F_S_MOCKED(RevertModifiedSettings, InvalidModifiedTopology) {
     .Times(1)
     .WillOnce(Return(false));
   expectedDefaultTopologyGuardCall(sequence);
+  expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_FALSE(getImpl().revertSettings());
 }
@@ -426,6 +444,82 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToSetPersistence) {
   expectedDefaultDisplayModeGuardCall(sequence);
   expectedDefaultHdrStateGuardCall(sequence);
   expectedDefaultTopologyGuardCall(sequence);
+  expectedHdrWorkaroundCalls(sequence);
+
+  EXPECT_FALSE(getImpl().revertSettings());
+}
+
+TEST_F_S_MOCKED(TopologyGuard, CurrentTopologyUsedAsFallback) {
+  InSequence sequence;
+  expectedDefaultCallsUntilModifiedSettings(sequence);
+  expectedDefaultRevertModifiedSettingsCall(sequence);
+  EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_initial.m_topology))
+    .Times(1)
+    .WillOnce(Return(false))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, enumAvailableDevices())
+    .Times(1)
+    .WillOnce(Return(CURRENT_DEVICES))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_initial.m_topology))
+    .Times(1)
+    .WillOnce(Return(false))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, CURRENT_TOPOLOGY))
+    .Times(1)
+    .WillOnce(Return(true))
+    .RetiresOnSaturation();
+  expectedHdrWorkaroundCalls(sequence);
+
+  EXPECT_FALSE(getImpl().revertSettings());
+}
+
+TEST_F_S_MOCKED(TopologyGuard, SystemSettingsUntouched) {
+  InSequence sequence;
+  expectedDefaultCallsUntilModifiedSettings(sequence);
+  EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_modified.m_topology))
+   .Times(1)
+   .WillOnce(Return(false))
+   .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, enumAvailableDevices())
+    .Times(1)
+    .WillOnce(Return(CURRENT_DEVICES))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_initial.m_topology))
+    .Times(1)
+    .WillOnce(Return(false))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, CURRENT_TOPOLOGY))
+    .Times(1)
+    .WillOnce(Return(true))
+    .RetiresOnSaturation();
+
+  EXPECT_FALSE(getImpl().revertSettings());
+}
+
+TEST_F_S_MOCKED(TopologyGuard, FailedToSetTopology) {
+  InSequence sequence;
+  expectedDefaultCallsUntilModifiedSettings(sequence);
+  EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_modified.m_topology))
+    .Times(1)
+    .WillOnce(Return(false))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, enumAvailableDevices())
+    .Times(1)
+    .WillOnce(Return(CURRENT_DEVICES))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_initial.m_topology))
+    .Times(1)
+    .WillOnce(Return(true))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, ut_consts::SDCS_FULL->m_initial.m_topology))
+    .Times(1)
+    .WillOnce(Return(false))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, setTopology(ut_consts::SDCS_FULL->m_initial.m_topology))
+    .Times(1)
+    .WillOnce(Return(false))
+    .RetiresOnSaturation();
   expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_FALSE(getImpl().revertSettings());

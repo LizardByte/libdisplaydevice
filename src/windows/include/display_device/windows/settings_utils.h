@@ -27,6 +27,22 @@ namespace display_device::win_utils {
   flattenTopology(const ActiveTopology &topology);
 
   /**
+   * @brief Remove all unavailable devices from the topology.
+   * @param win_dd Interface for interacting with the OS.
+   * @param topology Topology to be stripped.
+   * @return Topology with only available devices.
+   *
+   * EXAMPLES:
+   * ```cpp
+   * const WinDisplayDeviceInterface* iface = getIface(...);
+   * const ActiveTopology topology { { "DeviceId1", "DeviceId2" }, { "DeviceId3" } };
+   * const auto stripped_topology { stripTopologyOfUnavailableDevices(*iface, topology) };
+   * ```
+   */
+  ActiveTopology
+  stripTopologyOfUnavailableDevices(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
+
+  /**
    * @brief Get one primary device from the provided topology.
    * @param win_dd Interface for interacting with the OS.
    * @param topology Topology to be searched.
