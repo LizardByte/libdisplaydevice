@@ -478,9 +478,9 @@ TEST_F_S_MOCKED(TopologyGuard, SystemSettingsUntouched) {
   InSequence sequence;
   expectedDefaultCallsUntilModifiedSettings(sequence);
   EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_modified.m_topology))
-   .Times(1)
-   .WillOnce(Return(false))
-   .RetiresOnSaturation();
+    .Times(1)
+    .WillOnce(Return(false))
+    .RetiresOnSaturation();
   EXPECT_CALL(*m_dd_api, enumAvailableDevices())
     .Times(1)
     .WillOnce(Return(CURRENT_DEVICES))

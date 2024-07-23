@@ -65,9 +65,9 @@ TEST_F_S_MOCKED(StripTopologyOfUnavailableDevices, NothingStripped) {
   const display_device::ActiveTopology input_topology { DEFAULT_INITIAL_TOPOLOGY };
   const display_device::ActiveTopology expected_topology { DEFAULT_INITIAL_TOPOLOGY };
   const display_device::EnumeratedDeviceList devices {
-        { .m_device_id = "DeviceId1" },
-        { .m_device_id = "DeviceId2" },
-        { .m_device_id = "DeviceId3" }
+    { .m_device_id = "DeviceId1" },
+    { .m_device_id = "DeviceId2" },
+    { .m_device_id = "DeviceId3" }
   };
 
   EXPECT_CALL(m_dd_api, enumAvailableDevices()).Times(1).WillOnce(Return(devices));
