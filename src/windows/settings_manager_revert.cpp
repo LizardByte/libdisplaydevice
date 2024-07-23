@@ -46,7 +46,19 @@ namespace display_device {
         win_utils::blankHdrStates(*m_dd_api, m_hdr_blank_delay);
       }
     } };
-    boost::scope::scope_exit topology_prep_guard { win_utils::topologyGuardFn(*m_dd_api, current_topology) };
+    boost::scope::scope_exit topology_prep_guard { [this, &cached_state, &current_topology, &system_settings_touched]() {
+      auto topology_to_restore { win_utils::stripTopologyOfUnavailableDevices(*m_dd_api, cached_state->m_initial.m_topology) };
+      if (!m_dd_api->isTopologyValid(topology_to_restore)) {
+        topology_to_restore = current_topology;
+      }
+
+      const bool is_topology_the_same { m_dd_api->isTopologyTheSame(current_topology, topology_to_restore) };
+      system_settings_touched = system_settings_touched || !is_topology_the_same;
+      if (!is_topology_the_same && !m_dd_api->setTopology(topology_to_restore)) {
+        DD_LOG(error) << "failed to revert topology in revertSettings topology guard! Used the following topology:\n"
+                      << toJson(topology_to_restore);
+      }
+    } };
 
     // We can revert the modified setting independently before playing around with initial topology.
     if (!revertModifiedSettings(current_topology, system_settings_touched)) {
