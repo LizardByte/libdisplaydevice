@@ -17,9 +17,9 @@ namespace {
   class PersistentStateMocked: public BaseTest {
   public:
     display_device::PersistentState &
-    getImpl(const std::optional<display_device::SingleDisplayConfigState> &fallback_state = display_device::SingleDisplayConfigState {}) {
+    getImpl(bool throw_on_load_error = false) {
       if (!m_impl) {
-        m_impl = std::make_unique<display_device::PersistentState>(m_settings_persistence_api, fallback_state);
+        m_impl = std::make_unique<display_device::PersistentState>(m_settings_persistence_api, throw_on_load_error);
       }
 
       return *m_impl;
@@ -51,16 +51,15 @@ TEST_F_S_MOCKED(FailedToLoadPersitence) {
     .Times(1)
     .WillOnce(Return(serializeState(ut_consts::SDCS_NULL)));
 
-  EXPECT_THAT([this]() { getImpl(std::nullopt); }, ThrowsMessage<std::runtime_error>(HasSubstr("Failed to load persistent settings!")));
+  EXPECT_THAT([this]() { getImpl(true); }, ThrowsMessage<std::runtime_error>(HasSubstr("Failed to load persistent settings!")));
 }
 
-TEST_F_S_MOCKED(FailedToLoadPersitence, FallbackIsUsed) {
-  const display_device::SingleDisplayConfigState fallback_value { { { { "FallbackId" } } } };
+TEST_F_S_MOCKED(FailedToLoadPersitence, ThrowIsSuppressed) {
   EXPECT_CALL(*m_settings_persistence_api, load())
     .Times(1)
     .WillOnce(Return(serializeState(ut_consts::SDCS_NULL)));
 
-  EXPECT_EQ(getImpl(fallback_value).getState(), fallback_value);
+  EXPECT_EQ(getImpl(false).getState(), std::nullopt);
 }
 
 TEST_F_S_MOCKED(InvalidPersitenceData) {
@@ -71,13 +70,12 @@ TEST_F_S_MOCKED(InvalidPersitenceData) {
     .Times(1)
     .WillOnce(Return(data));
 
-  EXPECT_THAT([this]() { getImpl(std::nullopt); },
+  EXPECT_THAT([this]() { getImpl(true); },
     ThrowsMessage<std::runtime_error>(HasSubstr("Failed to parse persistent settings! Error:\n"
                                                 "[json.exception.parse_error.101] parse error at line 1, column 1: syntax error while parsing value - invalid literal; last read: 'S'")));
 }
 
-TEST_F_S_MOCKED(InvalidPersitenceData, FallbackIsUsed) {
-  const display_device::SingleDisplayConfigState fallback_value { { { { "FallbackId" } } } };
+TEST_F_S_MOCKED(InvalidPersitenceData, ThrowIsSuppressed) {
   const std::string data_string { "SOMETHING" };
   const std::vector<std::uint8_t> data { std::begin(data_string), std::end(data_string) };
 
@@ -85,16 +83,15 @@ TEST_F_S_MOCKED(InvalidPersitenceData, FallbackIsUsed) {
     .Times(1)
     .WillOnce(Return(data));
 
-  EXPECT_EQ(getImpl(fallback_value).getState(), fallback_value);
+  EXPECT_EQ(getImpl(false).getState(), std::nullopt);
 }
 
-TEST_F_S_MOCKED(FallbackIsNotUsedOnSuccess) {
-  const display_device::SingleDisplayConfigState fallback_value { { { { "FallbackId" } } } };
+TEST_F_S_MOCKED(NothingIsThrownOnSuccess) {
   EXPECT_CALL(*m_settings_persistence_api, load())
     .Times(1)
     .WillOnce(Return(serializeState(ut_consts::SDCS_FULL)));
 
-  EXPECT_EQ(getImpl(fallback_value).getState(), ut_consts::SDCS_FULL);
+  EXPECT_EQ(getImpl(true).getState(), ut_consts::SDCS_FULL);
 }
 
 TEST_F_S_MOCKED(FailedToPersistState, ClearFailed) {

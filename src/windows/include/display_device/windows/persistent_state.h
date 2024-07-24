@@ -16,10 +16,9 @@ namespace display_device {
     /**
      * Default constructor for the class.
      * @param settings_persistence_api [Optional] A pointer to the Settings Persistence interface.
-     * @param fallback_state Fallback state to be used if the persistence interface fails to load data (or it is invalid).
-     *                       If no fallback is provided in such case, the constructor will throw.
+     * @param throw_on_load_error Specify whether to throw exception in constructor in case settings fail to load.
      */
-    explicit PersistentState(std::shared_ptr<SettingsPersistenceInterface> settings_persistence_api, const std::optional<SingleDisplayConfigState> &fallback_state = SingleDisplayConfigState {});
+    explicit PersistentState(std::shared_ptr<SettingsPersistenceInterface> settings_persistence_api, bool throw_on_load_error = false);
 
     /**
      * @brief Store the new state via the interface and cache it.
