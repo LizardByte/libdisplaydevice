@@ -7,7 +7,7 @@
 #include "display_device/windows/json.h"
 
 namespace display_device {
-  PersistentState::PersistentState(std::shared_ptr<SettingsPersistenceInterface> settings_persistence_api, const std::optional<SingleDisplayConfigState> &fallback_state):
+  PersistentState::PersistentState(std::shared_ptr<SettingsPersistenceInterface> settings_persistence_api, const bool throw_on_load_error):
       m_settings_persistence_api { std::move(settings_persistence_api) } {
     if (!m_settings_persistence_api) {
       m_settings_persistence_api = std::make_shared<NoopSettingsPersistence>();
@@ -27,11 +27,12 @@ namespace display_device {
     }
 
     if (!error_message.empty()) {
-      if (!fallback_state) {
+      if (throw_on_load_error) {
         throw std::runtime_error { error_message };
       }
 
-      m_cached_state = *fallback_state;
+      DD_LOG(error) << error_message;
+      m_cached_state = std::nullopt;
     }
   }
 
