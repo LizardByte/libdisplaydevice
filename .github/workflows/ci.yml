@@ -18,12 +18,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  setup_release:
+    name: Setup Release
+    outputs:
+      publish_release: ${{ steps.setup_release.outputs.publish_release }}
+      release_body: ${{ steps.setup_release.outputs.release_body }}
+      release_commit: ${{ steps.setup_release.outputs.release_commit }}
+      release_generate_release_notes: ${{ steps.setup_release.outputs.release_generate_release_notes }}
+      release_tag: ${{ steps.setup_release.outputs.release_tag }}
+      release_version: ${{ steps.setup_release.outputs.release_version }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Release
+        id: setup_release
+        uses: LizardByte/setup-release-action@v2024.725.234618
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
   build:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     name: Build
+    needs: [setup_release]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -150,10 +171,17 @@ jobs:
           echo "python-path=${python_path}" >> $GITHUB_OUTPUT
 
       - name: Build
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          BUILD_VERSION: ${{ needs.setup_release.outputs.release_tag }}
+          COMMIT: ${{ needs.setup_release.outputs.release_commit }}
         run: |
           mkdir -p build
           cd build
-          cmake -DCMAKE_BUILD_TYPE:STRING=Debug -G Ninja ..
+          cmake \
+            -DCMAKE_BUILD_TYPE:STRING=Debug \
+            -G Ninja \
+            ..
           ninja
 
       - name: Run tests
@@ -184,6 +212,21 @@ jobs:
         with:
           name: coverage-${{ matrix.os }}
           path: build/coverage.xml
+
+      - name: Move Artifacts
+        run: |
+          mkdir -p artifacts
+          if ["${{ runner.os }}" == "Windows"]; then
+            mv -f ./build/tests/test_libdisplaydevice.exe artifacts/
+          else
+            mv -f ./build/tests/test_libdisplaydevice artifacts/
+          fi
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ runner.os }}
+          path: artifacts/
 
   coverage:
     if: >-
@@ -222,3 +265,51 @@ jobs:
           flags: ${{ matrix.flag }}
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
+
+  release:
+    if:
+      always() &&
+      needs.setup_release.outputs.publish_release == 'true' &&
+      needs.build.result == 'success' &&
+      startsWith(github.repository, 'LizardByte/')
+    name: Release
+    needs: [build, setup_release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifact (Windows)
+        uses: actions/download-artifact@v4
+        with:
+          name: build-Windows
+          path: build-Windows
+
+      - name: Download build artifact (Linux)
+        uses: actions/download-artifact@v4
+        with:
+          name: build-Linux
+          path: build-Linux
+
+      - name: Download build artifact (macOS)
+        uses: actions/download-artifact@v4
+        with:
+          name: build-macOS
+          path: build-macOS
+
+      - name: Move artifacts
+        run: |
+          mkdir -p artifacts
+          mv -f build-Windows/test_libdisplaydevice.exe artifacts/test_libdisplaydevice-Windows.exe
+          mv -f build-Linux/test_libdisplaydevice artifacts/test_libdisplaydevice-Linux
+          mv -f build-macOS/test_libdisplaydevice artifacts/test_libdisplaydevice-macOS
+
+      - name: Create/Update GitHub Release
+        if: ${{ needs.setup_release.outputs.publish_release == 'true' }}
+        uses: LizardByte/create-release-action@v2024.614.221009
+        with:
+          allowUpdates: true
+          body: ${{ needs.setup_release.outputs.release_body }}
+          discussionCategory: announcements
+          generateReleaseNotes: ${{ needs.setup_release.outputs.release_generate_release_notes }}
+          name: ${{ needs.setup_release.outputs.release_tag }}
+          prerelease: true
+          tag: ${{ needs.setup_release.outputs.release_tag }}
+          token: ${{ secrets.GH_BOT_TOKEN }}
