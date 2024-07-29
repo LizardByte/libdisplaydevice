@@ -201,6 +201,77 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
   EXPECT_EQ(m_win_dd.enumAvailableDevices(), expected_list);
 }
 
+TEST_F_S_MOCKED(EnumAvailableDevices, MissingSourceModes) {
+  auto pam_missing_modes { ut_consts::PAM_3_ACTIVE };
+  pam_missing_modes->m_paths.resize(2);
+  pam_missing_modes->m_modes.resize(1);
+
+  InSequence sequence;
+  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
+    .Times(1)
+    .WillOnce(Return(pam_missing_modes))
+    .RetiresOnSaturation();
+
+  for (int i = 1; i <= 2; ++i) {
+    EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
+      .Times(1)
+      .WillOnce(Return("Path" + std::to_string(i)))
+      .RetiresOnSaturation();
+    EXPECT_CALL(*m_layer, getDeviceId(_))
+      .Times(1)
+      .WillOnce(Return("DeviceId" + std::to_string(i)))
+      .RetiresOnSaturation();
+    EXPECT_CALL(*m_layer, getDisplayName(_))
+      .Times(1)
+      .WillOnce(Return("DisplayName" + std::to_string(i)))
+      .RetiresOnSaturation();
+  }
+
+  EXPECT_CALL(*m_layer, getFriendlyName(_))
+    .Times(1)
+    .WillOnce(Return("FriendlyName1"))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_layer, getDisplayName(_))
+    .Times(1)
+    .WillOnce(Return("DisplayName1"))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_layer, getDisplayScale(_, _))
+    .Times(1)
+    .WillOnce(Return(std::nullopt))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_layer, getHdrState(_))
+    .Times(1)
+    .WillOnce(Return(std::nullopt))
+    .RetiresOnSaturation();
+
+  EXPECT_CALL(*m_layer, getFriendlyName(_))
+    .Times(1)
+    .WillOnce(Return("FriendlyName2"))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_layer, getDisplayName(_))
+    .Times(1)
+    .WillOnce(Return("DisplayName2"))
+    .RetiresOnSaturation();
+
+  const display_device::EnumeratedDeviceList expected_list {
+    { "DeviceId1",
+      "DisplayName1",
+      "FriendlyName1",
+      display_device::EnumeratedDevice::Info {
+        { 1920, 1080 },
+        display_device::Rational { 0, 1 },
+        display_device::Rational { 120, 1 },
+        true,
+        { 0, 0 },
+        std::nullopt } },
+    { "DeviceId2",
+      "DisplayName2",
+      "FriendlyName2",
+      std::nullopt }
+  };
+  EXPECT_EQ(m_win_dd.enumAvailableDevices(), expected_list);
+}
+
 TEST_F_S_MOCKED(EnumAvailableDevices, FailedToGetDisplayData) {
   EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
     .Times(1)
@@ -213,30 +284,6 @@ TEST_F_S_MOCKED(EnumAvailableDevices, FailedToCollectSourceData) {
   EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_EMPTY));
-
-  EXPECT_EQ(m_win_dd.enumAvailableDevices(), display_device::EnumeratedDeviceList {});
-}
-
-TEST_F_S_MOCKED(EnumAvailableDevices, NoDisplayModes) {
-  auto pam_no_modes { ut_consts::PAM_3_ACTIVE };
-  pam_no_modes->m_paths.resize(1);
-  pam_no_modes->m_modes.clear();
-
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
-    .Times(1)
-    .WillOnce(Return(pam_no_modes));
-  EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
-    .Times(1)
-    .WillOnce(Return("Path1"));
-  EXPECT_CALL(*m_layer, getDeviceId(_))
-    .Times(1)
-    .WillOnce(Return("DeviceId1"));
-  EXPECT_CALL(*m_layer, getDisplayName(_))
-    .Times(1)
-    .WillOnce(Return("DisplayName1"));
-  EXPECT_CALL(*m_layer, getFriendlyName(_))
-    .Times(1)
-    .WillOnce(Return("FriendlyName1"));
 
   EXPECT_EQ(m_win_dd.enumAvailableDevices(), display_device::EnumeratedDeviceList {});
 }
