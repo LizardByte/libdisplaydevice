@@ -1,3 +1,7 @@
+/**
+ * @file src/common/json.cpp
+ * @brief Definitions for JSON conversion functions.
+ */
 // header include
 #include "display_device/json.h"
 

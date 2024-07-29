@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/include/display_device/windows/persistent_state.h
+ * @brief Declarations for the PersistentState.
+ */
 #pragma once
 
 // system includes

@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/include/display_device/windows/win_display_device.h
+ * @brief Declarations for the WinDisplayDevice.
+ */
 #pragma once
 
 // system includes

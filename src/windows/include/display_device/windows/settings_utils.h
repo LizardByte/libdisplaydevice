@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/include/display_device/windows/settings_utils.h
+ * @brief Declarations for settings related utility functions.
+ */
 #pragma once
 
 // system includes
@@ -16,12 +20,10 @@ namespace display_device::win_utils {
    * @brief Get all the device its in the topology.
    * @param topology Topology to be "flattened".
    * @return Device ids found in the topology.
-   *
-   * EXAMPLES:
-   * ```cpp
+   * @examples
    * const ActiveTopology topology { { "DeviceId1", "DeviceId2" }, { "DeviceId3" } };
    * const auto device_ids { flattenTopology(topology) };
-   * ```
+   * @examples_end
    */
   std::set<std::string>
   flattenTopology(const ActiveTopology &topology);
@@ -31,13 +33,11 @@ namespace display_device::win_utils {
    * @param win_dd Interface for interacting with the OS.
    * @param topology Topology to be stripped.
    * @return Topology with only available devices.
-   *
-   * EXAMPLES:
-   * ```cpp
+   * @examples
    * const WinDisplayDeviceInterface* iface = getIface(...);
    * const ActiveTopology topology { { "DeviceId1", "DeviceId2" }, { "DeviceId3" } };
    * const auto stripped_topology { stripTopologyOfUnavailableDevices(*iface, topology) };
-   * ```
+   * @examples_end
    */
   ActiveTopology
   stripTopologyOfUnavailableDevices(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
@@ -47,13 +47,11 @@ namespace display_device::win_utils {
    * @param win_dd Interface for interacting with the OS.
    * @param topology Topology to be searched.
    * @return Id of a primary device or an empty string if not found or an error has occured.
-   *
-   * EXAMPLES:
-   * ```cpp
+   * @examples
    * const WinDisplayDeviceInterface* iface = getIface(...);
    * const ActiveTopology topology { { "DeviceId1", "DeviceId2" }, { "DeviceId3" } };
    * const auto primary_device_id { getPrimaryDevice(*iface, topology) };
-   * ```
+   * @examples_end
    */
   std::string
   getPrimaryDevice(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
@@ -64,15 +62,13 @@ namespace display_device::win_utils {
    * @param topology_before_changes Topology before any changes were made.
    * @param devices Currently available device list.
    * @return New initial state that should be used.
-   *
-   * EXAMPLES:
-   * ```cpp
+   * @examples
    * const SingleDisplayConfigState::Initial prev_state { { { "DeviceId1", "DeviceId2" }, { "DeviceId3" } } };
    * const ActiveTopology topology_before_changes { { "DeviceId3" } };
    * const EnumeratedDeviceList devices { ... };
    *
    * const auto new_initial_state { computeInitialState(prev_state, topology_before_changes, devices) };
-   * ```
+   * @examples_end
    */
   std::optional<SingleDisplayConfigState::Initial>
   computeInitialState(const std::optional<SingleDisplayConfigState::Initial> &prev_state,
@@ -178,12 +174,10 @@ namespace display_device::win_utils {
    * @param win_dd Interface for interacting with the OS.
    * @param topology Topology to be used when making a guard.
    * @return Function that once called will try to revert topology to the provided one.
-   *
-   * EXAMPLES:
-   * ```cpp
+   * @examples
    * WinDisplayDeviceInterface* iface = getIface(...);
    * boost::scope::scope_exit guard { topologyGuardFn(*iface, iface->getCurrentTopology()) };
-   * ```
+   * @examples_end
    */
   DdGuardFn
   topologyGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
@@ -193,12 +187,10 @@ namespace display_device::win_utils {
    * @param win_dd Interface for interacting with the OS.
    * @param topology Topology to be used when making a guard.
    * @return Function that once called will try to revert display modes to the ones that were initially set for the provided topology.
-   *
-   * EXAMPLES:
-   * ```cpp
+   * @examples
    * WinDisplayDeviceInterface* iface = getIface(...);
    * boost::scope::scope_exit guard { modeGuardFn(*iface, iface->getCurrentTopology()) };
-   * ```
+   * @examples_end
    */
   DdGuardFn
   modeGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
@@ -208,14 +200,12 @@ namespace display_device::win_utils {
    * @param win_dd Interface for interacting with the OS.
    * @param modes Display modes to restore when the guard is executed.
    * @return Function that once called will try to revert display modes to the ones that were provided.
-   *
-   * EXAMPLES:
-   * ```cpp
+   * @examples
    * WinDisplayDeviceInterface* iface = getIface(...);
    * const DeviceDisplayModeMap modes { };
    *
    * boost::scope::scope_exit guard { modeGuardFn(*iface, modes) };
-   * ```
+   * @examples_end
    */
   DdGuardFn
   modeGuardFn(WinDisplayDeviceInterface &win_dd, const DeviceDisplayModeMap &modes);
@@ -225,12 +215,10 @@ namespace display_device::win_utils {
    * @param win_dd Interface for interacting with the OS.
    * @param topology Topology to be used when making a guard.
    * @return Function that once called will try to revert primary display to the one that was initially set for the provided topology.
-   *
-   * EXAMPLES:
-   * ```cpp
+   * @examples
    * WinDisplayDeviceInterface* iface = getIface(...);
    * boost::scope::scope_exit guard { primaryGuardFn(*iface, iface->getCurrentTopology()) };
-   * ```
+   * @examples_end
    */
   DdGuardFn
   primaryGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
@@ -240,14 +228,12 @@ namespace display_device::win_utils {
    * @param win_dd Interface for interacting with the OS.
    * @param primary_device Primary device to restore when the guard is executed.
    * @return Function that once called will try to revert primary display to the one that was provided.
-   *
-   * EXAMPLES:
-   * ```cpp
+   * @examples
    * WinDisplayDeviceInterface* iface = getIface(...);
    * const std::string prev_primary_device { "MyDeviceId" };
    *
    * boost::scope::scope_exit guard { primaryGuardFn(*iface, prev_primary_device) };
-   * ```
+   * @examples_end
    */
   DdGuardFn
   primaryGuardFn(WinDisplayDeviceInterface &win_dd, const std::string &primary_device);
@@ -257,12 +243,10 @@ namespace display_device::win_utils {
    * @param win_dd Interface for interacting with the OS.
    * @param topology Topology to be used when making a guard.
    * @return Function that once called will try to revert HDR states to the ones that were initially set for the provided topology.
-   *
-   * EXAMPLES:
-   * ```cpp
+   * @examples
    * WinDisplayDeviceInterface* iface = getIface(...);
    * boost::scope::scope_exit guard { hdrStateGuardFn(*iface, iface->getCurrentTopology()) };
-   * ```
+   * @examples_end
    */
   DdGuardFn
   hdrStateGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
@@ -272,14 +256,12 @@ namespace display_device::win_utils {
    * @param win_dd Interface for interacting with the OS.
    * @param states HDR states to restore when the guard is executed.
    * @return Function that once called will try to revert HDR states to the ones that were provided.
-   *
-   * EXAMPLES:
-   * ```cpp
+   * @examples
    * WinDisplayDeviceInterface* iface = getIface(...);
    * const HdrStateMap states { };
    *
    * boost::scope::scope_exit guard { hdrStateGuardFn(*iface, states) };
-   * ```
+   * @examples_end
    */
   DdGuardFn
   hdrStateGuardFn(WinDisplayDeviceInterface &win_dd, const HdrStateMap &states);

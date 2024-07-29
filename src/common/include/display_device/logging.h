@@ -1,3 +1,7 @@
+/**
+ * @file src/common/include/display_device/logging.h
+ * @brief Declarations for the logging utility.
+ */
 #pragma once
 
 // system includes
@@ -22,12 +26,12 @@ namespace display_device {
      * @note All levels are in lower-case on purpose to fit the "BOOST_LOG(info)" style.
      */
     enum class LogLevel {
-      verbose = 0,
-      debug,
-      info,
-      warning,
-      error,
-      fatal
+      verbose = 0,  ///< Verbose level
+      debug,  ///< Debug level
+      info,  ///< Info level
+      warning,  ///< Warning level
+      error,  ///< Error level
+      fatal  ///< Fatal level
     };
 
     /**
@@ -38,11 +42,9 @@ namespace display_device {
     /**
      * @brief Get the singleton instance.
      * @returns Singleton instance for the class.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * Logger& logger { Logger::get() };
-     * ```
+     * @examples_end
      */
     static Logger &
     get();
@@ -50,11 +52,9 @@ namespace display_device {
     /**
      * @brief Set the log level for the logger.
      * @param log_level New level to be used.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * Logger::get().setLogLevel(Logger::LogLevel::Info);
-     * ```
+     * @examples_end
      */
     void
     setLogLevel(LogLevel log_level);
@@ -63,11 +63,9 @@ namespace display_device {
      * @brief Check if log level is currently enabled.
      * @param log_level Log level to check.
      * @returns True if log level is enabled.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * const bool is_enabled { Logger::get().isLogLevelEnabled(Logger::LogLevel::Info) };
-     * ```
+     * @examples_end
      */
     [[nodiscard]] bool
     isLogLevelEnabled(LogLevel log_level) const;
@@ -75,13 +73,11 @@ namespace display_device {
     /**
      * @brief Set custom callback for writing the logs.
      * @param callback New callback to be used or nullptr to reset to the default.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * Logger::get().setCustomCallback([](const LogLevel level, std::string value){
      *    // write to file or something
      * });
-     * ```
+     * @examples_end
      */
     void
     setCustomCallback(Callback callback);
@@ -90,11 +86,9 @@ namespace display_device {
      * @brief Write the string to the output (via callback) if the log level is enabled.
      * @param log_level Log level to be checked and (probably) written.
      * @param value A copy of the string to be written.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * Logger::get().write(Logger::LogLevel::Info, "Hello World!");
-     * ```
+     * @examples_end
      */
     void
     write(LogLevel log_level, std::string value);
@@ -158,12 +152,10 @@ namespace display_device {
 
 /**
  * @brief Helper MACRO that disables output string computation if log level is not enabled.
- *
- * EXAMPLES:
- * ```cpp
+ * @examples
  * DD_LOG(info) << "Hello World!" << " " << 123;
  * DD_LOG(error) << "OH MY GAWD!";
- * ```
+ * @examples_end
  */
 #define DD_LOG(level)                                                                                                                                \
   for (bool is_enabled { display_device::Logger::get().isLogLevelEnabled(display_device::Logger::LogLevel::level) }; is_enabled; is_enabled = false) \

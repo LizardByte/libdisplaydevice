@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/include/display_device/windows/types.h
+ * @brief Declarations for Windows specific types.
+ */
 #pragma once
 
 // the most stupid and smelly windows include
@@ -132,15 +136,13 @@ namespace display_device {
       /**
        * @brief Check if the changed topology has any other modifications.
        * @return True if DisplayMode, HDR or primary device has been changed, false otherwise.
-       *
-       * EXAMPLES:
-       * ```cpp
+       * @examples
        * SingleDisplayConfigState state;
        * const no_modifications = state.hasModifications();
        *
        * state.modified.original_primary_device = "DeviceId2";
        * const has_modifications = state.hasModifications();
-       * ```
+       * @examples_end
        */
       [[nodiscard]] bool
       hasModifications() const;

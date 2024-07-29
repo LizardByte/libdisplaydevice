@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/include/display_device/windows/settings_manager.h
+ * @brief Declarations for the SettingsManager.
+ */
 #pragma once
 
 // system includes

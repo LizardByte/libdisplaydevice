@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/include/display_device/windows/win_api_layer.h
+ * @brief Declarations for the WinApiLayer.
+ */
 #pragma once
 
 // local includes

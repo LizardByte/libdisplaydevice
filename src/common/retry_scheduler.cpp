@@ -1,3 +1,7 @@
+/**
+ * @file src/common/retry_scheduler.cpp
+ * @brief Definitions for the RetryScheduler.
+ */
 // header include
 #include "display_device/retry_scheduler.h"
 

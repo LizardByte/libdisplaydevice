@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/json_serializer.cpp
+ * @brief Definitions for private JSON serialization helpers (Windows-only).
+ */
 // special ordered include of details
 #define DD_JSON_DETAIL
 // clang-format off

@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/include/display_device/windows/detail/json_serializer.h
+ * @brief Declarations for private JSON serialization helpers (Windows-only).
+ */
 #pragma once
 
 // local includes

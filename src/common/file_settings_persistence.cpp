@@ -1,3 +1,7 @@
+/**
+ * @file src/common/file_settings_persistence.cpp
+ * @brief Definitions for persistent file settings.
+ */
 // class header include
 #include "display_device/file_settings_persistence.h"
 

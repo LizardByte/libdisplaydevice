@@ -1,3 +1,7 @@
+/**
+ * @file src/common/include/display_device/detail/json_converter.h
+ * @brief Declarations for private JSON conversion helpers.
+ */
 #pragma once
 
 #ifdef DD_JSON_DETAIL

@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/win_api_utils.cpp
+ * @brief Definitions for lower level Windows API utility functions.
+ */
 // header include
 #include "display_device/windows/win_api_utils.h"
 
@@ -13,11 +17,9 @@ namespace {
    * @param lhs First id to check.
    * @param rhs Second id to check.
    * @return True if NOT equal, false otherwise.
-   *
-   * EXAMPLES:
-   * ```cpp
+   * @examples
    * const bool not_equal = (LUID{ 12, 34 }) != (LUID{ 12, 56 });
-   * ```
+   * @examples_end
    */
   bool
   operator!=(const LUID &lhs, const LUID &rhs) {
@@ -28,11 +30,9 @@ namespace {
    * @brief Stringify adapter id.
    * @param id Id to stringify.
    * @return String representation of the id.
-   *
-   * EXAMPLES:
-   * ```cpp
+   * @examples
    * const bool id_string = to_string({ 12, 34 });
-   * ```
+   * @examples_end
    */
   std::string
   toString(const LUID &id) {
@@ -46,13 +46,11 @@ namespace {
    * @returns True if both mode have the same origin point, false otherwise.
    * @note Windows enforces the behaviour that only the duplicate devices can
    *       have the same origin point as otherwise the configuration is considered invalid by the OS.
-   *
-   * EXAMPLES:
-   * ```cpp
+   * @examples
    * DISPLAYCONFIG_SOURCE_MODE mode_a;
    * DISPLAYCONFIG_SOURCE_MODE mode_b;
    * const bool are_duplicated = are_modes_duplicated(mode_a, mode_b);
-   * ```
+   * @examples_end
    */
   bool
   are_modes_duplicated(const DISPLAYCONFIG_SOURCE_MODE &lhs, const DISPLAYCONFIG_SOURCE_MODE &rhs) {

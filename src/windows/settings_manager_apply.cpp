@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/settings_manager_apply.cpp
+ * @brief Definitions for the methods for applying settings in SettingsManager.
+ */
 // class header include
 #include "display_device/windows/settings_manager.h"
 

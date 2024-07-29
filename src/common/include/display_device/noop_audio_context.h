@@ -1,3 +1,7 @@
+/**
+ * @file src/common/include/display_device/noop_audio_context.h
+ * @brief Declarations for the NoopAudioContext.
+ */
 #pragma once
 
 // local includes

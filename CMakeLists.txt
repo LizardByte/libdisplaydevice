@@ -2,7 +2,7 @@
 # Project configuration
 #
 cmake_minimum_required(VERSION 3.24)
-project(libdisplaydevice
+project(libdisplaydevice VERSION 0.0.0
         DESCRIPTION "Library to modify display devices."
         HOMEPAGE_URL "https://app.lizardbyte.dev"
         LANGUAGES CXX)
@@ -21,7 +21,15 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 #
 # Project optional configuration
 #
+option(BUILD_DOCS "Build documentation" ON)
 option(BUILD_TESTS "Build tests" ON)
+
+#
+# Documentation
+#
+if(BUILD_DOCS)
+    add_subdirectory(docs)
+endif()
 
 #
 # Testing only available if this is the main project

@@ -1,3 +1,7 @@
+/**
+ * @file src/common/include/display_device/noop_settings_persistence.h
+ * @brief Declarations for NoopSettingsPersistence.
+ */
 #pragma once
 
 // local includes

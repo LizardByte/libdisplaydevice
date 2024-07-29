@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/types.cpp
+ * @brief Definitions for Windows specific types.
+ */
 // header include
 #include "display_device/windows/types.h"
 

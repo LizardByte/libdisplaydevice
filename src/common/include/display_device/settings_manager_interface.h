@@ -1,3 +1,7 @@
+/**
+ * @file src/common/include/display_device/settings_manager_interface.h
+ * @brief Declarations for the SettingsManagerInterface.
+ */
 #pragma once
 
 // local includes
@@ -13,13 +17,13 @@ namespace display_device {
      * @brief Outcome values when trying to apply settings.
      */
     enum class ApplyResult {
-      Ok,
-      ApiTemporarilyUnavailable,
-      DevicePrepFailed,
-      PrimaryDevicePrepFailed,
-      DisplayModePrepFailed,
-      HdrStatePrepFailed,
-      PersistenceSaveFailed,
+      Ok,  ///< Settings were applied successfully
+      ApiTemporarilyUnavailable,  ///< API is temporarily unavailable
+      DevicePrepFailed,  ///< Device preparation failed
+      PrimaryDevicePrepFailed,  ///< Primary device preparation failed
+      DisplayModePrepFailed,  ///< Display mode preparation failed
+      HdrStatePrepFailed,  ///< HDR state preparation failed
+      PersistenceSaveFailed,  ///< Persistence save failed
     };
 
     /**
@@ -31,12 +35,10 @@ namespace display_device {
      * @brief Enumerate the available (active and inactive) devices.
      * @returns A list of available devices.
      *          Empty list can also be returned if an error has occurred.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * const SettingsManagerInterface* iface = getIface(...);
      * const auto devices { iface->enumAvailableDevices() };
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual EnumeratedDeviceList
     enumAvailableDevices() const = 0;
@@ -46,13 +48,11 @@ namespace display_device {
      * @param device_id A device to get display name for.
      * @returns A display name for the device, or an empty string if the device is inactive or not found.
      *          Empty string can also be returned if an error has occurred.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * const std::string device_id { "MY_DEVICE_ID" };
      * const SettingsManagerInterface* iface = getIface(...);
      * const std::string display_name = iface->getDisplayName(device_id);
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual std::string
     getDisplayName(const std::string &device_id) const = 0;
@@ -61,14 +61,12 @@ namespace display_device {
      * @brief Apply the provided configuration to the system.
      * @param config A desired configuration for the display device.
      * @returns The apply result.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * const SingleDisplayConfiguration config;
      *
      * SettingsManagerInterface* iface = getIface(...);
      * const auto result = iface->applySettings(config);
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual ApplyResult
     applySettings(const SingleDisplayConfiguration &config) = 0;
@@ -76,12 +74,10 @@ namespace display_device {
     /**
      * @brief Revert the applied configuration and restore the previous settings.
      * @returns True if settings were reverted or there was nothing to revert, false otherwise.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * SettingsManagerInterface* iface = getIface(...);
      * const auto result = iface->revertSettings();
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual bool
     revertSettings() = 0;
@@ -93,9 +89,7 @@ namespace display_device {
      * In case the settings cannot be reverted, because the display is turned or some other reason,
      * this allows to "accept" the current state and start from scratch, but only if the persistence was
      * cleared successfuly.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * SettingsManagerInterface* iface = getIface(...);
      * auto result = iface->applySettings(config);
      * if (result == ApplyResult::Ok) {
@@ -108,7 +102,7 @@ namespace display_device {
      *     }
      *   }
      * }
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual bool
     resetPersistence() = 0;

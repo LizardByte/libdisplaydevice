@@ -1,3 +1,7 @@
+/**
+ * @file src/common/types.cpp
+ * @brief Definitions for common display device types.
+ */
 // header include
 #include "display_device/types.h"
 
