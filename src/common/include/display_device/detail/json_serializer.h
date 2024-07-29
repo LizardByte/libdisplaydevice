@@ -1,3 +1,7 @@
+/**
+ * @file src/common/include/display_device/detail/json_serializer.h
+ * @brief Declarations for private JSON serialization helpers.
+ */
 #pragma once
 
 // local includes

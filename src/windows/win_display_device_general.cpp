@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/win_display_device_general.cpp
+ * @brief Definitions for the leftover (general) methods in WinDisplayDevice.
+ */
 // class header include
 #include "display_device/windows/win_display_device.h"
 

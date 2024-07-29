@@ -1,3 +1,7 @@
+/**
+ * @file src/common/include/display_device/types.h
+ * @brief Declarations for common display device types.
+ */
 #pragma once
 
 // system includes
@@ -11,8 +15,8 @@ namespace display_device {
    * @brief The device's HDR state in the operating system.
    */
   enum class HdrState {
-    Disabled,
-    Enabled
+    Disabled,  ///< HDR is disabled
+    Enabled  ///< HDR is enabled
   };
 
   /**

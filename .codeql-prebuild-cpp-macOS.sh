@@ -11,7 +11,9 @@ brew install \
 # build
 mkdir -p build
 cd build || exit 1
-cmake -G Ninja ..
+cmake \
+  -DBUILD_DOCS=OFF \
+  -G Ninja ..
 ninja
 
 # skip autobuild

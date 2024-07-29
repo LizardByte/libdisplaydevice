@@ -1,3 +1,7 @@
+/**
+ * @file src/common/json_serializer.cpp
+ * @brief Definitions for private JSON serialization helpers.
+ */
 // special ordered include of details
 #define DD_JSON_DETAIL
 // clang-format off

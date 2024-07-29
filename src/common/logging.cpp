@@ -1,3 +1,7 @@
+/**
+ * @file src/common/logging.cpp
+ * @brief Definitions for the logging utility.
+ */
 #if !defined(_MSC_VER) && !defined(_POSIX_THREAD_SAFE_FUNCTIONS)
   #define _POSIX_THREAD_SAFE_FUNCTIONS  // For localtime_r
 #endif

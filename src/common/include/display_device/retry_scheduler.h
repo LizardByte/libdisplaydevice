@@ -1,3 +1,7 @@
+/**
+ * @file src/common/include/display_device/retry_scheduler.h
+ * @brief Declarations for the RetryScheduler.
+ */
 #pragma once
 
 // system includes
@@ -93,7 +97,7 @@ namespace display_device {
   class RetryScheduler final {
   public:
     /**
-     * @bried Default constructor.
+     * @brief Default constructor.
      * @param iface Interface to be passed around to the executor functions.
      */
     explicit RetryScheduler(std::unique_ptr<T> iface):
@@ -153,9 +157,7 @@ namespace display_device {
      * @note Before the executor function is scheduled, it is first executed in the calling thread
      *       immediately and the callback is invoked before returning!
      * @note Previously scheduled executor is replaced by a new one!
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * std::unique_ptr<SettingsManagerInterface> iface = getIface(...);
      * RetryScheduler<SettingsManagerInterface> scheduler{std::move(iface)};
      *
@@ -164,7 +166,7 @@ namespace display_device {
      *     stop_token.requestStop();
      *   }
      * }, 5ms);
-     * ```
+     * @examples_end
      */
     void
     schedule(std::function<void(T &, SchedulerStopToken &stop_token)> exec_fn, std::chrono::milliseconds interval) {
@@ -205,9 +207,7 @@ namespace display_device {
      *                    `stop_token` is an optional parameter that allows to stop scheduler during
      *                    the same call.
      * @return Return value from the executor callback.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * std::unique_ptr<SettingsManagerInterface> iface = getIface(...);
      * RetryScheduler<SettingsManagerInterface> scheduler{std::move(iface)};
      * const std::string device_id { "MY_DEVICE_ID" };
@@ -230,7 +230,7 @@ namespace display_device {
      *     stop_token.requestStop();
      *   }
      * });
-     * ```
+     * @examples_end
      */
     template <class FunctionT>
       requires detail::ExecuteCallbackLike<T, FunctionT>

@@ -1,3 +1,7 @@
+/**
+ * @file src/common/noop_audio_context.cpp
+ * @brief Definitions for the NoopAudioContext.
+ */
 // local includes
 #include "display_device/noop_audio_context.h"
 

@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/include/display_device/windows/win_api_layer_interface.h
+ * @brief Declarations for the WinApiLayerInterface.
+ */
 #pragma once
 
 // local includes
@@ -18,12 +22,10 @@ namespace display_device {
      * @brief Stringify the error code from Windows API.
      * @param error_code Error code to stringify.
      * @returns String containing the error code in a readable format + a system message describing the code.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * const WinApiLayerInterface* iface = getIface(...);
      * const std::string error_message = iface->getErrorString(ERROR_NOT_SUPPORTED);
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual std::string
     getErrorString(LONG error_code) const = 0;
@@ -32,12 +34,10 @@ namespace display_device {
      * @brief Query Windows for the device paths and associated modes.
      * @param type Specify device type to query for.
      * @returns Data containing paths and modes, empty optional if we have failed to query.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * const WinApiLayerInterface* iface = getIface(...);
      * const auto display_data = iface->queryDisplayConfig(QueryType::Active);
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual std::optional<PathAndModeData>
     queryDisplayConfig(QueryType type) const = 0;
@@ -78,13 +78,11 @@ namespace display_device {
      * @param path Path to get the device id for.
      * @returns Device id, or an empty string if it could not be generated.
      * @see queryDisplayConfig on how to get paths from the system.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * DISPLAYCONFIG_PATH_INFO path;
      * const WinApiLayerInterface* iface = getIface(...);
      * const std::string device_path = iface->getDeviceId(path);
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual std::string
     getDeviceId(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
@@ -97,13 +95,11 @@ namespace display_device {
      * @note In the rest of the code we refer to this string representation simply as the "device path".
      *       It is used as a simple way of grouping related path objects together and removing "bad" paths
      *       that don't have such string representation.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * DISPLAYCONFIG_PATH_INFO path;
      * const WinApiLayerInterface* iface = getIface(...);
      * const std::string device_path = iface->getMonitorDevicePath(path);
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual std::string
     getMonitorDevicePath(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
@@ -114,13 +110,11 @@ namespace display_device {
      * @returns User friendly name for the path if available, empty string otherwise.
      * @see queryDisplayConfig on how to get paths from the system.
      * @note This is usually a monitor name (like "ROG PG279Q") and is most likely taken from EDID.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * DISPLAYCONFIG_PATH_INFO path;
      * const WinApiLayerInterface* iface = getIface(...);
      * const std::string friendly_name = iface->getFriendlyName(path);
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual std::string
     getFriendlyName(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
@@ -136,13 +130,11 @@ namespace display_device {
      * @see queryDisplayConfig on how to get paths from the system.
      * @note Inactive paths can have these names already assigned to them, even
      *       though they are not even in use! There can also be duplicates.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * DISPLAYCONFIG_PATH_INFO path;
      * const WinApiLayerInterface* iface = getIface(...);
      * const std::string display_name = iface->getDisplayName(path);
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual std::string
     getDisplayName(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
@@ -156,13 +148,11 @@ namespace display_device {
      * @param modes List of modes to pass.
      * @param flags Flags to pass.
      * @returns The return error code of the API.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * std::vector<DISPLAYCONFIG_PATH_INFO> paths;
      * WinApiLayerInterface* iface = getIface(...);
      * const auto result = iface->setDisplayConfig(paths, {}, 0);
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual LONG
     setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> paths, std::vector<DISPLAYCONFIG_MODE_INFO> modes, UINT32 flags) = 0;
@@ -171,13 +161,11 @@ namespace display_device {
      * @brief Get the HDR state the path.
      * @param path Path to get HDR state for.
      * @returns std::nullopt if the state could not be retrieved, or other enum values describing the state otherwise.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * DISPLAYCONFIG_PATH_INFO path;
      * const WinApiLayerInterface* iface = getIface(...);
      * const auto hdr_state = iface->getHdrState(path);
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual std::optional<HdrState>
     getHdrState(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
@@ -187,13 +175,11 @@ namespace display_device {
      * @param path Path to set HDR state for.
      * @param state Specify new HDR state.
      * @returns True if the device is in the new state, false otherwise.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * DISPLAYCONFIG_PATH_INFO path;
      * WinApiLayerInterface* iface = getIface(...);
      * const bool success = iface->setHdrState(path, HdrState::Enabled);
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual bool
     setHdrState(const DISPLAYCONFIG_PATH_INFO &path, HdrState state) = 0;
@@ -201,16 +187,15 @@ namespace display_device {
     /**
      * @brief Get the scaling value for the display.
      * @param display_name Display to get the scaling for.
+     * @param source_mode Source mode to get the scaling for.
      * @returns Current display scale value or null optional in case of error
      *          or if the value could not be retrieved.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * DISPLAYCONFIG_PATH_INFO path;
      * DISPLAYCONFIG_SOURCE_MODE source_mode;
      * const WinApiLayerInterface* iface = getIface(...);
      * const auto scale = iface->getDisplayScale(iface->getDisplayName(path), source_mode);
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual std::optional<Rational>
     getDisplayScale(const std::string &display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const = 0;

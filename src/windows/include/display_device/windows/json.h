@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/include/display_device/windows/json.h
+ * @brief Declarations for JSON conversion functions (Windows-only).
+ */
 #pragma once
 
 // local includes

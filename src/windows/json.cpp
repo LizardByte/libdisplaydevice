@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/json.cpp
+ * @brief Definitions for JSON conversion functions (Windows-only).
+ */
 // header include
 #include "display_device/windows/json.h"
 

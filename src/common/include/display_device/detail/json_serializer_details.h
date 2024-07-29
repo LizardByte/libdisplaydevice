@@ -1,3 +1,7 @@
+/**
+ * @file src/common/include/display_device/detail/json_serializer_details.h
+ * @brief Declarations for private JSON serialization details.
+ */
 #pragma once
 
 #ifdef DD_JSON_DETAIL

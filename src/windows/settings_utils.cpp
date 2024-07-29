@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/settings_utils.cpp
+ * @brief Definitions for settings related utility functions.
+ */
 // header include
 #include "display_device/windows/settings_utils.h"
 
@@ -33,14 +37,12 @@ namespace display_device::win_utils {
      * @param devices List of devices.
      * @param predicate Predicate to use.
      * @return Device ids from device list matching the predicate.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * const EnumeratedDeviceList devices { ... };
      *
      * const auto all_ids { getDeviceIds(devices, anyDevice) };
      * const auto primary_only_ids { getDeviceIds(devices, primaryOnlyDevices) };
-     * ```
+     * @examples_end
      */
     std::set<std::string>
     getDeviceIds(const EnumeratedDeviceList &devices, const std::add_lvalue_reference_t<bool(const EnumeratedDevice &)> &predicate) {

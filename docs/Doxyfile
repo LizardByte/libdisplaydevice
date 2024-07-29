@@ -1,0 +1,100 @@
+# This file describes the settings to be used by the documentation system
+# doxygen (www.doxygen.org) for a project.
+#
+# All text after a double hash (##) is considered a comment and is placed in
+# front of the TAG it is preceding.
+#
+# All text after a single hash (#) is considered a comment and will be ignored.
+# The format is:
+# TAG = value [value, ...]
+# For lists, items can also be appended using:
+# TAG += value [value, ...]
+# Values that contain spaces should be placed between quotes (\" \").
+#
+# Note:
+#
+# Use doxygen to compare the used configuration file with the template
+# configuration file:
+# doxygen -x [configFile]
+# Use doxygen to compare the used configuration file with the template
+# configuration file without replacing the environment variables or CMake type
+# replacement variables:
+# doxygen -x_noenv [configFile]
+
+# must be first
+DOXYFILE_ENCODING = UTF-8
+
+# files and directories to process
+INPUT = ../README.md \
+        ../src
+
+ALIASES = ""
+ALIASES += "examples=^^**Examples**^^@code{.cpp}"
+ALIASES += "examples_end=@endcode^^"
+ALIASES += "rst=^^\verbatim embed:rst:leading-asterisk^^"
+ALIASES += "rst_end=\endverbatim"
+
+CASE_SENSE_NAMES = YES
+DISABLE_INDEX = NO
+DOCBOOK_OUTPUT = doxydocbook
+DOCSET_BUNDLE_ID = dev.lizardbyte.libdisplaydevice
+DOCSET_PUBLISHER_ID = dev.lizardbyte.libdisplaydevice.documentation
+DOCSET_PUBLISHER_NAME = LizardByte
+DOT_GRAPH_MAX_NODES = 50
+DOT_IMAGE_FORMAT = svg
+
+# TODO: On Windows, Doxygen hangs when creating dot graphs if this is set to 0
+DOT_NUM_THREADS = 1
+
+EXTRACT_ALL = NO
+FULL_SIDEBAR = NO
+GENERATE_HTML = YES
+GENERATE_LATEX = NO
+GENERATE_TREEVIEW = YES
+GENERATE_XML = NO
+HAVE_DOT = YES
+HTML_COLORSTYLE = LIGHT  # required with Doxygen >= 1.9.5
+HTML_COPY_CLIPBOARD = NO  # required for Doxygen >= 1.10.0
+HTML_EXTRA_FILES = ../third-party/doxygen-awesome-css/doxygen-awesome-darkmode-toggle.js
+HTML_EXTRA_FILES += ../third-party/doxygen-awesome-css/doxygen-awesome-fragment-copy-button.js
+HTML_EXTRA_FILES += ../third-party/doxygen-awesome-css/doxygen-awesome-paragraph-link.js
+HTML_EXTRA_FILES += ../third-party/doxygen-awesome-css/doxygen-awesome-interactive-toc.js
+HTML_EXTRA_STYLESHEET = ../third-party/doxygen-awesome-css/doxygen-awesome.css
+HTML_HEADER = doxygen/header.html
+HTML_OUTPUT = html
+# INCLUDE_PATH = ../
+INTERACTIVE_SVG = YES
+LATEX_OUTPUT = latex
+MACRO_EXPANSION = YES
+MAN_OUTPUT = man
+NUM_PROC_THREADS = 1
+PREDEFINED = DOXYGEN
+PREDEFINED += __APPLE__
+PREDEFINED += linux
+PREDEFINED += __linux
+PREDEFINED += __linux__
+PREDEFINED += __MACH__
+PREDEFINED += _WIN32
+PROJECT_BRIEF = "C++ library to modify display devices."
+PROJECT_ICON = $(LDD_DOXYGEN_BUILD_DIR)/lizardbyte.ico
+PROJECT_NUMBER = $(LDD_PROJECT_VERSION)
+PROJECT_LOGO = $(LDD_DOXYGEN_BUILD_DIR)/lizardbyte.png
+PROJECT_NAME = libdisplaydevice
+OUTPUT_DIRECTORY = $(LDD_DOXYGEN_BUILD_DIR)
+RECURSIVE = YES
+RTF_OUTPUT = rtf
+SORT_BRIEF_DOCS = YES
+STRIP_FROM_INC_PATH = ../
+STRIP_FROM_PATH = ../
+WARN_AS_ERROR = FAIL_ON_WARNINGS
+
+# TODO: Enable this when we have complete documentation
+WARN_IF_UNDOCUMENTED = NO
+
+WARN_IF_DOC_ERROR = YES
+WARN_IF_INCOMPLETE_DOC = YES
+WARN_IF_UNDOC_ENUM_VAL = YES
+WARN_NO_PARAMDOC = YES
+WARNINGS = YES
+
+XML_OUTPUT = xml

@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/win_display_device_primary.cpp
+ * @brief Definitions for the "primary device" related methods in WinDisplayDevice.
+ */
 // class header include
 #include "display_device/windows/win_display_device.h"
 

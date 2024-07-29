@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/settings_manager_revert.cpp
+ * @brief Definitions for the methods for reverting settings in SettingsManager..
+ */
 // class header include
 #include "display_device/windows/settings_manager.h"
 

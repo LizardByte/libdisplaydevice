@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/win_display_device_modes.cpp
+ * @brief Definitions for the display mode related methods in WinDisplayDevice.
+ */
 // class header include
 #include "display_device/windows/win_display_device.h"
 

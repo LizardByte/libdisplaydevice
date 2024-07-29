@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/persistent_state.cpp
+ * @brief Definitions for the PersistentState.
+ */
 // class header include
 #include "display_device/windows/persistent_state.h"
 

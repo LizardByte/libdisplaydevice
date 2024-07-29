@@ -1,3 +1,7 @@
+/**
+ * @file src/common/include/display_device/file_settings_persistence.h
+ * @brief Declarations for persistent file settings.
+ */
 #pragma once
 
 // system includes

@@ -1,3 +1,7 @@
+/**
+ * @file src/common/include/display_device/audio_context_interface.h
+ * @brief Declarations for the AudioContextInterface.
+ */
 #pragma once
 
 namespace display_device {
@@ -18,12 +22,10 @@ namespace display_device {
     /**
      * @brief Capture audio context for currently active devices.
      * @returns True if the contexts could be captured, false otherwise.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * AudioContextInterface* iface = getIface(...);
      * const auto result { iface->capture() };
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual bool
     capture() = 0;
@@ -31,24 +33,20 @@ namespace display_device {
     /**
      * @brief Check if the context is already captured.
      * @returns True if the context is captured, false otherwise.
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * AudioContextInterface* iface = getIface(...);
      * const auto result { iface->isCaptured() };
-     * ```
+     * @examples_end
      */
     [[nodiscard]] virtual bool
     isCaptured() const = 0;
 
     /**
      * @brief Release captured audio context for the devices (if any).
-     *
-     * EXAMPLES:
-     * ```cpp
+     * @examples
      * AudioContextInterface* iface = getIface(...);
      * const auto result { iface->release() };
-     * ```
+     * @examples_end
      */
     virtual void
     release() = 0;

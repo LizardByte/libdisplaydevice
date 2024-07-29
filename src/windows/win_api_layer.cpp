@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/win_api_layer.cpp
+ * @brief Definitions for the WinApiLayer.
+ */
 // class header include
 #include "display_device/windows/win_api_layer.h"
 

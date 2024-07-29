@@ -1,3 +1,7 @@
+/**
+ * @file src/windows/settings_manager_general.cpp
+ * @brief Definitions for the leftover (general) methods in SettingsManager.
+ */
 // class header include
 #include "display_device/windows/settings_manager.h"
 
