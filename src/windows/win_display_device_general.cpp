@@ -50,15 +50,15 @@ namespace display_device {
       const auto source_id_index { data.m_active_source.value_or(0) };
       const auto &best_path { display_data->m_paths.at(data.m_source_id_to_path_index.at(source_id_index)) };
       const auto friendly_name { m_w_api->getFriendlyName(best_path) };
+      const bool is_active { win_utils::isActive(best_path) };
+      const auto source_mode { is_active ? win_utils::getSourceMode(win_utils::getSourceIndex(best_path, display_data->m_modes), display_data->m_modes) : nullptr };
+      const auto display_name { is_active ? m_w_api->getDisplayName(best_path) : std::string {} };  // Inactive devices can have multiple display names, so it's just meaningless use any
 
-      if (win_utils::isActive(best_path)) {
-        const auto source_mode { win_utils::getSourceMode(win_utils::getSourceIndex(best_path, display_data->m_modes), display_data->m_modes) };
-        if (!source_mode) {
-          // Error already logged
-          return {};
-        }
+      if (is_active && !source_mode) {
+        DD_LOG(warning) << "Device " << device_id << " is missing source mode!";
+      }
 
-        const auto display_name { m_w_api->getDisplayName(best_path) };
+      if (source_mode) {
         const Rational refresh_rate { best_path.targetInfo.refreshRate.Denominator > 0 ?
                                         Rational { best_path.targetInfo.refreshRate.Numerator, best_path.targetInfo.refreshRate.Denominator } :
                                         Rational { 0, 1 } };
@@ -80,7 +80,7 @@ namespace display_device {
       else {
         available_devices.push_back(
           { device_id,
-            std::string {},  // Inactive devices can have multiple display names, so it's just meaningless use any
+            display_name,
             friendly_name,
             std::nullopt });
       }
