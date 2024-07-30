@@ -244,7 +244,7 @@ namespace display_device {
       const auto original_primary_device { cached_primary_device.empty() ? current_primary_device : cached_primary_device };
       const auto &new_primary_device { device_to_configure };
 
-      if (!try_change(new_primary_device, "Changing primary display to: ", "Failed to apply new configuration, because a new primary device could not be set!")) {
+      if (!try_change(new_primary_device, "Changing primary display to:\n", "Failed to apply new configuration, because a new primary device could not be set!")) {
         // Error already logged
         return false;
       }
@@ -255,7 +255,7 @@ namespace display_device {
     }
 
     if (might_need_to_restore) {
-      if (!try_change(cached_primary_device, "Changing primary display back to: ", "Failed to restore original primary device!")) {
+      if (!try_change(cached_primary_device, "Changing primary display back to:\n", "Failed to restore original primary device!")) {
         // Error already logged
         return false;
       }
@@ -307,7 +307,7 @@ namespace display_device {
       const auto new_display_modes { win_utils::computeNewDisplayModes(config.m_resolution,
         config.m_refresh_rate, configuring_primary_devices, device_to_configure, additional_devices_to_configure, original_display_modes) };
 
-      if (!try_change(new_display_modes, "Changing display modes to: ", "Failed to apply new configuration, because new display modes could not be set!")) {
+      if (!try_change(new_display_modes, "Changing display modes to:\n", "Failed to apply new configuration, because new display modes could not be set!")) {
         // Error already logged
         return false;
       }
@@ -318,7 +318,7 @@ namespace display_device {
     }
 
     if (might_need_to_restore) {
-      if (!try_change(cached_display_modes, "Changing display modes back to: ", "Failed to restore original display modes!")) {
+      if (!try_change(cached_display_modes, "Changing display modes back to:\n", "Failed to restore original display modes!")) {
         // Error already logged
         return false;
       }
@@ -364,7 +364,7 @@ namespace display_device {
       const auto original_hdr_states { cached_hdr_states.empty() ? current_hdr_states : cached_hdr_states };
       const auto new_hdr_states { win_utils::computeNewHdrStates(config.m_hdr_state, configuring_primary_devices, device_to_configure, additional_devices_to_configure, original_hdr_states) };
 
-      if (!try_change(new_hdr_states, "Changing HDR states to: ", "Failed to apply new configuration, because new HDR states could not be set!")) {
+      if (!try_change(new_hdr_states, "Changing HDR states to:\n", "Failed to apply new configuration, because new HDR states could not be set!")) {
         // Error already logged
         return false;
       }
@@ -375,7 +375,7 @@ namespace display_device {
     }
 
     if (might_need_to_restore) {
-      if (!try_change(cached_hdr_states, "Changing HDR states back to: ", "Failed to restore original HDR states!")) {
+      if (!try_change(cached_hdr_states, "Changing HDR states back to:\n", "Failed to restore original HDR states!")) {
         // Error already logged
         return false;
       }
