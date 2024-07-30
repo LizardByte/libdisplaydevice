@@ -16,7 +16,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 # Add our custom CMake modules to the global path
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 #
 # Project optional configuration
@@ -28,7 +28,7 @@ option(BUILD_TESTS "Build tests" ON)
 # Documentation
 #
 if(BUILD_DOCS)
-    add_subdirectory(docs)
+    add_subdirectory(third-party/doxyconfig docs)
 endif()
 
 #

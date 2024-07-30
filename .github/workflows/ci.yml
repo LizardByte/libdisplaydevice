@@ -63,8 +63,6 @@ jobs:
           sudo apt-get install -y \
             build-essential \
             cmake \
-            doxygen \
-            graphviz \
             ninja-build \
             nlohmann-json3-dev
 
@@ -72,12 +70,13 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew install \
+            boost \
             cmake \
             doxygen \
             graphviz \
+            nlohmann-json \
             ninja \
-            boost \
-            nlohmann-json
+            node \
 
       - name: Setup Dependencies Windows
         if: runner.os == 'Windows'
@@ -91,6 +90,7 @@ jobs:
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-graphviz
             mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-nodejs
             mingw-w64-ucrt-x86_64-toolchain
             mingw-w64-ucrt-x86_64-boost
             mingw-w64-ucrt-x86_64-nlohmann-json
@@ -177,18 +177,27 @@ jobs:
           COMMIT: ${{ needs.setup_release.outputs.release_commit }}
         run: |
           mkdir -p build
-          cd build
+
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            # Doxygen from Ubuntu is too old, need Doxygen >= 1.10
+            DOCS=OFF
+          else
+            DOCS=ON
+          fi
+
           cmake \
+            -DBUILD_DOCS=${DOCS} \
             -DCMAKE_BUILD_TYPE:STRING=Debug \
+            -B build \
             -G Ninja \
-            ..
-          ninja
+            -S .
+          ninja -C build
 
       - name: Run tests
         id: test
-        working-directory: build
+        working-directory: build/tests
         run: |
-          ./tests/test_libdisplaydevice --gtest_color=yes
+          ./test_libdisplaydevice --gtest_color=yes
 
       - name: Generate gcov report
         # any except canceled or skipped
