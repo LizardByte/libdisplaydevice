@@ -23,8 +23,7 @@ Ensure [git](https://git-scm.com/) is installed and run the following:
 ```bash
 git clone https://github.com/lizardbyte/libdisplaydevice.git --recurse-submodules
 cd libdisplaydevice
-mkdir build
-cd build
+mkdir -p build
 ```
 
 ### Windows
@@ -54,18 +53,17 @@ pacman -S \
 
 ### Build
 
-> [!WARNING]
-> Ensure you are in the build directory created during the clone step earlier before continuing.
+@warning{Ensure you are in the build directory created during the clone step earlier before continuing.}
 
 ```bash
-cmake -G Ninja ..
-ninja
+cmake -G Ninja -B build -S .
+ninja -C build
 ```
 
 ### Test
 
 ```bash
-tests\test_libdisplaydevice
+./build/tests/test_libdisplaydevice
 ```
 
 ## Support
