@@ -42,7 +42,7 @@ build/
 cmake-*/
 
 # doxyconfig
-docs/*-doxyconfig*
+docs/doxyconfig*
 
 # CTest
 Testing/
