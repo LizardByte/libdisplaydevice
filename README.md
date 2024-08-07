@@ -53,8 +53,6 @@ pacman -S \
 
 ### Build
 
-@warning{Ensure you are in the build directory created during the clone step earlier before continuing.}
-
 ```bash
 cmake -G Ninja -B build -S .
 ninja -C build
