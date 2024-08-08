@@ -44,11 +44,25 @@ namespace display_device {
   DD_JSON_DEFINE_CONVERTER(TestEnum)
   DD_JSON_DEFINE_CONVERTER(TestStruct)
   DD_JSON_DEFINE_CONVERTER(TestVariant)
+  DD_JSON_DEFINE_CONVERTER(std::chrono::nanoseconds)
+  DD_JSON_DEFINE_CONVERTER(std::chrono::microseconds)
+  DD_JSON_DEFINE_CONVERTER(std::chrono::milliseconds)
+  DD_JSON_DEFINE_CONVERTER(std::chrono::seconds)
+  DD_JSON_DEFINE_CONVERTER(std::chrono::minutes)
+  DD_JSON_DEFINE_CONVERTER(std::chrono::hours)
+  DD_JSON_DEFINE_CONVERTER(std::chrono::days)
+  DD_JSON_DEFINE_CONVERTER(std::chrono::weeks)
+  DD_JSON_DEFINE_CONVERTER(std::chrono::months)
+  DD_JSON_DEFINE_CONVERTER(std::chrono::years)
 }  // namespace display_device
 
 namespace {
   // Specialized TEST macro(s) for this test file
 #define TEST_S(...) DD_MAKE_TEST(TEST, JsonTest, __VA_ARGS__)
+
+  // Additional convenience global const(s)
+  constexpr auto MIN_NANO_VAL { std::numeric_limits<decltype(std::chrono::nanoseconds {}.count())>::min() };
+  constexpr auto MAX_NANO_VAL { std::numeric_limits<decltype(std::chrono::nanoseconds {}.count())>::max() };
 }  // namespace
 
 TEST_S(ToJson, NoError, WithSuccessParam) {
@@ -191,4 +205,56 @@ TEST_S(FromJson, TestVariant, UnknownVariantType) {
 
   EXPECT_FALSE(display_device::fromJson(R"({"type":"SomeUnknownType","value":123.0})", variant, &error_message));
   EXPECT_EQ(error_message, "Could not parse variant from type SomeUnknownType!");
+}
+
+TEST_S(ToJson, ChronoDuration) {
+  using namespace std::chrono;
+
+  EXPECT_EQ(display_device::toJson(nanoseconds { 2000000000 }, std::nullopt, nullptr), R"(2000000000)");
+  EXPECT_EQ(display_device::toJson(microseconds { 2000000 }, std::nullopt, nullptr), R"(2000000)");
+  EXPECT_EQ(display_device::toJson(milliseconds { 2000 }, std::nullopt, nullptr), R"(2000)");
+  EXPECT_EQ(display_device::toJson(seconds { 2 }, std::nullopt, nullptr), R"(2)");
+  EXPECT_EQ(display_device::toJson(minutes { 20 }, std::nullopt, nullptr), R"(20)");
+  EXPECT_EQ(display_device::toJson(hours { 20 }, std::nullopt, nullptr), R"(20)");
+  EXPECT_EQ(display_device::toJson(days { 20 }, std::nullopt, nullptr), R"(20)");
+  EXPECT_EQ(display_device::toJson(weeks { 20 }, std::nullopt, nullptr), R"(20)");
+  EXPECT_EQ(display_device::toJson(months { 20 }, std::nullopt, nullptr), R"(20)");
+  EXPECT_EQ(display_device::toJson(years { 20 }, std::nullopt, nullptr), R"(20)");
+}
+
+TEST_S(FromJson, ChronoDuration) {
+  const auto doTest { []<class T>(const std::string &string_input, T expected_value) {
+    T value {};
+
+    EXPECT_TRUE(display_device::fromJson(string_input, value, nullptr));
+    EXPECT_EQ(value, expected_value);
+  } };
+
+  using namespace std::chrono;
+
+  doTest(R"(2000000000)", nanoseconds { 2000000000 });
+  doTest(R"(2000000)", microseconds { 2000000 });
+  doTest(R"(2000)", milliseconds { 2000 });
+  doTest(R"(2)", seconds { 2 });
+  doTest(R"(20)", minutes { 20 });
+  doTest(R"(20)", hours { 20 });
+  doTest(R"(20)", days { 20 });
+  doTest(R"(20)", weeks { 20 });
+  doTest(R"(20)", months { 20 });
+  doTest(R"(20)", years { 20 });
+}
+
+TEST_S(ToJson, ChronoDuration, Ranges) {
+  EXPECT_EQ(display_device::toJson(std::chrono::nanoseconds { MIN_NANO_VAL }, std::nullopt, nullptr), std::to_string(MIN_NANO_VAL));
+  EXPECT_EQ(display_device::toJson(std::chrono::nanoseconds { MAX_NANO_VAL }, std::nullopt, nullptr), std::to_string(MAX_NANO_VAL));
+}
+
+TEST_S(FromJson, ChronoDuration, Ranges) {
+  std::chrono::nanoseconds value {};
+
+  EXPECT_TRUE(display_device::fromJson(std::to_string(MIN_NANO_VAL), value, nullptr));
+  EXPECT_EQ(value, std::chrono::nanoseconds { MIN_NANO_VAL });
+
+  EXPECT_TRUE(display_device::fromJson(std::to_string(MAX_NANO_VAL), value, nullptr));
+  EXPECT_EQ(value, std::chrono::nanoseconds { MAX_NANO_VAL });
 }

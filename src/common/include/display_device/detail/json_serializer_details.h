@@ -109,7 +109,7 @@ namespace nlohmann {
         nlohmann_json_t = std::nullopt;
       }
       else {
-        nlohmann_json_t = nlohmann_json_j.template get<T>();
+        nlohmann_json_t = nlohmann_json_j.get<T>();
       }
     }
   };
@@ -136,6 +136,24 @@ namespace nlohmann {
         const std::string error { "Could not parse variant from type " + nlohmann_json_j.at("type").get<std::string>() + "!" };
         throw std::runtime_error(error);
       }
+    }
+  };
+
+  // Specialization for chrono duration.
+  template <class Rep, class Period>
+  struct adl_serializer<std::chrono::duration<Rep, Period>> {
+    using NanoRep = decltype(std::chrono::nanoseconds {}.count());
+    static_assert(std::numeric_limits<Rep>::max() <= std::numeric_limits<NanoRep>::max(),
+      "Duration support above nanoseconds have not been tested/verified yet!");
+
+    static void
+    to_json(json &nlohmann_json_j, const std::chrono::duration<Rep, Period> &nlohmann_json_t) {
+      nlohmann_json_j = nlohmann_json_t.count();
+    }
+
+    static void
+    from_json(const json &nlohmann_json_j, std::chrono::duration<Rep, Period> &nlohmann_json_t) {
+      nlohmann_json_t = std::chrono::duration<Rep, Period> { nlohmann_json_j.get<Rep>() };
     }
   };
 }  // namespace nlohmann

@@ -363,6 +363,10 @@ TEST_F_S_MOCKED(BlankHdrStates, FailedToApplyOriginalStates) {
   EXPECT_NO_THROW(display_device::win_utils::blankHdrStates(m_dd_api, std::chrono::milliseconds(0)));
 }
 
+TEST_F_S_MOCKED(BlankHdrStates, NullDelay) {
+  EXPECT_NO_THROW(display_device::win_utils::blankHdrStates(m_dd_api, std::nullopt));
+}
+
 TEST_F_S_MOCKED(BlankHdrStates, Success) {
   const display_device::HdrStateMap initial_states {
     { "DeviceId1", { display_device::HdrState::Enabled } },

@@ -29,7 +29,7 @@ namespace {
     std::unique_ptr<display_device::SettingsManager> m_settings { std::make_unique<display_device::SettingsManager>(
       std::make_shared<display_device::WinDisplayDevice>(std::make_shared<display_device::WinApiLayer>()),
       nullptr,
-      std::make_unique<display_device::PersistentState>(nullptr)) };
+      std::make_unique<display_device::PersistentState>(nullptr), display_device::WinWorkarounds {}) };
   };
 
   // Specialized TEST macro(s) for this test file

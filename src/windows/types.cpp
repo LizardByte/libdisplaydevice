@@ -30,4 +30,9 @@ namespace display_device {
   operator==(const SingleDisplayConfigState &lhs, const SingleDisplayConfigState &rhs) {
     return lhs.m_initial == rhs.m_initial && lhs.m_modified == rhs.m_modified;
   }
+
+  bool
+  operator==(const WinWorkarounds &lhs, const WinWorkarounds &rhs) {
+    return lhs.m_hdr_blank_delay == rhs.m_hdr_blank_delay;
+  }
 }  // namespace display_device

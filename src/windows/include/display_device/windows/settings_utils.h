@@ -165,9 +165,10 @@ namespace display_device::win_utils {
    *
    * @param win_dd Interface for interacting with the OS.
    * @param delay Delay between OFF and ON states (ON -> OFF -> DELAY -> ON).
+   *              If null optional is provided, the function does nothing.
    */
   void
-  blankHdrStates(WinDisplayDeviceInterface &win_dd, std::chrono::milliseconds delay);
+  blankHdrStates(WinDisplayDeviceInterface &win_dd, const std::optional<std::chrono::milliseconds>& delay);
 
   /**
    * @brief Make guard function for the topology.

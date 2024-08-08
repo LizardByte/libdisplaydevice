@@ -6,6 +6,37 @@ namespace {
 #define TEST_F_S(...) DD_MAKE_TEST(TEST_F, JsonConverterTest, __VA_ARGS__)
 }  // namespace
 
+TEST_F_S(EnumeratedDevice) {
+  display_device::EnumeratedDevice item_1 {
+    "ID_1",
+    "NAME_2",
+    "FU_NAME_3",
+    display_device::EnumeratedDevice::Info {
+        { 1920, 1080 },
+        display_device::Rational { 175, 100 },
+        119.9554,
+        false,
+        { 1, 2 },
+        display_device::HdrState::Enabled }
+  };
+  display_device::EnumeratedDevice item_2 {
+    "ID_2",
+    "NAME_2",
+    "FU_NAME_2",
+    display_device::EnumeratedDevice::Info {
+        { 1920, 1080 },
+        1.75,
+        display_device::Rational { 1199554, 10000 },
+        true,
+        { 0, 0 },
+        display_device::HdrState::Disabled }
+  };
+
+  executeTestCase(display_device::EnumeratedDevice {}, R"({"device_id":"","display_name":"","friendly_name":"","info":null})");
+  executeTestCase(item_1, R"({"device_id":"ID_1","display_name":"NAME_2","friendly_name":"FU_NAME_3","info":{"hdr_state":"Enabled","origin_point":{"x":1,"y":2},"primary":false,"refresh_rate":{"type":"double","value":119.9554},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"rational","value":{"denominator":100,"numerator":175}}}})");
+  executeTestCase(item_2, R"({"device_id":"ID_2","display_name":"NAME_2","friendly_name":"FU_NAME_2","info":{"hdr_state":"Disabled","origin_point":{"x":0,"y":0},"primary":true,"refresh_rate":{"type":"rational","value":{"denominator":10000,"numerator":1199554}},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"double","value":1.75}}})");
+}
+
 TEST_F_S(EnumeratedDeviceList) {
   display_device::EnumeratedDevice item_1 {
     "ID_1",

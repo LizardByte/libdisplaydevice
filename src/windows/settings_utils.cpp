@@ -358,7 +358,11 @@ namespace display_device::win_utils {
   }
 
   void
-  blankHdrStates(WinDisplayDeviceInterface &win_dd, const std::chrono::milliseconds delay) {
+  blankHdrStates(WinDisplayDeviceInterface &win_dd, const std::optional<std::chrono::milliseconds>& delay) {
+    if (!delay) {
+      return;
+    }
+
     const auto topology { win_dd.getCurrentTopology() };
     if (!win_dd.isTopologyValid(topology)) {
       DD_LOG(error) << "Got an invalid topology while trying to blank HDR states!";
@@ -390,13 +394,13 @@ namespace display_device::win_utils {
       return;
     }
 
-    DD_LOG(info) << "Applying HDR state \"blank\" workaround (" << delay.count() << "ms) to devices: " << toJson(device_ids, JSON_COMPACT);
+    DD_LOG(info) << "Applying HDR state \"blank\" workaround (" << delay->count() << "ms) to devices: " << toJson(device_ids, JSON_COMPACT);
     if (!win_dd.setHdrStates(inverse_states)) {
       DD_LOG(error) << "Failed to apply inverse HDR states during \"blank\"!";
       return;
     }
 
-    std::this_thread::sleep_for(delay);
+    std::this_thread::sleep_for(*delay);
     if (!win_dd.setHdrStates(original_states)) {
       DD_LOG(error) << "Failed to apply original HDR states during \"blank\"!";
     }

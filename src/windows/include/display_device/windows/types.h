@@ -11,6 +11,7 @@
 #include <windows.h>
 
 // system includes
+#include <chrono>
 #include <functional>
 #include <map>
 #include <set>
@@ -171,4 +172,18 @@ namespace display_device {
    * @brief Default function type used for cleanup/guard functions.
    */
   using DdGuardFn = std::function<void()>;
+
+  /**
+   * @brief Settings for workarounds/hacks for Windows.
+   */
+  struct WinWorkarounds {
+    /** @see win_utils::blankHdrStates for more details. */
+    std::optional<std::chrono::milliseconds> m_hdr_blank_delay { std::nullopt };
+
+    /**
+     * @brief Comparator for strict equality.
+     */
+    friend bool
+    operator==(const WinWorkarounds &lhs, const WinWorkarounds &rhs);
+  };
 }  // namespace display_device

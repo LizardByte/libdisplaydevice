@@ -13,6 +13,7 @@
 // clang-format on
 
 namespace display_device {
+  DD_JSON_DEFINE_CONVERTER(EnumeratedDevice)
   DD_JSON_DEFINE_CONVERTER(EnumeratedDeviceList)
   DD_JSON_DEFINE_CONVERTER(SingleDisplayConfiguration)
   DD_JSON_DEFINE_CONVERTER(std::set<std::string>)

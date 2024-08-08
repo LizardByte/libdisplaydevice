@@ -25,6 +25,7 @@
 namespace display_device {
   extern const std::optional<unsigned int> JSON_COMPACT;
 
+  DD_JSON_DECLARE_CONVERTER(EnumeratedDevice)
   DD_JSON_DECLARE_CONVERTER(EnumeratedDeviceList)
   DD_JSON_DECLARE_CONVERTER(SingleDisplayConfiguration)
   DD_JSON_DECLARE_CONVERTER(std::set<std::string>)

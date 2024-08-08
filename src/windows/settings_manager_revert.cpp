@@ -47,7 +47,7 @@ namespace display_device {
     bool system_settings_touched { false };
     boost::scope::scope_exit hdr_blank_always_executed_guard { [this, &system_settings_touched]() {
       if (system_settings_touched) {
-        win_utils::blankHdrStates(*m_dd_api, m_hdr_blank_delay);
+        win_utils::blankHdrStates(*m_dd_api, m_workarounds.m_hdr_blank_delay);
       }
     } };
     boost::scope::scope_exit topology_prep_guard { [this, &cached_state, &current_topology, &system_settings_touched]() {
