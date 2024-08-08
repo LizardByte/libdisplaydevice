@@ -177,8 +177,7 @@ namespace display_device {
    * @brief Settings for workarounds/hacks for Windows.
    */
   struct WinWorkarounds {
-    /** @see win_utils::blankHdrStates for more details. */
-    std::optional<std::chrono::milliseconds> m_hdr_blank_delay { std::nullopt };
+    std::optional<std::chrono::milliseconds> m_hdr_blank_delay { std::nullopt }; /**< @seealso{win_utils::blankHdrStates for more details.} */
 
     /**
      * @brief Comparator for strict equality.
