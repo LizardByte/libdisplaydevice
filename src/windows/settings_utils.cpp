@@ -300,7 +300,7 @@ namespace display_device::win_utils {
         // It's hard to deal with floating values, so we just multiply it
         // to keep 4 decimal places (if any) and let Windows deal with it!
         // Genius idea if I'm being honest.
-        static const auto multiplier { static_cast<unsigned int>(std::pow(10, 4)) };
+        constexpr auto multiplier { 10000 };
         const double transformed_value { std::round(std::get<double>(value) * multiplier) };
         return Rational { static_cast<unsigned int>(transformed_value), multiplier };
       } };
