@@ -26,10 +26,20 @@ namespace {
       return BaseTest::getDefaultLogLevel().value_or(display_device::Logger::LogLevel::info);
     }
 
-    std::unique_ptr<display_device::SettingsManager> m_settings { std::make_unique<display_device::SettingsManager>(
-      std::make_shared<display_device::WinDisplayDevice>(std::make_shared<display_device::WinApiLayer>()),
-      nullptr,
-      std::make_unique<display_device::PersistentState>(nullptr), display_device::WinWorkarounds {}) };
+    display_device::SettingsManager &
+    getImpl(const display_device::WinWorkarounds &workarounds = {}) {
+      if (!m_impl) {
+        m_impl = std::make_unique<display_device::SettingsManager>(
+          std::make_shared<display_device::WinDisplayDevice>(std::make_shared<display_device::WinApiLayer>()),
+          nullptr,
+          std::make_unique<display_device::PersistentState>(nullptr), workarounds);
+      }
+
+      return *m_impl;
+    }
+
+  private:
+    std::unique_ptr<display_device::SettingsManager> m_impl;
   };
 
   // Specialized TEST macro(s) for this test file
@@ -41,29 +51,42 @@ TEST_F_S(EnumAvailableDevices) {
   //   test_libdisplaydevice.exe --gtest_color=yes --gtest_also_run_disabled_tests --gtest_filter=*WinPlayground.EnumAvailableDevices
 
   DD_LOG(info) << "enumerated devices:\n"
-               << toJson(m_settings->enumAvailableDevices());
+               << toJson(getImpl().enumAvailableDevices());
 }
 
 TEST_F_S(ApplySettings) {
   // Usage example:
   //   test_libdisplaydevice.exe --gtest_color=yes --gtest_also_run_disabled_tests --gtest_filter=*WinPlayground.ApplySettings config='{\"device_id\":\"{77f67f3e-754f-5d31-af64-ee037e18100a}\",\"device_prep\":\"EnsureActive\",\"hdr_state\":null,\"refresh_rate\":null,\"resolution\":null}'
+  //
+  // With workarounds (optional):
+  //   test_libdisplaydevice.exe --gtest_color=yes --gtest_also_run_disabled_tests --gtest_filter=*WinPlayground.ApplySettings config='...' workarounds='{\"hdr_blank_delay\":500}'
 
-  const auto arg { getArgWithMatchingPattern(R"(^config=)", true) };
-  if (!arg) {
+  const auto config_arg { getArgWithMatchingPattern(R"(^config=)", true) };
+  if (!config_arg) {
     GTEST_FAIL() << "\"config=<json_string>\" argument not found!";
   }
 
   std::string parse_error {};
   display_device::SingleDisplayConfiguration config;
-  if (!fromJson(*arg, config, &parse_error)) {
-    GTEST_FAIL() << "Config argument could not be parsed!\nArgument:\n  " << *arg << "\nError:\n  " << parse_error;
+  if (!fromJson(*config_arg, config, &parse_error)) {
+    GTEST_FAIL() << "Config argument could not be parsed!\nArgument:\n  " << *config_arg << "\nError:\n  " << parse_error;
   }
 
-  const boost::scope::scope_exit cleanup { [this]() { static_cast<void>(m_settings->revertSettings()); } };
+  if (const auto workarounds_arg { getArgWithMatchingPattern(R"(^workarounds=)", true) }) {
+    display_device::WinWorkarounds workarounds;
+    if (!fromJson(*workarounds_arg, workarounds, &parse_error)) {
+      GTEST_FAIL() << "Workarounds argument could not be parsed!\nArgument:\n  " << *workarounds_arg << "\nError:\n  " << parse_error;
+    }
+
+    // Initialize the implementation
+    getImpl(workarounds);
+  }
+
+  const boost::scope::scope_exit cleanup { [this]() { static_cast<void>(getImpl().revertSettings()); } };
 
   std::cout << "Applying settings. Press enter to continue..." << std::endl;
   std::cin.get();
-  if (m_settings->applySettings(config) != display_device::SettingsManagerInterface::ApplyResult::Ok) {
+  if (getImpl().applySettings(config) != display_device::SettingsManagerInterface::ApplyResult::Ok) {
     GTEST_FAIL() << "Failed to apply configuration!";
   }
 
