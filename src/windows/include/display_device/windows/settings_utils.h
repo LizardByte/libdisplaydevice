@@ -168,7 +168,7 @@ namespace display_device::win_utils {
    *              If null optional is provided, the function does nothing.
    */
   void
-  blankHdrStates(WinDisplayDeviceInterface &win_dd, const std::optional<std::chrono::milliseconds>& delay);
+  blankHdrStates(WinDisplayDeviceInterface &win_dd, const std::optional<std::chrono::milliseconds> &delay);
 
   /**
    * @brief Make guard function for the topology.

@@ -358,7 +358,7 @@ namespace display_device::win_utils {
   }
 
   void
-  blankHdrStates(WinDisplayDeviceInterface &win_dd, const std::optional<std::chrono::milliseconds>& delay) {
+  blankHdrStates(WinDisplayDeviceInterface &win_dd, const std::optional<std::chrono::milliseconds> &delay) {
     if (!delay) {
       return;
     }

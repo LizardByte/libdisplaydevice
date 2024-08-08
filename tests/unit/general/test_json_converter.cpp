@@ -12,24 +12,24 @@ TEST_F_S(EnumeratedDevice) {
     "NAME_2",
     "FU_NAME_3",
     display_device::EnumeratedDevice::Info {
-        { 1920, 1080 },
-        display_device::Rational { 175, 100 },
-        119.9554,
-        false,
-        { 1, 2 },
-        display_device::HdrState::Enabled }
+      { 1920, 1080 },
+      display_device::Rational { 175, 100 },
+      119.9554,
+      false,
+      { 1, 2 },
+      display_device::HdrState::Enabled }
   };
   display_device::EnumeratedDevice item_2 {
     "ID_2",
     "NAME_2",
     "FU_NAME_2",
     display_device::EnumeratedDevice::Info {
-        { 1920, 1080 },
-        1.75,
-        display_device::Rational { 1199554, 10000 },
-        true,
-        { 0, 0 },
-        display_device::HdrState::Disabled }
+      { 1920, 1080 },
+      1.75,
+      display_device::Rational { 1199554, 10000 },
+      true,
+      { 0, 0 },
+      display_device::HdrState::Disabled }
   };
 
   executeTestCase(display_device::EnumeratedDevice {}, R"({"device_id":"","display_name":"","friendly_name":"","info":null})");
