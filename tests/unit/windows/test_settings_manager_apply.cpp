@@ -47,7 +47,10 @@ namespace {
     display_device::SettingsManager &
     getImpl() {
       if (!m_impl) {
-        m_impl = std::make_unique<display_device::SettingsManager>(m_dd_api, m_audio_context_api, std::make_unique<display_device::PersistentState>(m_settings_persistence_api));
+        m_impl = std::make_unique<display_device::SettingsManager>(m_dd_api, m_audio_context_api, std::make_unique<display_device::PersistentState>(m_settings_persistence_api),
+          display_device::WinWorkarounds {
+            .m_hdr_blank_delay = std::chrono::milliseconds { 123 }  // Value is irrelevant for the tests
+          });
       }
 
       return *m_impl;

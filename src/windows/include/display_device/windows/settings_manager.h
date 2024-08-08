@@ -5,7 +5,6 @@
 #pragma once
 
 // system includes
-#include <chrono>
 #include <memory>
 
 // local includes
@@ -25,11 +24,13 @@ namespace display_device {
      * @param dd_api A pointer to the Windows Display Device interface. Will throw on nullptr!
      * @param audio_context_api [Optional] A pointer to the Audio Context interface.
      * @param persistent_state A pointer to a class for managing persistence.
+     * @param workarounds Workaround settings for the APIs.
      */
     explicit SettingsManager(
       std::shared_ptr<WinDisplayDeviceInterface> dd_api,
       std::shared_ptr<AudioContextInterface> audio_context_api,
-      std::unique_ptr<PersistentState> persistent_state);
+      std::unique_ptr<PersistentState> persistent_state,
+      WinWorkarounds workarounds);
 
     /** For details @see SettingsManagerInterface::enumAvailableDevices */
     [[nodiscard]] EnumeratedDeviceList
@@ -115,9 +116,6 @@ namespace display_device {
     std::shared_ptr<WinDisplayDeviceInterface> m_dd_api;
     std::shared_ptr<AudioContextInterface> m_audio_context_api;
     std::unique_ptr<PersistentState> m_persistence_state;
-
-  private:
-    /** @see win_utils::blankHdrStates for more details. */
-    std::chrono::milliseconds m_hdr_blank_delay { 500 };  // 500ms should be more than enough...
+    WinWorkarounds m_workarounds;
   };
 }  // namespace display_device

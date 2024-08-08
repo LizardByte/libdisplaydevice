@@ -40,3 +40,12 @@ TEST_F_S(SingleDisplayConfigState) {
   executeTestCase(display_device::SingleDisplayConfigState {}, R"({"initial":{"primary_devices":[],"topology":[]},"modified":{"original_hdr_states":{},"original_modes":{},"original_primary_device":"","topology":[]}})");
   executeTestCase(valid_input, R"({"initial":{"primary_devices":["DeviceId1"],"topology":[["DeviceId1"]]},"modified":{"original_hdr_states":{"DeviceId2":"Disabled"},"original_modes":{"DeviceId2":{"refresh_rate":{"denominator":1,"numerator":120},"resolution":{"height":1080,"width":1920}}},"original_primary_device":"DeviceId2","topology":[["DeviceId2"]]}})");
 }
+
+TEST_F_S(WinWorkarounds) {
+  display_device::WinWorkarounds input {
+    std::chrono::milliseconds { 500 }
+  };
+
+  executeTestCase(display_device::WinWorkarounds {}, R"({"hdr_blank_delay":null})");
+  executeTestCase(input, R"({"hdr_blank_delay":500})");
+}

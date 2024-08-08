@@ -15,4 +15,5 @@ namespace display_device {
   DD_JSON_DEFINE_SERIALIZE_STRUCT(SingleDisplayConfigState::Initial, topology, primary_devices)
   DD_JSON_DEFINE_SERIALIZE_STRUCT(SingleDisplayConfigState::Modified, topology, original_modes, original_hdr_states, original_primary_device)
   DD_JSON_DEFINE_SERIALIZE_STRUCT(SingleDisplayConfigState, initial, modified)
+  DD_JSON_DEFINE_SERIALIZE_STRUCT(WinWorkarounds, hdr_blank_delay)
 }  // namespace display_device
