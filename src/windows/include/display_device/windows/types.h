@@ -5,6 +5,9 @@
 #pragma once
 
 // the most stupid and smelly windows include
+#ifndef NOMINMAX
+  #define NOMINMAX
+#endif
 #include <windows.h>
 
 // system includes

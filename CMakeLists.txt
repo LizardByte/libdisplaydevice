@@ -39,8 +39,10 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTS)
     # Additional setup for coverage
     # https://gcovr.com/en/stable/guide/compiling.html#compiler-options
     #
-    set(CMAKE_CXX_FLAGS "-fprofile-arcs -ftest-coverage -O0")
-    set(CMAKE_C_FLAGS "-fprofile-arcs -ftest-coverage -O0")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set(CMAKE_CXX_FLAGS "-fprofile-arcs -ftest-coverage -O0")
+        set(CMAKE_C_FLAGS "-fprofile-arcs -ftest-coverage -O0")
+    endif()
 
     enable_testing()
     add_subdirectory(tests)
