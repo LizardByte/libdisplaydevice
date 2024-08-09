@@ -263,14 +263,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage-${{ matrix.build_os }}
-          path: _coverage
+          path: build
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
           disable_search: true
           fail_ci_if_error: true
-          files: ./_coverage/coverage.xml
+          files: ./build/coverage.xml
           flags: ${{ matrix.flag }}
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
