@@ -25,16 +25,13 @@ option(BUILD_DOCS "Build documentation" ON)
 option(BUILD_TESTS "Build tests" ON)
 
 #
-# Documentation
-#
-if(BUILD_DOCS)
-    add_subdirectory(third-party/doxyconfig docs)
-endif()
-
-#
-# Testing only available if this is the main project
+# Testing and documentation are only available if this is the main project
 #
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTS)
+    if(BUILD_DOCS)
+        add_subdirectory(third-party/doxyconfig docs)
+    endif()
+
     #
     # Additional setup for coverage
     # https://gcovr.com/en/stable/guide/compiling.html#compiler-options
