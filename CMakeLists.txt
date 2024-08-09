@@ -21,8 +21,10 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 #
 # Project optional configuration
 #
-option(BUILD_DOCS "Build documentation" ON)
-option(BUILD_TESTS "Build tests" ON)
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    option(BUILD_DOCS "Build documentation" ON)
+    option(BUILD_TESTS "Build tests" ON)
+endif()
 
 #
 # Testing and documentation are only available if this is the main project
