@@ -67,3 +67,8 @@ ninja -C build
 ## Support
 
 Our support methods are listed in our [LizardByte Docs](https://lizardbyte.readthedocs.io/en/latest/about/support.html).
+
+<details style="display: none;">
+  <summary></summary>
+  [TOC]
+</details>
