@@ -32,35 +32,40 @@ TEST_F_S(NullptrInterfaceProvided) {
 }
 
 TEST_F_S(Schedule, NullptrCallbackProvided) {
-  EXPECT_THAT([&]() { m_impl.schedule(nullptr, 0ms); },
+  EXPECT_THAT([&]() { m_impl.schedule(nullptr, { .m_sleep_durations = { 0ms } }); },
     ThrowsMessage<std::logic_error>(HasSubstr("Empty callback function provided in RetryScheduler::schedule!")));
 }
 
-TEST_F_S(Schedule, ZeroInterval) {
-  EXPECT_THAT([&]() { m_impl.schedule([](auto, auto) {}, 0ms); },
-    ThrowsMessage<std::logic_error>(HasSubstr("Interval cannot be zero in RetryScheduler::schedule!")));
+TEST_F_S(Schedule, NoDurations) {
+  EXPECT_THAT([&]() { m_impl.schedule([](auto, auto) {}, { .m_sleep_durations = {} }); },
+    ThrowsMessage<std::logic_error>(HasSubstr("At least 1 sleep duration must be specified in RetryScheduler::schedule!")));
 }
 
-TEST_F_S(Schedule, SchedulingAtIntervals) {
+TEST_F_S(Schedule, ZeroDuration) {
+  EXPECT_THAT([&]() { m_impl.schedule([](auto, auto) {}, { .m_sleep_durations = { 0ms } }); },
+    ThrowsMessage<std::logic_error>(HasSubstr("All of the durations specified in RetryScheduler::schedule must be larger than a 0!")));
+}
+
+TEST_F_S(Schedule, SchedulingDurations) {
   // Note: in this test we care that the delay is not less than the requested one, but we
   //       do not really have an upper ceiling...
 
-  const auto schedule_and_get_average_delays { [&](const std::chrono::milliseconds delay) {
+  const auto schedule_and_get_average_delays { [&](const std::vector<std::chrono::milliseconds> &durations) {
     m_impl.execute([](TestIface &iface) { iface.m_durations.clear(); });
 
     std::optional<std::chrono::high_resolution_clock::time_point> prev;
-    m_impl.schedule([&prev](TestIface &iface, auto &stop_token) {
+    m_impl.schedule([&durations, &prev](TestIface &iface, auto &stop_token) {
       auto now = std::chrono::high_resolution_clock::now();
       if (prev) {
         iface.m_durations.push_back(static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(now - *prev).count()));
-        if (iface.m_durations.size() == 10) {
+        if (iface.m_durations.size() == durations.size()) {
           stop_token.requestStop();
         }
       }
 
       prev = now;
     },
-      delay);
+      { .m_sleep_durations = durations });
 
     while (m_impl.isScheduled()) {
       std::this_thread::sleep_for(1ms);
@@ -75,13 +80,14 @@ TEST_F_S(Schedule, SchedulingAtIntervals) {
     });
   } };
 
-  EXPECT_GE(schedule_and_get_average_delays(10ms), 10);
-  EXPECT_GE(schedule_and_get_average_delays(50ms), 50);
+  EXPECT_GE(schedule_and_get_average_delays({ 10ms, 10ms, 10ms, 10ms, 10ms, 10ms, 10ms, 10ms, 10ms, 10ms }), 10);
+  EXPECT_GE(schedule_and_get_average_delays({ 50ms, 50ms, 50ms, 50ms, 50ms, 50ms, 50ms, 50ms, 50ms, 50ms }), 50);
+  EXPECT_GE(schedule_and_get_average_delays({ 10ms, 20ms, 30ms, 40ms, 50ms, 10ms, 50ms, 10ms, 50ms, 10ms }), 28);
 }
 
 TEST_F_S(Schedule, SchedulerInteruptAndReplacement) {
   int counter_a { 0 };
-  m_impl.schedule([&counter_a](auto, auto) { counter_a++; }, 5ms);
+  m_impl.schedule([&counter_a](auto, auto) { counter_a++; }, { .m_sleep_durations = { 5ms } });
 
   while (counter_a < 3) {
     std::this_thread::sleep_for(1ms);
@@ -94,7 +100,7 @@ TEST_F_S(Schedule, SchedulerInteruptAndReplacement) {
     counter_a_last_value = counter_a;
     counter_b++;
   },
-    1ms);
+    { .m_sleep_durations = { 1ms } });
 
   while (counter_b < 3) {
     std::this_thread::sleep_for(1ms);
@@ -111,30 +117,45 @@ TEST_F_S(Schedule, StoppedImmediately) {
   m_impl.schedule([&](auto, auto &stop_token) {
     stop_token.requestStop();
   },
-    1000ms);
+    { .m_sleep_durations = { 1000ms } });
 
   EXPECT_FALSE(m_impl.isScheduled());
 }
 
-TEST_F_S(Schedule, ImmediateExecution) {
+TEST_F_S(Schedule, Execution, Immediate) {
+  const auto default_duration { 500ms };
   const auto calling_thread_id { std::this_thread::get_id() };
   std::optional<std::thread::id> first_call_scheduler_thread_id;
   std::optional<std::thread::id> second_call_scheduler_thread_id;
 
+  int first_call_delay { -1 };
+  int second_call_delay { -1 };
+  auto prev = std::chrono::high_resolution_clock::now();
   m_impl.schedule([&](auto, auto &stop_token) {
+    const auto now = std::chrono::high_resolution_clock::now();
+    const auto duration = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(now - prev).count());
+    prev = now;
+
     if (!first_call_scheduler_thread_id) {
+      first_call_delay = duration;
       first_call_scheduler_thread_id = std::this_thread::get_id();
       return;
     }
 
+    second_call_delay = duration;
     second_call_scheduler_thread_id = std::this_thread::get_id();
     stop_token.requestStop();
   },
-    1ms);
+    { .m_sleep_durations = { default_duration * 2, default_duration }, .m_execution = display_device::SchedulerOptions::Execution::Immediate });
 
   while (m_impl.isScheduled()) {
     std::this_thread::sleep_for(1ms);
   }
+
+  EXPECT_GE(first_call_delay, 0);
+  EXPECT_LT(first_call_delay, default_duration.count());
+  EXPECT_GE(second_call_delay, default_duration.count() * 2);
+  EXPECT_LT(second_call_delay, default_duration.count() * 3);
 
   EXPECT_TRUE(first_call_scheduler_thread_id);
   EXPECT_TRUE(second_call_scheduler_thread_id);
@@ -143,11 +164,95 @@ TEST_F_S(Schedule, ImmediateExecution) {
   EXPECT_NE(*first_call_scheduler_thread_id, *second_call_scheduler_thread_id);
 }
 
+TEST_F_S(Schedule, Execution, ImmediateWithSleep) {
+  const auto default_duration { 500ms };
+  const auto calling_thread_id { std::this_thread::get_id() };
+  std::optional<std::thread::id> first_call_scheduler_thread_id;
+  std::optional<std::thread::id> second_call_scheduler_thread_id;
+
+  int first_call_delay { -1 };
+  int second_call_delay { -1 };
+  auto prev = std::chrono::high_resolution_clock::now();
+  m_impl.schedule([&](auto, auto &stop_token) {
+    const auto now = std::chrono::high_resolution_clock::now();
+    const auto duration = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(now - prev).count());
+    prev = now;
+
+    if (!first_call_scheduler_thread_id) {
+      first_call_delay = duration;
+      first_call_scheduler_thread_id = std::this_thread::get_id();
+      return;
+    }
+
+    second_call_delay = duration;
+    second_call_scheduler_thread_id = std::this_thread::get_id();
+    stop_token.requestStop();
+  },
+    { .m_sleep_durations = { default_duration * 2, default_duration }, .m_execution = display_device::SchedulerOptions::Execution::ImmediateWithSleep });
+
+  while (m_impl.isScheduled()) {
+    std::this_thread::sleep_for(1ms);
+  }
+
+  EXPECT_GE(first_call_delay, default_duration.count() * 2);
+  EXPECT_LT(first_call_delay, default_duration.count() * 3);
+  EXPECT_GE(second_call_delay, default_duration.count());
+  EXPECT_LT(second_call_delay, default_duration.count() * 2);
+
+  EXPECT_TRUE(first_call_scheduler_thread_id);
+  EXPECT_TRUE(second_call_scheduler_thread_id);
+
+  EXPECT_EQ(*first_call_scheduler_thread_id, calling_thread_id);
+  EXPECT_NE(*first_call_scheduler_thread_id, *second_call_scheduler_thread_id);
+}
+
+TEST_F_S(Schedule, Execution, ScheduledOnly) {
+  const auto default_duration { 500ms };
+  const auto calling_thread_id { std::this_thread::get_id() };
+  std::optional<std::thread::id> first_call_scheduler_thread_id;
+  std::optional<std::thread::id> second_call_scheduler_thread_id;
+
+  int first_call_delay { -1 };
+  int second_call_delay { -1 };
+  auto prev = std::chrono::high_resolution_clock::now();
+  m_impl.schedule([&](auto, auto &stop_token) {
+    const auto now = std::chrono::high_resolution_clock::now();
+    const auto duration = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(now - prev).count());
+    prev = now;
+
+    if (!first_call_scheduler_thread_id) {
+      first_call_delay = duration;
+      first_call_scheduler_thread_id = std::this_thread::get_id();
+      return;
+    }
+
+    second_call_delay = duration;
+    second_call_scheduler_thread_id = std::this_thread::get_id();
+    stop_token.requestStop();
+  },
+    { .m_sleep_durations = { default_duration * 2, default_duration }, .m_execution = display_device::SchedulerOptions::Execution::ScheduledOnly });
+
+  while (m_impl.isScheduled()) {
+    std::this_thread::sleep_for(1ms);
+  }
+
+  EXPECT_GE(first_call_delay, default_duration.count() * 2);
+  EXPECT_LT(first_call_delay, default_duration.count() * 3);
+  EXPECT_GE(second_call_delay, default_duration.count());
+  EXPECT_LT(second_call_delay, default_duration.count() * 2);
+
+  EXPECT_TRUE(first_call_scheduler_thread_id);
+  EXPECT_TRUE(second_call_scheduler_thread_id);
+
+  EXPECT_NE(*first_call_scheduler_thread_id, calling_thread_id);
+  EXPECT_EQ(*first_call_scheduler_thread_id, *second_call_scheduler_thread_id);
+}
+
 TEST_F_S(Schedule, ExceptionThrown, DuringImmediateCall) {
   auto &logger { display_device::Logger::get() };
 
   int counter_a { 0 };
-  m_impl.schedule([&](auto, auto) { counter_a++; }, 1ms);
+  m_impl.schedule([&](auto, auto) { counter_a++; }, { .m_sleep_durations = { 1ms } });
   while (counter_a < 3) {
     std::this_thread::sleep_for(1ms);
   }
@@ -161,13 +266,13 @@ TEST_F_S(Schedule, ExceptionThrown, DuringImmediateCall) {
   m_impl.schedule([&](auto, auto) {
     throw std::runtime_error("Get rekt!");
   },
-    1ms);
+    { .m_sleep_durations = { 1ms } });
   EXPECT_FALSE(m_impl.isScheduled());
   EXPECT_EQ(output, "Exception thrown in the RetryScheduler::schedule. Stopping scheduler. Error:\nGet rekt!");
 
   // Verify that scheduler still works
   int counter_b { 0 };
-  m_impl.schedule([&](auto, auto) { counter_b++; }, 1ms);
+  m_impl.schedule([&](auto, auto) { counter_b++; }, { .m_sleep_durations = { 1ms } });
   while (counter_b < 3) {
     std::this_thread::sleep_for(1ms);
   }
@@ -192,7 +297,7 @@ TEST_F_S(Schedule, ExceptionThrown, DuringScheduledCall) {
     }
     first_call = false;
   },
-    1ms);
+    { .m_sleep_durations = { 1ms } });
 
   while (m_impl.isScheduled()) {
     std::this_thread::sleep_for(1ms);
@@ -201,7 +306,7 @@ TEST_F_S(Schedule, ExceptionThrown, DuringScheduledCall) {
 
   // Verify that scheduler still works
   int counter { 0 };
-  m_impl.schedule([&](auto, auto) { counter++; }, 1ms);
+  m_impl.schedule([&](auto, auto) { counter++; }, { .m_sleep_durations = { 1ms } });
   while (counter < 3) {
     std::this_thread::sleep_for(1ms);
   }
@@ -217,7 +322,7 @@ TEST_F_S(Execute, NullptrCallbackProvided) {
 
 TEST_F_S(Execute, SchedulerNotStopped) {
   int counter { 0 };
-  m_impl.schedule([&](auto, auto) { counter++; }, 1ms);
+  m_impl.schedule([&](auto, auto) { counter++; }, { .m_sleep_durations = { 1ms } });
   while (counter < 3) {
     std::this_thread::sleep_for(1ms);
   }
@@ -243,7 +348,7 @@ TEST_F_S(Execute, SchedulerNotStopped) {
 
 TEST_F_S(Execute, SchedulerStopped) {
   int counter { 0 };
-  m_impl.schedule([&](auto, auto) { counter++; }, 1ms);
+  m_impl.schedule([&](auto, auto) { counter++; }, { .m_sleep_durations = { 1ms } });
   while (counter < 3) {
     std::this_thread::sleep_for(1ms);
   }
@@ -268,7 +373,7 @@ TEST_F_S(Execute, SchedulerStopped, ExceptThatItWasNotRunning) {
   EXPECT_FALSE(m_impl.isScheduled());
 
   int counter { 0 };
-  m_impl.schedule([&](auto, auto) { counter++; }, 1ms);
+  m_impl.schedule([&](auto, auto) { counter++; }, { .m_sleep_durations = { 1ms } });
   while (counter < 3) {
     std::this_thread::sleep_for(1ms);
   }
@@ -279,7 +384,7 @@ TEST_F_S(Execute, SchedulerStopped, ExceptThatItWasNotRunning) {
 
 TEST_F_S(Execute, ExceptionThrown) {
   int counter { 0 };
-  m_impl.schedule([&](auto, auto) { counter++; }, 1ms);
+  m_impl.schedule([&](auto, auto) { counter++; }, { .m_sleep_durations = { 1ms } });
   while (counter < 3) {
     std::this_thread::sleep_for(1ms);
   }
@@ -297,7 +402,7 @@ TEST_F_S(Execute, ExceptionThrown) {
 
 TEST_F_S(Execute, ExceptionThrown, BeforeStopToken) {
   int counter { 0 };
-  m_impl.schedule([&](auto, auto) { counter++; }, 1ms);
+  m_impl.schedule([&](auto, auto) { counter++; }, { .m_sleep_durations = { 1ms } });
   while (counter < 3) {
     std::this_thread::sleep_for(1ms);
   }
@@ -316,7 +421,7 @@ TEST_F_S(Execute, ExceptionThrown, BeforeStopToken) {
 
 TEST_F_S(Execute, ExceptionThrown, AfterStopToken) {
   int counter { 0 };
-  m_impl.schedule([&](auto, auto) { counter++; }, 1ms);
+  m_impl.schedule([&](auto, auto) { counter++; }, { .m_sleep_durations = { 1ms } });
   while (counter < 3) {
     std::this_thread::sleep_for(1ms);
   }
@@ -336,7 +441,7 @@ TEST_F_S(Stop) {
   EXPECT_FALSE(m_impl.isScheduled());
 
   int counter { 0 };
-  m_impl.schedule([&](auto, auto) { counter++; }, 1ms);
+  m_impl.schedule([&](auto, auto) { counter++; }, { .m_sleep_durations = { 1ms } });
   while (counter < 3) {
     std::this_thread::sleep_for(1ms);
   }
@@ -351,7 +456,7 @@ TEST_F_S(ThreadCleanupInDestructor) {
   {
     display_device::RetryScheduler<TestIface> scheduler { std::make_unique<TestIface>() };
 
-    scheduler.schedule([&](auto, auto) { counter++; }, 1ms);
+    scheduler.schedule([&](auto, auto) { counter++; }, { .m_sleep_durations = { 1ms } });
     while (counter < 3) {
       std::this_thread::sleep_for(1ms);
     }
