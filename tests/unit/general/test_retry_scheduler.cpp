@@ -151,8 +151,10 @@ TEST_F_S(Schedule, Execution, Immediate) {
     std::this_thread::sleep_for(1ms);
   }
 
-  EXPECT_TRUE(0 <= first_call_delay && first_call_delay < 100);
-  EXPECT_TRUE(100 <= second_call_delay && second_call_delay < 200);
+  EXPECT_GE(first_call_delay, 0);
+  EXPECT_LT(first_call_delay, 10);
+  EXPECT_GE(second_call_delay, 100);
+  EXPECT_LT(second_call_delay, 110);
 
   EXPECT_TRUE(first_call_scheduler_thread_id);
   EXPECT_TRUE(second_call_scheduler_thread_id);
@@ -190,8 +192,10 @@ TEST_F_S(Schedule, Execution, ImmediateWithSleep) {
     std::this_thread::sleep_for(1ms);
   }
 
-  EXPECT_TRUE(100 <= first_call_delay && first_call_delay < 200);
-  EXPECT_TRUE(10 <= second_call_delay && second_call_delay < 100);
+  EXPECT_GE(first_call_delay, 100);
+  EXPECT_LT(first_call_delay, 110);
+  EXPECT_GE(second_call_delay, 10);
+  EXPECT_LT(second_call_delay, 20);
 
   EXPECT_TRUE(first_call_scheduler_thread_id);
   EXPECT_TRUE(second_call_scheduler_thread_id);
@@ -229,8 +233,10 @@ TEST_F_S(Schedule, Execution, ScheduledOnly) {
     std::this_thread::sleep_for(1ms);
   }
 
-  EXPECT_TRUE(100 <= first_call_delay && first_call_delay < 200);
-  EXPECT_TRUE(10 <= second_call_delay && second_call_delay < 100);
+  EXPECT_GE(first_call_delay, 100);
+  EXPECT_LT(first_call_delay, 110);
+  EXPECT_GE(second_call_delay, 10);
+  EXPECT_LT(second_call_delay, 20);
 
   EXPECT_TRUE(first_call_scheduler_thread_id);
   EXPECT_TRUE(second_call_scheduler_thread_id);
