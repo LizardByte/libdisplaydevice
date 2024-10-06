@@ -123,6 +123,7 @@ TEST_F_S(Schedule, StoppedImmediately) {
 }
 
 TEST_F_S(Schedule, Execution, Immediate) {
+  const auto default_duration { 500ms };
   const auto calling_thread_id { std::this_thread::get_id() };
   std::optional<std::thread::id> first_call_scheduler_thread_id;
   std::optional<std::thread::id> second_call_scheduler_thread_id;
@@ -145,16 +146,16 @@ TEST_F_S(Schedule, Execution, Immediate) {
     second_call_scheduler_thread_id = std::this_thread::get_id();
     stop_token.requestStop();
   },
-    { .m_sleep_durations = { 100ms, 10ms }, .m_execution = display_device::SchedulerOptions::Execution::Immediate });
+    { .m_sleep_durations = { default_duration * 2, default_duration }, .m_execution = display_device::SchedulerOptions::Execution::Immediate });
 
   while (m_impl.isScheduled()) {
     std::this_thread::sleep_for(1ms);
   }
 
   EXPECT_GE(first_call_delay, 0);
-  EXPECT_LT(first_call_delay, 10);
-  EXPECT_GE(second_call_delay, 100);
-  EXPECT_LT(second_call_delay, 110);
+  EXPECT_LT(first_call_delay, default_duration.count());
+  EXPECT_GE(second_call_delay, default_duration.count() * 2);
+  EXPECT_LT(second_call_delay, default_duration.count() * 3);
 
   EXPECT_TRUE(first_call_scheduler_thread_id);
   EXPECT_TRUE(second_call_scheduler_thread_id);
@@ -164,6 +165,7 @@ TEST_F_S(Schedule, Execution, Immediate) {
 }
 
 TEST_F_S(Schedule, Execution, ImmediateWithSleep) {
+  const auto default_duration { 500ms };
   const auto calling_thread_id { std::this_thread::get_id() };
   std::optional<std::thread::id> first_call_scheduler_thread_id;
   std::optional<std::thread::id> second_call_scheduler_thread_id;
@@ -186,16 +188,16 @@ TEST_F_S(Schedule, Execution, ImmediateWithSleep) {
     second_call_scheduler_thread_id = std::this_thread::get_id();
     stop_token.requestStop();
   },
-    { .m_sleep_durations = { 100ms, 10ms }, .m_execution = display_device::SchedulerOptions::Execution::ImmediateWithSleep });
+    { .m_sleep_durations = { default_duration * 2, default_duration }, .m_execution = display_device::SchedulerOptions::Execution::ImmediateWithSleep });
 
   while (m_impl.isScheduled()) {
     std::this_thread::sleep_for(1ms);
   }
 
-  EXPECT_GE(first_call_delay, 100);
-  EXPECT_LT(first_call_delay, 110);
-  EXPECT_GE(second_call_delay, 10);
-  EXPECT_LT(second_call_delay, 20);
+  EXPECT_GE(first_call_delay, default_duration.count() * 2);
+  EXPECT_LT(first_call_delay, default_duration.count() * 3);
+  EXPECT_GE(second_call_delay, default_duration.count());
+  EXPECT_LT(second_call_delay, default_duration.count() * 2);
 
   EXPECT_TRUE(first_call_scheduler_thread_id);
   EXPECT_TRUE(second_call_scheduler_thread_id);
@@ -205,6 +207,7 @@ TEST_F_S(Schedule, Execution, ImmediateWithSleep) {
 }
 
 TEST_F_S(Schedule, Execution, ScheduledOnly) {
+  const auto default_duration { 500ms };
   const auto calling_thread_id { std::this_thread::get_id() };
   std::optional<std::thread::id> first_call_scheduler_thread_id;
   std::optional<std::thread::id> second_call_scheduler_thread_id;
@@ -227,16 +230,16 @@ TEST_F_S(Schedule, Execution, ScheduledOnly) {
     second_call_scheduler_thread_id = std::this_thread::get_id();
     stop_token.requestStop();
   },
-    { .m_sleep_durations = { 100ms, 10ms }, .m_execution = display_device::SchedulerOptions::Execution::ScheduledOnly });
+    { .m_sleep_durations = { default_duration * 2, default_duration }, .m_execution = display_device::SchedulerOptions::Execution::ScheduledOnly });
 
   while (m_impl.isScheduled()) {
     std::this_thread::sleep_for(1ms);
   }
 
-  EXPECT_GE(first_call_delay, 100);
-  EXPECT_LT(first_call_delay, 110);
-  EXPECT_GE(second_call_delay, 10);
-  EXPECT_LT(second_call_delay, 20);
+  EXPECT_GE(first_call_delay, default_duration.count() * 2);
+  EXPECT_LT(first_call_delay, default_duration.count() * 3);
+  EXPECT_GE(second_call_delay, default_duration.count());
+  EXPECT_LT(second_call_delay, default_duration.count() * 2);
 
   EXPECT_TRUE(first_call_scheduler_thread_id);
   EXPECT_TRUE(second_call_scheduler_thread_id);
