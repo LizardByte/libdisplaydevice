@@ -145,14 +145,14 @@ TEST_F_S(Schedule, Execution, Immediate) {
     second_call_scheduler_thread_id = std::this_thread::get_id();
     stop_token.requestStop();
   },
-    { .m_sleep_durations = { 50ms, 10ms }, .m_execution = display_device::SchedulerOptions::Execution::Immediate });
+    { .m_sleep_durations = { 100ms, 10ms }, .m_execution = display_device::SchedulerOptions::Execution::Immediate });
 
   while (m_impl.isScheduled()) {
     std::this_thread::sleep_for(1ms);
   }
 
-  EXPECT_TRUE(0 <= first_call_delay && first_call_delay < 10);
-  EXPECT_TRUE(50 <= second_call_delay && second_call_delay < 60);
+  EXPECT_TRUE(0 <= first_call_delay && first_call_delay < 100);
+  EXPECT_TRUE(100 <= second_call_delay && second_call_delay < 200);
 
   EXPECT_TRUE(first_call_scheduler_thread_id);
   EXPECT_TRUE(second_call_scheduler_thread_id);
@@ -184,14 +184,14 @@ TEST_F_S(Schedule, Execution, ImmediateWithSleep) {
     second_call_scheduler_thread_id = std::this_thread::get_id();
     stop_token.requestStop();
   },
-    { .m_sleep_durations = { 50ms, 10ms }, .m_execution = display_device::SchedulerOptions::Execution::ImmediateWithSleep });
+    { .m_sleep_durations = { 100ms, 10ms }, .m_execution = display_device::SchedulerOptions::Execution::ImmediateWithSleep });
 
   while (m_impl.isScheduled()) {
     std::this_thread::sleep_for(1ms);
   }
 
-  EXPECT_TRUE(50 <= first_call_delay && first_call_delay < 60);
-  EXPECT_TRUE(10 <= second_call_delay && second_call_delay < 20);
+  EXPECT_TRUE(100 <= first_call_delay && first_call_delay < 200);
+  EXPECT_TRUE(10 <= second_call_delay && second_call_delay < 100);
 
   EXPECT_TRUE(first_call_scheduler_thread_id);
   EXPECT_TRUE(second_call_scheduler_thread_id);
@@ -223,14 +223,14 @@ TEST_F_S(Schedule, Execution, ScheduledOnly) {
     second_call_scheduler_thread_id = std::this_thread::get_id();
     stop_token.requestStop();
   },
-    { .m_sleep_durations = { 50ms, 10ms }, .m_execution = display_device::SchedulerOptions::Execution::ScheduledOnly });
+    { .m_sleep_durations = { 100ms, 10ms }, .m_execution = display_device::SchedulerOptions::Execution::ScheduledOnly });
 
   while (m_impl.isScheduled()) {
     std::this_thread::sleep_for(1ms);
   }
 
-  EXPECT_TRUE(50 <= first_call_delay && first_call_delay < 60);
-  EXPECT_TRUE(10 <= second_call_delay && second_call_delay < 20);
+  EXPECT_TRUE(100 <= first_call_delay && first_call_delay < 200);
+  EXPECT_TRUE(10 <= second_call_delay && second_call_delay < 100);
 
   EXPECT_TRUE(first_call_scheduler_thread_id);
   EXPECT_TRUE(second_call_scheduler_thread_id);
