@@ -311,7 +311,7 @@ namespace display_device {
       requires detail::ExecuteCallbackLikeConst<T, FunctionT>
     auto
     execute(FunctionT exec_fn) const {
-      return const_cast<RetryScheduler *>(this)->execute(exec_fn);
+      return const_cast<RetryScheduler *>(this)->execute(std::move(exec_fn));
     }
 
     /**
