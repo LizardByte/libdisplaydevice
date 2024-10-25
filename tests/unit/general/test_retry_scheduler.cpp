@@ -462,8 +462,8 @@ TEST_F_S(Execute, ExceptionThrown, AfterStopToken) {
 }
 
 TEST_F_S(Execute, ConstVsNonConst, WithoutStopToken) {
-  const auto const_callback = [](const TestIface &) {};
-  const auto non_const_callback = [](TestIface &) {};
+  const auto const_callback = [](const TestIface &) { /* noop */ };
+  const auto non_const_callback = [](TestIface &) { /* noop */ };
 
   // Verify that concepts are working as expected
   static_assert(isValidNonConstCallback(const_callback), "Invalid non-const callback");
@@ -482,10 +482,10 @@ TEST_F_S(Execute, ConstVsNonConst, WithoutStopToken) {
 }
 
 TEST_F_S(Execute, ConstVsNonConst, WithStopToken) {
-  const auto const_const_callback = [](const TestIface &, const display_device::SchedulerStopToken &) {};
-  const auto const_non_const_callback = [](const TestIface &, display_device::SchedulerStopToken &) {};
-  const auto non_const_const_callback = [](TestIface &, const display_device::SchedulerStopToken &) {};
-  const auto non_const_non_const_callback = [](TestIface &, display_device::SchedulerStopToken &) {};
+  const auto const_const_callback = [](const TestIface &, const display_device::SchedulerStopToken &) { /* noop */ };
+  const auto const_non_const_callback = [](const TestIface &, display_device::SchedulerStopToken &) { /* noop */ };
+  const auto non_const_const_callback = [](TestIface &, const display_device::SchedulerStopToken &) { /* noop */ };
+  const auto non_const_non_const_callback = [](TestIface &, display_device::SchedulerStopToken &) { /* noop */ };
 
   // Verify that concepts are working as expected
   static_assert(isValidNonConstCallback(const_const_callback), "Invalid non-const callback");
