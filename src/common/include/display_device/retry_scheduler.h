@@ -31,6 +31,17 @@ namespace display_device {
     explicit SchedulerStopToken(std::function<void()> cleanup);
 
     /**
+     * @brief Deleted copy constructor.
+     */
+    SchedulerStopToken(const SchedulerStopToken &) = delete;
+
+    /**
+     * @brief Deleted copy operator.
+     */
+    SchedulerStopToken &
+    operator=(const SchedulerStopToken &) = delete;
+
+    /**
      * @brief Executes cleanup logic if scheduler stop was requested.
      */
     ~SchedulerStopToken();
@@ -64,39 +75,41 @@ namespace display_device {
     };
 
     /**
+     * @brief A convenience template struct helper for adding const to the type.
+     */
+    template <class T, bool AddConst>
+    struct AutoConst;
+
+    template <class T>
+    struct AutoConst<T, false> {
+      using type = T;
+    };
+
+    template <class T>
+    struct AutoConst<T, true> {
+      using type = std::add_const_t<T>;
+    };
+
+    /**
+     * @brief A convenience template helper for adding const to the type.
+     */
+    template <class T, bool AddConst>
+    using auto_const_t = typename AutoConst<T, AddConst>::type;
+
+    /**
      * @brief Check if the function signature matches the acceptable signature for RetryScheduler::execute
      *        without a stop token.
      */
     template <class T, class FunctionT>
-    concept ExecuteWithoutStopToken = requires(FunctionT exec_fn) {
-      exec_fn(std::declval<T &>());
-    };
-
-    /**
-     * @brief Check if the function signature matches the acceptable signature for RetryScheduler::execute (const)
-     *        without a stop token.
-     */
-    template <class T, class FunctionT>
-    concept ExecuteWithoutStopTokenConst = requires(FunctionT exec_fn) {
-      exec_fn(std::declval<const T &>());
-    };
+    concept ExecuteWithoutStopToken = requires(FunctionT exec_fn, T &value) { exec_fn(value); };
 
     /**
      * @brief Check if the function signature matches the acceptable signature for RetryScheduler::execute
      *        with a stop token.
      */
     template <class T, class FunctionT>
-    concept ExecuteWithStopToken = requires(FunctionT exec_fn) {
-      exec_fn(std::declval<T &>(), std::declval<SchedulerStopToken &>());
-    };
-
-    /**
-     * @brief Check if the function signature matches the acceptable signature for RetryScheduler::execute (const)
-     *        with a stop token.
-     */
-    template <class T, class FunctionT>
-    concept ExecuteWithStopTokenConst = requires(FunctionT exec_fn) {
-      exec_fn(std::declval<const T &>(), std::declval<const SchedulerStopToken &>());
+    concept ExecuteWithStopToken = requires(FunctionT exec_fn, T &value, SchedulerStopToken &token) {
+      exec_fn(value, token);
     };
 
     /**
@@ -104,12 +117,6 @@ namespace display_device {
      */
     template <class T, class FunctionT>
     concept ExecuteCallbackLike = ExecuteWithoutStopToken<T, FunctionT> || ExecuteWithStopToken<T, FunctionT>;
-
-    /**
-     * @brief Check if the function signature matches the acceptable signature for RetryScheduler::execute (const).
-     */
-    template <class T, class FunctionT>
-    concept ExecuteCallbackLikeConst = ExecuteWithoutStopTokenConst<T, FunctionT> || ExecuteWithStopTokenConst<T, FunctionT>;
   }  // namespace detail
 
   /**
@@ -251,67 +258,21 @@ namespace display_device {
     }
 
     /**
-     * @brief Execute arbitrary logic using the provided interface in a thread-safe manner.
-     * @param exec_fn Provides thread-safe access to the interface for executing arbitrary logic.
-     *                Acceptable function signatures are:
-     *                  - AnyReturnType(T &);
-     *                  - AnyReturnType(T &, SchedulerStopToken& stop_token),
-     *                    `stop_token` is an optional parameter that allows to stop scheduler during
-     *                    the same call.
-     * @return Return value from the executor callback.
-     * @examples
-     * std::unique_ptr<SettingsManagerInterface> iface = getIface(...);
-     * RetryScheduler<SettingsManagerInterface> scheduler{std::move(iface)};
-     * const std::string device_id { "MY_DEVICE_ID" };
-     *
-     * // Without stop token:
-     * const auto display_name = scheduler.execute([&](SettingsManagerInterface& iface) {
-     *   return iface.getDisplayName(device_id);
-     * });
-     *
-     * // With stop token:
-     * scheduler.schedule([](SettingsManagerInterface& iface, SchedulerStopToken& stop_token) {
-     *   if (iface.revertSettings()) {
-     *     stop_token.requestStop();
-     *   }
-     * });
-     *
-     * scheduler.execute([&](SettingsManagerInterface& iface, SchedulerStopToken& stop_token) {
-     *   if (true) {
-     *     // Some condition was met and we no longer want to revert settings!
-     *     stop_token.requestStop();
-     *   }
-     * });
-     * @examples_end
+     * @brief A non-const variant of the `executeImpl` method. See it for details.
      */
     template <class FunctionT>
-      requires detail::ExecuteCallbackLike<T, FunctionT>
     auto
-    execute(FunctionT exec_fn) {
-      if constexpr (detail::OptionalFunction<FunctionT>) {
-        if (!exec_fn) {
-          throw std::logic_error { "Empty callback function provided in RetryScheduler::execute!" };
-        }
-      }
-
-      std::lock_guard lock { m_mutex };
-      if constexpr (detail::ExecuteWithStopToken<T, FunctionT>) {
-        SchedulerStopToken stop_token { [&]() { stopUnlocked(); } };
-        return exec_fn(*m_iface, stop_token);
-      }
-      else {
-        return exec_fn(*m_iface);
-      }
+    execute(FunctionT &&exec_fn) {
+      return executeImpl(*this, std::forward<FunctionT>(exec_fn));
     }
 
     /**
-     * @brief A const variant of the `execute` method. See non-const variant for details.
+     * @brief A const variant of the `executeImpl` method. See it for details.
      */
     template <class FunctionT>
-      requires detail::ExecuteCallbackLikeConst<T, FunctionT>
     auto
-    execute(FunctionT exec_fn) const {
-      return const_cast<RetryScheduler *>(this)->execute(std::move(exec_fn));
+    execute(FunctionT &&exec_fn) const {
+      return executeImpl(*this, std::forward<FunctionT>(exec_fn));
     }
 
     /**
@@ -343,6 +304,70 @@ namespace display_device {
       }
 
       return durations.empty() ? std::chrono::milliseconds::zero() : durations.back();
+    }
+
+    /**
+     * @brief Execute arbitrary logic using the provided interface in a thread-safe manner.
+     * @param self A reference to *this.
+     * @param exec_fn Provides thread-safe access to the interface for executing arbitrary logic.
+     *                Acceptable function signatures are:
+     *                  - AnyReturnType(T &);
+     *                  - AnyReturnType(T &, SchedulerStopToken& stop_token),
+     *                    `stop_token` is an optional parameter that allows to stop scheduler during
+     *                    the same call.
+     * @return Return value from the executor callback.
+     * @note This method is not to be used directly. Intead the `execute` method is to be used.
+     * @examples
+     * std::unique_ptr<SettingsManagerInterface> iface = getIface(...);
+     * RetryScheduler<SettingsManagerInterface> scheduler{std::move(iface)};
+     * const std::string device_id { "MY_DEVICE_ID" };
+     *
+     * // Without stop token:
+     * const auto display_name = scheduler.execute([&](SettingsManagerInterface& iface) {
+     *   return iface.getDisplayName(device_id);
+     * });
+     *
+     * // With stop token:
+     * scheduler.schedule([](SettingsManagerInterface& iface, SchedulerStopToken& stop_token) {
+     *   if (iface.revertSettings()) {
+     *     stop_token.requestStop();
+     *   }
+     * });
+     *
+     * scheduler.execute([&](SettingsManagerInterface& iface, SchedulerStopToken& stop_token) {
+     *   if (true) {
+     *     // Some condition was met and we no longer want to revert settings!
+     *     stop_token.requestStop();
+     *   }
+     * });
+     * @examples_end
+     */
+    static auto
+    executeImpl(auto &self, auto &&exec_fn)
+      requires detail::ExecuteCallbackLike<T, decltype(exec_fn)>
+    {
+      using FunctionT = decltype(exec_fn);
+      constexpr bool IsConst = std::is_const_v<std::remove_reference_t<decltype(self)>>;
+
+      if constexpr (detail::OptionalFunction<FunctionT>) {
+        if (!exec_fn) {
+          throw std::logic_error { "Empty callback function provided in RetryScheduler::execute!" };
+        }
+      }
+
+      std::lock_guard lock { self.m_mutex };
+      detail::auto_const_t<std::decay_t<T>, IsConst> &iface_ref { *self.m_iface };
+      if constexpr (detail::ExecuteWithStopToken<T, FunctionT>) {
+        detail::auto_const_t<SchedulerStopToken, IsConst> stop_token { [&self]() {
+          if constexpr (!IsConst) {
+            self.stopUnlocked();
+          }
+        } };
+        return std::forward<FunctionT>(exec_fn)(iface_ref, stop_token);
+      }
+      else {
+        return std::forward<FunctionT>(exec_fn)(iface_ref);
+      }
     }
 
     /**
@@ -378,7 +403,7 @@ namespace display_device {
     std::vector<std::chrono::milliseconds> m_sleep_durations; /**< Sleep times for the timer. */
     std::function<void(T &, SchedulerStopToken &)> m_retry_function { nullptr }; /**< Function to be executed until it succeeds. */
 
-    std::mutex m_mutex {}; /**< A mutex for synchronizing thread and "external" access. */
+    mutable std::mutex m_mutex {}; /**< A mutex for synchronizing thread and "external" access. */
     std::condition_variable m_sleep_cv {}; /**< Condition variable for waking up thread. */
     bool m_syncing_thread { false }; /**< Safeguard for the condition variable to prevent sporadic thread wake-ups. */
     bool m_keep_alive { true }; /**< When set to false, scheduler thread will exit. */
