@@ -73,6 +73,15 @@ namespace display_device {
     };
 
     /**
+     * @brief Check if the function signature matches the acceptable signature for RetryScheduler::execute (const)
+     *        without a stop token.
+     */
+    template <class T, class FunctionT>
+    concept ExecuteWithoutStopTokenConst = requires(FunctionT exec_fn) {
+      exec_fn(std::declval<const T &>());
+    };
+
+    /**
      * @brief Check if the function signature matches the acceptable signature for RetryScheduler::execute
      *        with a stop token.
      */
@@ -82,10 +91,25 @@ namespace display_device {
     };
 
     /**
+     * @brief Check if the function signature matches the acceptable signature for RetryScheduler::execute (const)
+     *        with a stop token.
+     */
+    template <class T, class FunctionT>
+    concept ExecuteWithStopTokenConst = requires(FunctionT exec_fn) {
+      exec_fn(std::declval<const T &>(), std::declval<const SchedulerStopToken &>());
+    };
+
+    /**
      * @brief Check if the function signature matches the acceptable signature for RetryScheduler::execute.
      */
     template <class T, class FunctionT>
     concept ExecuteCallbackLike = ExecuteWithoutStopToken<T, FunctionT> || ExecuteWithStopToken<T, FunctionT>;
+
+    /**
+     * @brief Check if the function signature matches the acceptable signature for RetryScheduler::execute (const).
+     */
+    template <class T, class FunctionT>
+    concept ExecuteCallbackLikeConst = ExecuteWithoutStopTokenConst<T, FunctionT> || ExecuteWithStopTokenConst<T, FunctionT>;
   }  // namespace detail
 
   /**
@@ -278,6 +302,16 @@ namespace display_device {
       else {
         return exec_fn(*m_iface);
       }
+    }
+
+    /**
+     * @brief A const variant of the `execute` method. See non-const variant for details.
+     */
+    template <class FunctionT>
+      requires detail::ExecuteCallbackLikeConst<T, FunctionT>
+    auto
+    execute(FunctionT exec_fn) const {
+      return const_cast<RetryScheduler *>(this)->execute(std::move(exec_fn));
     }
 
     /**

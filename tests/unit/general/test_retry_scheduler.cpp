@@ -16,6 +16,26 @@ namespace {
     std::vector<int> m_durations;
   };
 
+  template <class FunctionT>
+  constexpr bool
+  isValidNonConstCallback(FunctionT) {
+    using namespace display_device::detail;
+    if constexpr (ExecuteCallbackLike<TestIface, FunctionT>) {
+      return true;
+    }
+    return false;
+  }
+
+  template <class FunctionT>
+  constexpr bool
+  isValidConstCallback(FunctionT) {
+    using namespace display_device::detail;
+    if constexpr (ExecuteCallbackLikeConst<TestIface, FunctionT>) {
+      return true;
+    }
+    return false;
+  }
+
   // Test fixture(s) for this file
   class RetrySchedulerTest: public BaseTest {
   public:
@@ -315,8 +335,14 @@ TEST_F_S(Schedule, ExceptionThrown, DuringScheduledCall) {
   m_impl.stop();
 }
 
-TEST_F_S(Execute, NullptrCallbackProvided) {
-  EXPECT_THAT([&]() { m_impl.execute(std::function<void(TestIface &)> {}); },
+TEST_F_S(Execute, NonConst, NullptrCallbackProvided) {
+  EXPECT_THAT([this]() { auto &non_const_impl { m_impl }; non_const_impl.execute(std::function<void(TestIface &)> {}); },
+    ThrowsMessage<std::logic_error>(HasSubstr("Empty callback function provided in RetryScheduler::execute!")));
+}
+
+TEST_F_S(Execute, Const, NullptrCallbackProvided) {
+  // Note: this test verifies that non-const method is invoked from const method.
+  EXPECT_THAT([this]() { auto &const_impl { m_impl }; const_impl.execute(std::function<void(TestIface &)> {}); },
     ThrowsMessage<std::logic_error>(HasSubstr("Empty callback function provided in RetryScheduler::execute!")));
 }
 
@@ -433,6 +459,54 @@ TEST_F_S(Execute, ExceptionThrown, AfterStopToken) {
     ThrowsMessage<std::runtime_error>(HasSubstr("Get rekt!")));
 
   EXPECT_FALSE(m_impl.isScheduled());
+}
+
+TEST_F_S(Execute, ConstVsNonConst, WithoutStopToken) {
+  const auto const_callback = [](const TestIface &) { /* noop */ };
+  const auto non_const_callback = [](TestIface &) { /* noop */ };
+
+  // Verify that concepts are working as expected
+  static_assert(isValidNonConstCallback(const_callback), "Invalid non-const callback");
+  static_assert(isValidNonConstCallback(non_const_callback), "Invalid non-const callback");
+  static_assert(isValidConstCallback(const_callback), "Invalid const callback");
+  static_assert(!isValidConstCallback(non_const_callback), "Invalid const callback");
+
+  // Verify it compiles with non-const
+  auto &non_const_impl { m_impl };
+  non_const_impl.execute(const_callback);
+  non_const_impl.execute(non_const_callback);
+
+  // Verify it compiles with const
+  const auto &const_impl { m_impl };
+  const_impl.execute(const_callback);
+}
+
+TEST_F_S(Execute, ConstVsNonConst, WithStopToken) {
+  const auto const_const_callback = [](const TestIface &, const display_device::SchedulerStopToken &) { /* noop */ };
+  const auto const_non_const_callback = [](const TestIface &, display_device::SchedulerStopToken &) { /* noop */ };
+  const auto non_const_const_callback = [](TestIface &, const display_device::SchedulerStopToken &) { /* noop */ };
+  const auto non_const_non_const_callback = [](TestIface &, display_device::SchedulerStopToken &) { /* noop */ };
+
+  // Verify that concepts are working as expected
+  static_assert(isValidNonConstCallback(const_const_callback), "Invalid non-const callback");
+  static_assert(isValidNonConstCallback(const_non_const_callback), "Invalid non-const callback");
+  static_assert(isValidNonConstCallback(non_const_const_callback), "Invalid non-const callback");
+  static_assert(isValidNonConstCallback(non_const_non_const_callback), "Invalid non-const callback");
+  static_assert(isValidConstCallback(const_const_callback), "Invalid const callback");
+  static_assert(!isValidConstCallback(const_non_const_callback), "Invalid const callback");
+  static_assert(!isValidConstCallback(non_const_const_callback), "Invalid const callback");
+  static_assert(!isValidConstCallback(non_const_non_const_callback), "Invalid const callback");
+
+  // Verify it compiles with non-const
+  auto &non_const_impl { m_impl };
+  non_const_impl.execute(const_const_callback);
+  non_const_impl.execute(const_non_const_callback);
+  non_const_impl.execute(non_const_const_callback);
+  non_const_impl.execute(non_const_non_const_callback);
+
+  // Verify it compiles with const
+  const auto &const_impl { m_impl };
+  const_impl.execute(const_const_callback);
 }
 
 TEST_F_S(Stop) {
