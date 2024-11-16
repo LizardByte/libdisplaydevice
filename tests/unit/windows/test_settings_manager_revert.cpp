@@ -170,8 +170,8 @@ namespace {
     }
 
     void
-    expectedDefaultRevertModifiedSettingsCall(InSequence &sequence /* To ensure that sequence is created outside this scope */) {
-      auto expected_persistent_input { ut_consts::SDCS_FULL };
+    expectedDefaultRevertModifiedSettingsCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::SingleDisplayConfigState> &state = ut_consts::SDCS_FULL) {
+      auto expected_persistent_input { state };
       expected_persistent_input->m_modified = { expected_persistent_input->m_modified.m_topology };
 
       expectedDefaultMofifiedTopologyCalls(sequence);
@@ -188,16 +188,16 @@ namespace {
     }
 
     void
-    expectedDefaultInitialTopologyCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */) {
-      EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_initial.m_topology))
+    expectedDefaultInitialTopologyCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::SingleDisplayConfigState> &state = ut_consts::SDCS_FULL) {
+      EXPECT_CALL(*m_dd_api, isTopologyValid(state->m_initial.m_topology))
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
-      EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, ut_consts::SDCS_FULL->m_initial.m_topology))
+      EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, state->m_initial.m_topology))
         .Times(1)
-        .WillOnce(Return(false))
+        .WillOnce(Return(CURRENT_TOPOLOGY == state->m_initial.m_topology))
         .RetiresOnSaturation();
-      EXPECT_CALL(*m_dd_api, setTopology(ut_consts::SDCS_FULL->m_initial.m_topology))
+      EXPECT_CALL(*m_dd_api, setTopology(state->m_initial.m_topology))
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
@@ -592,7 +592,7 @@ TEST_F_S_MOCKED(SuccesfullyReverted, WithAudioCapture) {
   expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_TRUE(getImpl().revertSettings());
-  EXPECT_TRUE(getImpl().revertSettings());  // Seconds call after success is NOOP
+  EXPECT_TRUE(getImpl().revertSettings());  // Second call after success is NOOP
 }
 
 TEST_F_S_MOCKED(SuccesfullyReverted, NoAudioCapture) {
@@ -605,7 +605,22 @@ TEST_F_S_MOCKED(SuccesfullyReverted, NoAudioCapture) {
   expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_TRUE(getImpl().revertSettings());
-  EXPECT_TRUE(getImpl().revertSettings());  // Seconds call after success is NOOP
+  EXPECT_TRUE(getImpl().revertSettings());  // Second call after success is NOOP
+}
+
+TEST_F_S_MOCKED(SuccesfullyReverted, TopologySetToBackToInitialSinceItWasChangedToModified) {
+  auto initial_state { ut_consts::SDCS_FULL };
+  initial_state->m_initial.m_topology = CURRENT_TOPOLOGY;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilModifiedSettings(sequence, initial_state);
+  expectedDefaultRevertModifiedSettingsCall(sequence, initial_state);
+  expectedDefaultInitialTopologyCalls(sequence, initial_state);
+  expectedDefaultFinalPersistenceCalls(sequence);
+  expectedDefaultAudioContextCalls(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
+
+  EXPECT_TRUE(getImpl().revertSettings());
 }
 
 TEST_F_S_MOCKED(RevertModifiedSettings, CachedSettingsAreUpdated) {
