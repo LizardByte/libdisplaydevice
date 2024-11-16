@@ -21,6 +21,13 @@ namespace {
     constMethod() const { /* noop */ }
   };
 
+  // Some threads wake up a little earlier than expected, so we round the lower bound to
+  // 99% of the expected value to stabilize the tests
+  int
+  roundTo99(int value) {
+    return static_cast<int>(std::round(value * 0.99));
+  }
+
   // Test fixture(s) for this file
   class RetrySchedulerTest: public BaseTest {
   public:
@@ -157,9 +164,9 @@ TEST_F_S(Schedule, Execution, Immediate) {
     std::this_thread::sleep_for(1ms);
   }
 
-  EXPECT_GE(first_call_delay, 0);
+  EXPECT_GE(first_call_delay, roundTo99(0));
   EXPECT_LT(first_call_delay, default_duration.count());
-  EXPECT_GE(second_call_delay, default_duration.count() * 2);
+  EXPECT_GE(second_call_delay, roundTo99(default_duration.count() * 2));
   EXPECT_LT(second_call_delay, default_duration.count() * 3);
 
   EXPECT_TRUE(first_call_scheduler_thread_id);
@@ -199,9 +206,9 @@ TEST_F_S(Schedule, Execution, ImmediateWithSleep) {
     std::this_thread::sleep_for(1ms);
   }
 
-  EXPECT_GE(first_call_delay, default_duration.count() * 2);
+  EXPECT_GE(first_call_delay, roundTo99(default_duration.count() * 2));
   EXPECT_LT(first_call_delay, default_duration.count() * 3);
-  EXPECT_GE(second_call_delay, default_duration.count());
+  EXPECT_GE(second_call_delay, roundTo99(default_duration.count()));
   EXPECT_LT(second_call_delay, default_duration.count() * 2);
 
   EXPECT_TRUE(first_call_scheduler_thread_id);
@@ -241,9 +248,9 @@ TEST_F_S(Schedule, Execution, ScheduledOnly) {
     std::this_thread::sleep_for(1ms);
   }
 
-  EXPECT_GE(first_call_delay, default_duration.count() * 2);
+  EXPECT_GE(first_call_delay, roundTo99(default_duration.count() * 2));
   EXPECT_LT(first_call_delay, default_duration.count() * 3);
-  EXPECT_GE(second_call_delay, default_duration.count());
+  EXPECT_GE(second_call_delay, roundTo99(default_duration.count()));
   EXPECT_LT(second_call_delay, default_duration.count() * 2);
 
   EXPECT_TRUE(first_call_scheduler_thread_id);
