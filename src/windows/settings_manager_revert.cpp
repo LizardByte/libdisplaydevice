@@ -65,7 +65,8 @@ namespace display_device {
     } };
 
     // We can revert the modified setting independently before playing around with initial topology.
-    if (!revertModifiedSettings(current_topology, system_settings_touched)) {
+    bool switched_to_modified_topology { false };
+    if (!revertModifiedSettings(current_topology, system_settings_touched, &switched_to_modified_topology)) {
       // Error already logged
       return false;
     }
@@ -77,8 +78,9 @@ namespace display_device {
     }
 
     const bool is_topology_the_same { m_dd_api->isTopologyTheSame(current_topology, cached_state->m_initial.m_topology) };
+    const bool need_to_switch_topology { !is_topology_the_same || switched_to_modified_topology };
     system_settings_touched = system_settings_touched || !is_topology_the_same;
-    if (!is_topology_the_same && !m_dd_api->setTopology(cached_state->m_initial.m_topology)) {
+    if (need_to_switch_topology && !m_dd_api->setTopology(cached_state->m_initial.m_topology)) {
       DD_LOG(error) << "Failed to change topology to:\n"
                     << toJson(cached_state->m_initial.m_topology);
       return false;
@@ -99,7 +101,7 @@ namespace display_device {
   }
 
   bool
-  SettingsManager::revertModifiedSettings(const ActiveTopology &current_topology, bool &system_settings_touched) {
+  SettingsManager::revertModifiedSettings(const ActiveTopology &current_topology, bool &system_settings_touched, bool *switched_topology) {
     const auto &cached_state { m_persistence_state->getState() };
     if (!cached_state || !cached_state->m_modified.hasModifications()) {
       return true;
@@ -117,6 +119,9 @@ namespace display_device {
       DD_LOG(error) << "Failed to change topology to:\n"
                     << toJson(cached_state->m_modified.m_topology);
       return false;
+    }
+    if (switched_topology) {
+      *switched_topology = !is_topology_the_same;
     }
 
     DdGuardFn hdr_guard_fn { noopFn };
@@ -152,7 +157,7 @@ namespace display_device {
 
         // It is possible that the display modes will not actually change even though the "current != new" condition is true.
         // This is because of some additional internal checks that determine whether the change is actually needed.
-        // Therefore we should check the current display modes after the fact!
+        // Therefore, we should check the current display modes after the fact!
         if (current_modes != m_dd_api->getCurrentDisplayModes(win_utils::flattenTopology(cached_state->m_modified.m_topology))) {
           system_settings_touched = true;
           mode_guard_fn = win_utils::modeGuardFn(*m_dd_api, current_modes);
