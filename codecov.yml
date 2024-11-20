@@ -1,6 +1,7 @@
 ---
 codecov:
   branch: master
+  max_report_age: off
   notify:
     after_n_builds: 3
 
