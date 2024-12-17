@@ -12,16 +12,16 @@ set(REQUIRED_HEADER_LIBRARIES
         uuid
 )
 
-find_package(Boost 1.85 CONFIG QUIET GLOBAL)
+find_package(Boost 1.87 CONFIG QUIET GLOBAL)
 if(NOT Boost_FOUND)
-    message(STATUS "Boost v1.85.x package not found in the system. Falling back to FetchContent.")
+    message(STATUS "Boost v1.87.x package not found in the system. Falling back to FetchContent.")
     include(FetchContent)
 
     set(BOOST_INCLUDE_LIBRARIES ${REQUIRED_HEADER_LIBRARIES})
     FetchContent_Declare(
             Boost
-            URL      https://github.com/boostorg/boost/releases/download/boost-1.85.0/boost-1.85.0-cmake.tar.xz
-            URL_HASH MD5=BADEA970931766604D4D5F8F4090B176
+            URL      https://github.com/boostorg/boost/releases/download/boost-1.87.0/boost-1.87.0-cmake.tar.xz
+            URL_HASH MD5=D55D43218E81CA3D0FC14436B7665BF1
             DOWNLOAD_EXTRACT_TIMESTAMP
     )
     FetchContent_MakeAvailable(Boost)
@@ -30,9 +30,10 @@ else()
     # (differ in linked targets).
     # Also, FetchContent creates Boost::<lib> targets, whereas find_package does not. Since we cannot extend
     # Boost::headers as it is an ALIAS target, this is the workaround:
+    get_target_property(original_headers_target Boost::headers ALIASED_TARGET)
     foreach (lib ${REQUIRED_HEADER_LIBRARIES})
         if (NOT TARGET Boost::${lib})
-            add_library(Boost::${lib} ALIAS Boost::headers)
+            add_library(Boost::${lib} ALIAS ${original_headers_target})
         endif ()
     endforeach ()
 endif()
