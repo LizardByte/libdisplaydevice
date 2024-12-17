@@ -271,7 +271,7 @@ jobs:
           cat _coverage/coverage.xml
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           disable_search: true
           fail_ci_if_error: true
