@@ -30,10 +30,13 @@ else()
     # (differ in linked targets).
     # Also, FetchContent creates Boost::<lib> targets, whereas find_package does not. Since we cannot extend
     # Boost::headers as it is an ALIAS target, this is the workaround:
-    get_target_property(original_headers_target Boost::headers ALIASED_TARGET)
+    get_target_property(ORIGINAL_TARGET Boost::headers ALIASED_TARGET)
+    if (NOT DEFINED ORIGINAL_TARGET-NOTFOUND)
+        set(ORIGINAL_TARGET Boost::headers)
+    endif ()
     foreach (lib ${REQUIRED_HEADER_LIBRARIES})
         if (NOT TARGET Boost::${lib})
-            add_library(Boost::${lib} ALIAS ${original_headers_target})
+            add_library(Boost::${lib} ALIAS ${ORIGINAL_TARGET})
         endif ()
     endforeach ()
 endif()
