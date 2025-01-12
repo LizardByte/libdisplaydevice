@@ -182,7 +182,7 @@ jobs:
             # Doxygen from Ubuntu is too old, need Doxygen >= 1.10
             DOCS=OFF
           else
-            DOCS=ON
+            DOCS=OFF
           fi
 
           cmake \
