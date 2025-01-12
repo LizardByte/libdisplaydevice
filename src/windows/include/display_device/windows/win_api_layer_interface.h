@@ -142,7 +142,7 @@ namespace display_device {
     /**
      * @brief Direct wrapper around the SetDisplayConfig WinAPI.
      *
-     * It implements no additional logic, just a direct pass-trough.
+     * It implements additional implicit validation logic.
      *
      * @param paths List of paths to pass.
      * @param modes List of modes to pass.

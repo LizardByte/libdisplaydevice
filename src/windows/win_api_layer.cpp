@@ -536,13 +536,27 @@ namespace display_device {
 
   LONG
   WinApiLayer::setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> paths, std::vector<DISPLAYCONFIG_MODE_INFO> modes, UINT32 flags) {
-    // std::vector::data() "may or may not return a null pointer, if size() is 0", therefore we want to enforce nullptr...
-    return ::SetDisplayConfig(
-      paths.size(),
-      paths.empty() ? nullptr : paths.data(),
-      modes.size(),
-      modes.empty() ? nullptr : modes.data(),
-      flags);
+    const auto do_set_display_config { [&paths, &modes](UINT32 flags) {
+      // std::vector::data() "may or may not return a null pointer, if size() is 0", therefore we want to enforce nullptr...
+      return ::SetDisplayConfig(
+        paths.size(),
+        paths.empty() ? nullptr : paths.data(),
+        modes.size(),
+        modes.empty() ? nullptr : modes.data(),
+        flags);
+    } };
+
+    if (flags & SDC_APPLY) {
+      auto validation_flags { flags };
+      validation_flags &= ~SDC_APPLY;
+      validation_flags |= SDC_VALIDATE;
+
+      if (const auto result = do_set_display_config(validation_flags); result != ERROR_SUCCESS) {
+        return result;
+      }
+    }
+
+    return do_set_display_config(flags);
   }
 
   std::optional<HdrState>
