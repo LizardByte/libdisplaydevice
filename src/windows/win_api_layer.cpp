@@ -536,14 +536,14 @@ namespace display_device {
 
   LONG
   WinApiLayer::setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> paths, std::vector<DISPLAYCONFIG_MODE_INFO> modes, UINT32 flags) {
-    const auto do_set_display_config { [&paths, &modes](const UINT32 actual_flags) {
+    const auto do_set_display_config { [&paths, &modes](const UINT32 final_flags) {
       // std::vector::data() "may or may not return a null pointer, if size() is 0", therefore we want to enforce nullptr...
       return ::SetDisplayConfig(
         paths.size(),
         paths.empty() ? nullptr : paths.data(),
         modes.size(),
         modes.empty() ? nullptr : modes.data(),
-        actual_flags);
+        final_flags);
     } };
 
     if (flags & SDC_APPLY) {
