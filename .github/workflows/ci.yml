@@ -85,7 +85,6 @@ jobs:
           msystem: ucrt64
           update: true
           install: >-
-            doxygen
             mingw-w64-ucrt-x86_64-binutils
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-graphviz
@@ -94,6 +93,35 @@ jobs:
             mingw-w64-ucrt-x86_64-toolchain
             mingw-w64-ucrt-x86_64-boost
             mingw-w64-ucrt-x86_64-nlohmann-json
+
+      - name: Install Doxygen
+        # GCC compiled doxygen has issues when running graphviz
+        # Docs fail with Doxygen >= 1.13.0
+        # TODO: once working again, can add `doxygen` to the windows dependencies step
+        env:
+          DOXYGEN_VERSION: "1.11.0"
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Set version variables
+          $doxy_ver = $env:DOXYGEN_VERSION
+          $_doxy_ver = $doxy_ver.Replace(".", "_")
+
+          # Download the Doxygen installer
+          Invoke-WebRequest -Uri `
+            "https://github.com/doxygen/doxygen/releases/download/Release_${_doxy_ver}/doxygen-${doxy_ver}-setup.exe" `
+            -OutFile "doxygen-setup.exe"
+
+          # Run the installer
+          Start-Process `
+            -FilePath .\doxygen-setup.exe `
+            -ArgumentList `
+              '/VERYSILENT' `
+          -Wait `
+          -NoNewWindow
+
+          # Clean up
+          Remove-Item -Path doxygen-setup.exe
 
       - name: Prepare tests
         id: prepare-tests
