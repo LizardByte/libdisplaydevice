@@ -612,12 +612,12 @@ namespace display_device {
       return TRUE; }, reinterpret_cast<LPARAM>(&enum_data));
 
     if (!enum_data.m_width) {
-      DD_LOG(error) << "Failed to get monitor info for " << display_name << "!";
+      DD_LOG(debug) << "Failed to get monitor info for " << display_name << "!";
       return std::nullopt;
     }
 
     if (*enum_data.m_width * source_mode.width == 0) {
-      DD_LOG(error) << "Cannot get display scale for " << display_name << " from a width of 0!";
+      DD_LOG(debug) << "Cannot get display scale for " << display_name << " from a width of 0!";
       return std::nullopt;
     }
 
