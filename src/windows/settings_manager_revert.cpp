@@ -1,6 +1,6 @@
 /**
  * @file src/windows/settings_manager_revert.cpp
- * @brief Definitions for the methods for reverting settings in SettingsManager..
+ * @brief Definitions for the methods for reverting settings in SettingsManager.
  */
 // class header include
 #include "display_device/windows/settings_manager.h"
@@ -23,25 +23,25 @@ namespace display_device {
     }
   }  // namespace
 
-  bool
+  SettingsManager::RevertResult
   SettingsManager::revertSettings() {
     const auto &cached_state { m_persistence_state->getState() };
     if (!cached_state) {
-      return true;
+      return RevertResult::Ok;
     }
 
     const auto api_access { m_dd_api->isApiAccessAvailable() };
     DD_LOG(info) << "Trying to revert applied display device settings. API is available: " << toJson(api_access);
 
     if (!api_access) {
-      return false;
+      return RevertResult::ApiTemporarilyUnavailable;
     }
 
     const auto current_topology { m_dd_api->getCurrentTopology() };
     if (!m_dd_api->isTopologyValid(current_topology)) {
       DD_LOG(error) << "Retrieved current topology is invalid:\n"
                     << toJson(current_topology);
-      return false;
+      return RevertResult::TopologyIsInvalid;
     }
 
     bool system_settings_touched { false };
@@ -50,8 +50,8 @@ namespace display_device {
         win_utils::blankHdrStates(*m_dd_api, m_workarounds.m_hdr_blank_delay);
       }
     } };
-    boost::scope::scope_exit topology_prep_guard { [this, &cached_state, &current_topology, &system_settings_touched]() {
-      auto topology_to_restore { win_utils::stripTopologyOfUnavailableDevices(*m_dd_api, cached_state->m_initial.m_topology) };
+    boost::scope::scope_exit topology_prep_guard { [this, &current_topology, &system_settings_touched]() {
+      auto topology_to_restore { win_utils::createFullExtendedTopology(*m_dd_api) };
       if (!m_dd_api->isTopologyValid(topology_to_restore)) {
         topology_to_restore = current_topology;
       }
@@ -66,15 +66,15 @@ namespace display_device {
 
     // We can revert the modified setting independently before playing around with initial topology.
     bool switched_to_modified_topology { false };
-    if (!revertModifiedSettings(current_topology, system_settings_touched, &switched_to_modified_topology)) {
+    if (const auto result = revertModifiedSettings(current_topology, system_settings_touched, &switched_to_modified_topology); result != RevertResult::Ok) {
       // Error already logged
-      return false;
+      return result;
     }
 
     if (!m_dd_api->isTopologyValid(cached_state->m_initial.m_topology)) {
       DD_LOG(error) << "Trying to revert to an invalid initial topology:\n"
                     << toJson(cached_state->m_initial.m_topology);
-      return false;
+      return RevertResult::TopologyIsInvalid;
     }
 
     const bool is_topology_the_same { m_dd_api->isTopologyTheSame(current_topology, cached_state->m_initial.m_topology) };
@@ -83,12 +83,12 @@ namespace display_device {
     if (need_to_switch_topology && !m_dd_api->setTopology(cached_state->m_initial.m_topology)) {
       DD_LOG(error) << "Failed to change topology to:\n"
                     << toJson(cached_state->m_initial.m_topology);
-      return false;
+      return RevertResult::SwitchingTopologyFailed;
     }
 
     if (!m_persistence_state->persistState(std::nullopt)) {
       DD_LOG(error) << "Failed to save reverted settings! Undoing initial topology changes...";
-      return false;
+      return RevertResult::PersistenceSaveFailed;
     }
 
     if (m_audio_context_api->isCaptured()) {
@@ -97,20 +97,20 @@ namespace display_device {
 
     // Disable guards
     topology_prep_guard.set_active(false);
-    return true;
+    return RevertResult::Ok;
   }
 
-  bool
+  SettingsManager::RevertResult
   SettingsManager::revertModifiedSettings(const ActiveTopology &current_topology, bool &system_settings_touched, bool *switched_topology) {
     const auto &cached_state { m_persistence_state->getState() };
     if (!cached_state || !cached_state->m_modified.hasModifications()) {
-      return true;
+      return RevertResult::Ok;
     }
 
     if (!m_dd_api->isTopologyValid(cached_state->m_modified.m_topology)) {
       DD_LOG(error) << "Trying to revert modified settings using invalid topology:\n"
                     << toJson(cached_state->m_modified.m_topology);
-      return false;
+      return RevertResult::TopologyIsInvalid;
     }
 
     const bool is_topology_the_same { m_dd_api->isTopologyTheSame(current_topology, cached_state->m_modified.m_topology) };
@@ -118,7 +118,7 @@ namespace display_device {
     if (!is_topology_the_same && !m_dd_api->setTopology(cached_state->m_modified.m_topology)) {
       DD_LOG(error) << "Failed to change topology to:\n"
                     << toJson(cached_state->m_modified.m_topology);
-      return false;
+      return RevertResult::SwitchingTopologyFailed;
     }
     if (switched_topology) {
       *switched_topology = !is_topology_the_same;
@@ -135,7 +135,7 @@ namespace display_device {
                      << toJson(cached_state->m_modified.m_original_hdr_states);
         if (!m_dd_api->setHdrStates(cached_state->m_modified.m_original_hdr_states)) {
           // Error already logged
-          return false;
+          return RevertResult::RevertingHdrStatesFailed;
         }
 
         hdr_guard_fn = win_utils::hdrStateGuardFn(*m_dd_api, current_states);
@@ -152,7 +152,7 @@ namespace display_device {
         if (!m_dd_api->setDisplayModes(cached_state->m_modified.m_original_modes)) {
           system_settings_touched = true;
           // Error already logged
-          return false;
+          return RevertResult::RevertingDisplayModesFailed;
         }
 
         // It is possible that the display modes will not actually change even though the "current != new" condition is true.
@@ -175,7 +175,7 @@ namespace display_device {
         DD_LOG(info) << "Trying to change back the original primary device to: " << toJson(cached_state->m_modified.m_original_primary_device);
         if (!m_dd_api->setAsPrimary(cached_state->m_modified.m_original_primary_device)) {
           // Error already logged
-          return false;
+          return RevertResult::RevertingPrimaryDeviceFailed;
         }
 
         primary_guard_fn = win_utils::primaryGuardFn(*m_dd_api, current_primary_device);
@@ -186,13 +186,13 @@ namespace display_device {
     cleared_data.m_modified = { cleared_data.m_modified.m_topology };
     if (!m_persistence_state->persistState(cleared_data)) {
       DD_LOG(error) << "Failed to save reverted settings! Undoing changes to modified topology...";
-      return false;
+      return RevertResult::PersistenceSaveFailed;
     }
 
     // Disable guards
     hdr_guard.set_active(false);
     mode_guard.set_active(false);
     primary_guard.set_active(false);
-    return true;
+    return RevertResult::Ok;
   }
 }  // namespace display_device

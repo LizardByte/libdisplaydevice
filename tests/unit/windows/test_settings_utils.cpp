@@ -40,30 +40,16 @@ TEST_F_S_MOCKED(FlattenTopology) {
   EXPECT_EQ(display_device::win_utils::flattenTopology({}), std::set<std::string> {});
 }
 
-TEST_F_S_MOCKED(StripTopologyOfUnavailableDevices, NoDevicesAreAvailable) {
-  const display_device::ActiveTopology input_topology { DEFAULT_INITIAL_TOPOLOGY };
+TEST_F_S_MOCKED(CreateFullExtendedTopology, NoDevicesAreAvailable) {
   const display_device::ActiveTopology expected_topology {};
   const display_device::EnumeratedDeviceList devices {};
 
   EXPECT_CALL(m_dd_api, enumAvailableDevices()).Times(1).WillOnce(Return(devices));
-  EXPECT_EQ(display_device::win_utils::stripTopologyOfUnavailableDevices(m_dd_api, input_topology), expected_topology);
+  EXPECT_EQ(display_device::win_utils::createFullExtendedTopology(m_dd_api), expected_topology);
 }
 
-TEST_F_S_MOCKED(StripTopologyOfUnavailableDevices, DeviceStripped) {
-  const display_device::ActiveTopology input_topology { DEFAULT_INITIAL_TOPOLOGY };
-  const display_device::ActiveTopology expected_topology { { "DeviceId1" }, { "DeviceId3" } };
-  const display_device::EnumeratedDeviceList devices {
-    { .m_device_id = "DeviceId1" },
-    { .m_device_id = "DeviceId3" }
-  };
-
-  EXPECT_CALL(m_dd_api, enumAvailableDevices()).Times(1).WillOnce(Return(devices));
-  EXPECT_EQ(display_device::win_utils::stripTopologyOfUnavailableDevices(m_dd_api, input_topology), expected_topology);
-}
-
-TEST_F_S_MOCKED(StripTopologyOfUnavailableDevices, NothingStripped) {
-  const display_device::ActiveTopology input_topology { DEFAULT_INITIAL_TOPOLOGY };
-  const display_device::ActiveTopology expected_topology { DEFAULT_INITIAL_TOPOLOGY };
+TEST_F_S_MOCKED(CreateFullExtendedTopology, TopologyCreated) {
+  const display_device::ActiveTopology expected_topology { { "DeviceId1" }, { "DeviceId2" }, { "DeviceId3" } };
   const display_device::EnumeratedDeviceList devices {
     { .m_device_id = "DeviceId1" },
     { .m_device_id = "DeviceId2" },
@@ -71,7 +57,7 @@ TEST_F_S_MOCKED(StripTopologyOfUnavailableDevices, NothingStripped) {
   };
 
   EXPECT_CALL(m_dd_api, enumAvailableDevices()).Times(1).WillOnce(Return(devices));
-  EXPECT_EQ(display_device::win_utils::stripTopologyOfUnavailableDevices(m_dd_api, input_topology), expected_topology);
+  EXPECT_EQ(display_device::win_utils::createFullExtendedTopology(m_dd_api), expected_topology);
 }
 
 TEST_F_S_MOCKED(ComputeInitialState, PreviousStateIsUsed) {

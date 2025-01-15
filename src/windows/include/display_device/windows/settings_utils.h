@@ -17,7 +17,7 @@
  */
 namespace display_device::win_utils {
   /**
-   * @brief Get all the device its in the topology.
+   * @brief Get all the device ids in the topology.
    * @param topology Topology to be "flattened".
    * @return Device ids found in the topology.
    * @examples
@@ -29,18 +29,16 @@ namespace display_device::win_utils {
   flattenTopology(const ActiveTopology &topology);
 
   /**
-   * @brief Remove all unavailable devices from the topology.
+   * @brief Create extended topology from all the available devices.
    * @param win_dd Interface for interacting with the OS.
-   * @param topology Topology to be stripped.
-   * @return Topology with only available devices.
+   * @return Extended topology with all the available devices.
    * @examples
    * const WinDisplayDeviceInterface* iface = getIface(...);
-   * const ActiveTopology topology { { "DeviceId1", "DeviceId2" }, { "DeviceId3" } };
-   * const auto stripped_topology { stripTopologyOfUnavailableDevices(*iface, topology) };
+   * const auto extended_topology { stripTopologyOfUnavailableDevices(*iface) };
    * @examples_end
    */
   ActiveTopology
-  stripTopologyOfUnavailableDevices(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
+  createFullExtendedTopology(WinDisplayDeviceInterface &win_dd);
 
   /**
    * @brief Get one primary device from the provided topology.
@@ -86,7 +84,7 @@ namespace display_device::win_utils {
 
   /**
    * @brief Compute new topology from arbitrary data.
-   * @param device_prep Specify how to to compute the new topology.
+   * @param device_prep Specify how to compute the new topology.
    * @param configuring_primary_devices Specify whether the `device_to_configure` was unspecified (primary device was selected).
    * @param device_to_configure Main device to be configured.
    * @param additional_devices_to_configure Additional devices that belong to the same group as `device_to_configure`.

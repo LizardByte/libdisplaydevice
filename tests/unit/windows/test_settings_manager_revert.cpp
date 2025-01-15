@@ -32,6 +32,11 @@ namespace {
     { .m_device_id = "DeviceId3" },
     { .m_device_id = "DeviceId4" }
   };
+  const display_device::ActiveTopology FULL_EXTENDED_TOPOLOGY {
+    { "DeviceId1" },
+    { "DeviceId3" },
+    { "DeviceId4" }
+  };
 
   // Test fixture(s) for this file
   class SettingsManagerRevertMocked: public BaseTest {
@@ -231,15 +236,15 @@ namespace {
         .Times(1)
         .WillOnce(Return(CURRENT_DEVICES))
         .RetiresOnSaturation();
-      EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_initial.m_topology))
+      EXPECT_CALL(*m_dd_api, isTopologyValid(FULL_EXTENDED_TOPOLOGY))
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
-      EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, ut_consts::SDCS_FULL->m_initial.m_topology))
+      EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, FULL_EXTENDED_TOPOLOGY))
         .Times(1)
-        .WillOnce(Return(CURRENT_TOPOLOGY == ut_consts::SDCS_FULL->m_initial.m_topology))
+        .WillOnce(Return(false))
         .RetiresOnSaturation();
-      EXPECT_CALL(*m_dd_api, setTopology(ut_consts::SDCS_FULL->m_initial.m_topology))
+      EXPECT_CALL(*m_dd_api, setTopology(FULL_EXTENDED_TOPOLOGY))
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
@@ -276,7 +281,7 @@ TEST_F_S_MOCKED(NoSettingsAvailable) {
     .Times(1)
     .WillOnce(Return(serializeState(ut_consts::SDCS_EMPTY)));
 
-  EXPECT_TRUE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::Ok);
 }
 
 TEST_F_S_MOCKED(NoApiAccess) {
@@ -288,7 +293,7 @@ TEST_F_S_MOCKED(NoApiAccess) {
     .Times(1)
     .WillOnce(Return(false));
 
-  EXPECT_FALSE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::ApiTemporarilyUnavailable);
 }
 
 TEST_F_S_MOCKED(InvalidCurrentTopology) {
@@ -306,7 +311,7 @@ TEST_F_S_MOCKED(InvalidCurrentTopology) {
     .Times(1)
     .WillOnce(Return(false));
 
-  EXPECT_FALSE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::TopologyIsInvalid);
 }
 
 TEST_F_S_MOCKED(RevertModifiedSettings, InvalidModifiedTopology) {
@@ -319,7 +324,7 @@ TEST_F_S_MOCKED(RevertModifiedSettings, InvalidModifiedTopology) {
   expectedDefaultTopologyGuardCall(sequence);
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_FALSE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::TopologyIsInvalid);
 }
 
 TEST_F_S_MOCKED(RevertModifiedSettings, FailedToSetModifiedTopology) {
@@ -338,7 +343,7 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToSetModifiedTopology) {
   expectedDefaultTopologyGuardCall(sequence);
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_FALSE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::SwitchingTopologyFailed);
 }
 
 TEST_F_S_MOCKED(RevertModifiedSettings, FailedToRevertHdrStates) {
@@ -358,7 +363,7 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToRevertHdrStates) {
   expectedDefaultTopologyGuardCall(sequence);
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_FALSE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::RevertingHdrStatesFailed);
 }
 
 TEST_F_S_MOCKED(RevertModifiedSettings, FailedToRevertDisplayModes) {
@@ -378,7 +383,7 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToRevertDisplayModes) {
   expectedDefaultTopologyGuardCall(sequence);
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_FALSE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::RevertingDisplayModesFailed);
 }
 
 TEST_F_S_MOCKED(RevertModifiedSettings, RevertedDisplayModes, PersistenceFailed, GuardNotInvoked) {
@@ -402,7 +407,7 @@ TEST_F_S_MOCKED(RevertModifiedSettings, RevertedDisplayModes, PersistenceFailed,
   expectedDefaultTopologyGuardCall(sequence);
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_FALSE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::PersistenceSaveFailed);
 }
 
 TEST_F_S_MOCKED(RevertModifiedSettings, FailedToRevertPrimaryDevice) {
@@ -422,7 +427,7 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToRevertPrimaryDevice) {
   expectedDefaultTopologyGuardCall(sequence);
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_FALSE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::RevertingPrimaryDeviceFailed);
 }
 
 TEST_F_S_MOCKED(RevertModifiedSettings, FailedToSetPersistence) {
@@ -449,7 +454,7 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToSetPersistence) {
   expectedDefaultTopologyGuardCall(sequence);
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_FALSE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::PersistenceSaveFailed);
 }
 
 TEST_F_S_MOCKED(TopologyGuard, CurrentTopologyUsedAsFallback) {
@@ -464,7 +469,7 @@ TEST_F_S_MOCKED(TopologyGuard, CurrentTopologyUsedAsFallback) {
     .Times(1)
     .WillOnce(Return(CURRENT_DEVICES))
     .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_initial.m_topology))
+  EXPECT_CALL(*m_dd_api, isTopologyValid(FULL_EXTENDED_TOPOLOGY))
     .Times(1)
     .WillOnce(Return(false))
     .RetiresOnSaturation();
@@ -474,7 +479,7 @@ TEST_F_S_MOCKED(TopologyGuard, CurrentTopologyUsedAsFallback) {
     .RetiresOnSaturation();
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_FALSE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::TopologyIsInvalid);
 }
 
 TEST_F_S_MOCKED(TopologyGuard, SystemSettingsUntouched) {
@@ -488,7 +493,7 @@ TEST_F_S_MOCKED(TopologyGuard, SystemSettingsUntouched) {
     .Times(1)
     .WillOnce(Return(CURRENT_DEVICES))
     .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_initial.m_topology))
+  EXPECT_CALL(*m_dd_api, isTopologyValid(FULL_EXTENDED_TOPOLOGY))
     .Times(1)
     .WillOnce(Return(false))
     .RetiresOnSaturation();
@@ -497,7 +502,7 @@ TEST_F_S_MOCKED(TopologyGuard, SystemSettingsUntouched) {
     .WillOnce(Return(true))
     .RetiresOnSaturation();
 
-  EXPECT_FALSE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::TopologyIsInvalid);
 }
 
 TEST_F_S_MOCKED(TopologyGuard, FailedToSetTopology) {
@@ -511,21 +516,21 @@ TEST_F_S_MOCKED(TopologyGuard, FailedToSetTopology) {
     .Times(1)
     .WillOnce(Return(CURRENT_DEVICES))
     .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_initial.m_topology))
+  EXPECT_CALL(*m_dd_api, isTopologyValid(FULL_EXTENDED_TOPOLOGY))
     .Times(1)
     .WillOnce(Return(true))
     .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, ut_consts::SDCS_FULL->m_initial.m_topology))
+  EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, FULL_EXTENDED_TOPOLOGY))
     .Times(1)
     .WillOnce(Return(false))
     .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, setTopology(ut_consts::SDCS_FULL->m_initial.m_topology))
+  EXPECT_CALL(*m_dd_api, setTopology(FULL_EXTENDED_TOPOLOGY))
     .Times(1)
     .WillOnce(Return(false))
     .RetiresOnSaturation();
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_FALSE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::TopologyIsInvalid);
 }
 
 TEST_F_S_MOCKED(InvalidInitialTopology) {
@@ -540,7 +545,7 @@ TEST_F_S_MOCKED(InvalidInitialTopology) {
   expectedDefaultTopologyGuardCall(sequence);
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_FALSE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::TopologyIsInvalid);
 }
 
 TEST_F_S_MOCKED(FailedToSetInitialTopology) {
@@ -563,7 +568,7 @@ TEST_F_S_MOCKED(FailedToSetInitialTopology) {
   expectedDefaultTopologyGuardCall(sequence);
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_FALSE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::SwitchingTopologyFailed);
 }
 
 TEST_F_S_MOCKED(FailedToClearPersistence) {
@@ -579,7 +584,7 @@ TEST_F_S_MOCKED(FailedToClearPersistence) {
   expectedDefaultTopologyGuardCall(sequence);
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_FALSE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::PersistenceSaveFailed);
 }
 
 TEST_F_S_MOCKED(SuccesfullyReverted, WithAudioCapture) {
@@ -591,8 +596,8 @@ TEST_F_S_MOCKED(SuccesfullyReverted, WithAudioCapture) {
   expectedDefaultAudioContextCalls(sequence, true);
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_TRUE(getImpl().revertSettings());
-  EXPECT_TRUE(getImpl().revertSettings());  // Second call after success is NOOP
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::Ok);  // Second call after success is NOOP
 }
 
 TEST_F_S_MOCKED(SuccesfullyReverted, NoAudioCapture) {
@@ -604,8 +609,8 @@ TEST_F_S_MOCKED(SuccesfullyReverted, NoAudioCapture) {
   expectedDefaultAudioContextCalls(sequence, false);
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_TRUE(getImpl().revertSettings());
-  EXPECT_TRUE(getImpl().revertSettings());  // Second call after success is NOOP
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::Ok);  // Second call after success is NOOP
 }
 
 TEST_F_S_MOCKED(SuccesfullyReverted, TopologySetToBackToInitialSinceItWasChangedToModified) {
@@ -620,7 +625,7 @@ TEST_F_S_MOCKED(SuccesfullyReverted, TopologySetToBackToInitialSinceItWasChanged
   expectedDefaultAudioContextCalls(sequence, false);
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_TRUE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::Ok);
 }
 
 TEST_F_S_MOCKED(RevertModifiedSettings, CachedSettingsAreUpdated) {
@@ -634,7 +639,7 @@ TEST_F_S_MOCKED(RevertModifiedSettings, CachedSettingsAreUpdated) {
 
   expectedDefaultTopologyGuardCall(sequence);
   expectedHdrWorkaroundCalls(sequence);
-  EXPECT_FALSE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::TopologyIsInvalid);
 
   expectedDefaultCallsUntilModifiedSettingsNoPersistence(sequence);
   // No need for expectedDefaultRevertModifiedSettingsCall anymore.
@@ -643,7 +648,7 @@ TEST_F_S_MOCKED(RevertModifiedSettings, CachedSettingsAreUpdated) {
   expectedDefaultAudioContextCalls(sequence, false);
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_TRUE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::Ok);
 }
 
 TEST_F_S_MOCKED(CurrentSettingsMatchPersistentOnes) {
@@ -672,5 +677,5 @@ TEST_F_S_MOCKED(CurrentSettingsMatchPersistentOnes) {
   expectedDefaultFinalPersistenceCalls(sequence);
   expectedDefaultAudioContextCalls(sequence, false);
 
-  EXPECT_TRUE(getImpl().revertSettings());
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::Ok);
 }
