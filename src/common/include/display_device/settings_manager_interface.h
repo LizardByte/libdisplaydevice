@@ -27,6 +27,20 @@ namespace display_device {
     };
 
     /**
+     * @brief Outcome values when trying to revert settings.
+     */
+    enum class RevertResult {
+      Ok,  ///< Settings were reverted successfully
+      ApiTemporarilyUnavailable,  ///< API is temporarily unavailable
+      TopologyIsInvalid,  ///< Topology is invalid
+      SwitchingTopologyFailed,  ///< Switching topology has failed
+      RevertingPrimaryDeviceFailed,  ///< Reverting primary device failed
+      RevertingDisplayModeFailed,  ///< Reverting display mode failed
+      RevertingHdrStateFailed,  ///< Reverting HDR state failed
+      PersistenceSaveFailed,  ///< Persistence save failed
+    };
+
+    /**
      * @brief Default virtual destructor.
      */
     virtual ~SettingsManagerInterface() = default;
@@ -79,7 +93,7 @@ namespace display_device {
      * const auto result = iface->revertSettings();
      * @examples_end
      */
-    [[nodiscard]] virtual bool
+    [[nodiscard]] virtual RevertResult
     revertSettings() = 0;
 
     /**
@@ -94,11 +108,11 @@ namespace display_device {
      * auto result = iface->applySettings(config);
      * if (result == ApplyResult::Ok) {
      *   // Wait for some time
-     *   if (!iface->revertSettings()) {
+     *   if (iface->revertSettings() != RevertResult::Ok) {
      *     // Wait for user input
      *     const bool user_wants_reset { true };
      *     if (user_wants_reset) {
-     *       result = iface->resetPersistence();
+     *       iface->resetPersistence();
      *     }
      *   }
      * }

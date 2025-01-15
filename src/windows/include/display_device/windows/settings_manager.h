@@ -45,7 +45,7 @@ namespace display_device {
     applySettings(const SingleDisplayConfiguration &config) override;
 
     /** For details @see SettingsManagerInterface::revertSettings */
-    [[nodiscard]] bool
+    [[nodiscard]] RevertResult
     revertSettings() override;
 
     /** For details @see SettingsManagerInterface::resetPersistence */
@@ -107,11 +107,11 @@ namespace display_device {
      * @param current_topology Topology before this method is called.
      * @param system_settings_touched Indicates whether a "write" operation could have been performed on the OS.
      * @param switched_topology [Optional] Indicates whether the current topology was switched to revert settings.
-     * @returns True on success, false otherwise.
+     * @returns Result enum indicating success or failure.
      * @warning The method assumes that the caller will ensure restoring the topology
      *          in case of a failure!
      */
-    [[nodiscard]] bool
+    [[nodiscard]] RevertResult
     revertModifiedSettings(const ActiveTopology &current_topology, bool &system_settings_touched, bool *switched_topology = nullptr);
 
     std::shared_ptr<WinDisplayDeviceInterface> m_dd_api;

@@ -49,7 +49,7 @@ namespace display_device {
   bool
   SettingsManager::resetPersistence() {
     // Trying to revert one more time in case we succeed.
-    if (revertSettings()) {
+    if (revertSettings() == RevertResult::Ok) {
       return true;
     }
 
