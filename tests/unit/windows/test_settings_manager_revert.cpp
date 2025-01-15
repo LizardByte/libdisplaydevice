@@ -32,6 +32,11 @@ namespace {
     { .m_device_id = "DeviceId3" },
     { .m_device_id = "DeviceId4" }
   };
+  const display_device::ActiveTopology FULL_EXTENDED_TOPOLOGY {
+    { "DeviceId1" },
+    { "DeviceId3" },
+    { "DeviceId4" }
+  };
 
   // Test fixture(s) for this file
   class SettingsManagerRevertMocked: public BaseTest {
@@ -231,15 +236,15 @@ namespace {
         .Times(1)
         .WillOnce(Return(CURRENT_DEVICES))
         .RetiresOnSaturation();
-      EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_initial.m_topology))
+      EXPECT_CALL(*m_dd_api, isTopologyValid(FULL_EXTENDED_TOPOLOGY))
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
-      EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, ut_consts::SDCS_FULL->m_initial.m_topology))
+      EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, FULL_EXTENDED_TOPOLOGY))
         .Times(1)
-        .WillOnce(Return(CURRENT_TOPOLOGY == ut_consts::SDCS_FULL->m_initial.m_topology))
+        .WillOnce(Return(false))
         .RetiresOnSaturation();
-      EXPECT_CALL(*m_dd_api, setTopology(ut_consts::SDCS_FULL->m_initial.m_topology))
+      EXPECT_CALL(*m_dd_api, setTopology(FULL_EXTENDED_TOPOLOGY))
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
@@ -464,7 +469,7 @@ TEST_F_S_MOCKED(TopologyGuard, CurrentTopologyUsedAsFallback) {
     .Times(1)
     .WillOnce(Return(CURRENT_DEVICES))
     .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_initial.m_topology))
+  EXPECT_CALL(*m_dd_api, isTopologyValid(FULL_EXTENDED_TOPOLOGY))
     .Times(1)
     .WillOnce(Return(false))
     .RetiresOnSaturation();
@@ -488,7 +493,7 @@ TEST_F_S_MOCKED(TopologyGuard, SystemSettingsUntouched) {
     .Times(1)
     .WillOnce(Return(CURRENT_DEVICES))
     .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_initial.m_topology))
+  EXPECT_CALL(*m_dd_api, isTopologyValid(FULL_EXTENDED_TOPOLOGY))
     .Times(1)
     .WillOnce(Return(false))
     .RetiresOnSaturation();
@@ -511,15 +516,15 @@ TEST_F_S_MOCKED(TopologyGuard, FailedToSetTopology) {
     .Times(1)
     .WillOnce(Return(CURRENT_DEVICES))
     .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, isTopologyValid(ut_consts::SDCS_FULL->m_initial.m_topology))
+  EXPECT_CALL(*m_dd_api, isTopologyValid(FULL_EXTENDED_TOPOLOGY))
     .Times(1)
     .WillOnce(Return(true))
     .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, ut_consts::SDCS_FULL->m_initial.m_topology))
+  EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, FULL_EXTENDED_TOPOLOGY))
     .Times(1)
     .WillOnce(Return(false))
     .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, setTopology(ut_consts::SDCS_FULL->m_initial.m_topology))
+  EXPECT_CALL(*m_dd_api, setTopology(FULL_EXTENDED_TOPOLOGY))
     .Times(1)
     .WillOnce(Return(false))
     .RetiresOnSaturation();

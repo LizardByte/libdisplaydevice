@@ -147,14 +147,19 @@ namespace display_device::win_utils {
   }
 
   ActiveTopology
-  stripTopologyOfUnavailableDevices(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology) {
+  createFullExtendedTopology(WinDisplayDeviceInterface &win_dd) {
     const auto devices { win_dd.enumAvailableDevices() };
     if (devices.empty()) {
-      DD_LOG(error) << "Failed to enumerate available devices for stripping topology!";
+      DD_LOG(error) << "Failed to enumerate available devices for full extended topology!";
       return {};
     }
 
-    return stripTopology(topology, devices);
+    ActiveTopology topology;
+    for (const auto &device : devices) {
+      topology.push_back({ device.m_device_id });
+    }
+
+    return topology;
   }
 
   std::string

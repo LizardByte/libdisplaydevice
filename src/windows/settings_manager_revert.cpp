@@ -50,8 +50,8 @@ namespace display_device {
         win_utils::blankHdrStates(*m_dd_api, m_workarounds.m_hdr_blank_delay);
       }
     } };
-    boost::scope::scope_exit topology_prep_guard { [this, &cached_state, &current_topology, &system_settings_touched]() {
-      auto topology_to_restore { win_utils::stripTopologyOfUnavailableDevices(*m_dd_api, cached_state->m_initial.m_topology) };
+    boost::scope::scope_exit topology_prep_guard { [this, &current_topology, &system_settings_touched]() {
+      auto topology_to_restore { win_utils::createFullExtendedTopology(*m_dd_api) };
       if (!m_dd_api->isTopologyValid(topology_to_restore)) {
         topology_to_restore = current_topology;
       }
