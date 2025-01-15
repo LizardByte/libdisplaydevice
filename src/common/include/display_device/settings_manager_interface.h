@@ -35,8 +35,8 @@ namespace display_device {
       TopologyIsInvalid,  ///< Topology is invalid
       SwitchingTopologyFailed,  ///< Switching topology has failed
       RevertingPrimaryDeviceFailed,  ///< Reverting primary device failed
-      RevertingDisplayModeFailed,  ///< Reverting display mode failed
-      RevertingHdrStateFailed,  ///< Reverting HDR state failed
+      RevertingDisplayModesFailed,  ///< Reverting display modes failed
+      RevertingHdrStatesFailed,  ///< Reverting HDR states failed
       PersistenceSaveFailed,  ///< Persistence save failed
     };
 

@@ -135,7 +135,7 @@ namespace display_device {
                      << toJson(cached_state->m_modified.m_original_hdr_states);
         if (!m_dd_api->setHdrStates(cached_state->m_modified.m_original_hdr_states)) {
           // Error already logged
-          return RevertResult::RevertingHdrStateFailed;
+          return RevertResult::RevertingHdrStatesFailed;
         }
 
         hdr_guard_fn = win_utils::hdrStateGuardFn(*m_dd_api, current_states);
@@ -152,7 +152,7 @@ namespace display_device {
         if (!m_dd_api->setDisplayModes(cached_state->m_modified.m_original_modes)) {
           system_settings_touched = true;
           // Error already logged
-          return RevertResult::RevertingDisplayModeFailed;
+          return RevertResult::RevertingDisplayModesFailed;
         }
 
         // It is possible that the display modes will not actually change even though the "current != new" condition is true.

@@ -363,7 +363,7 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToRevertHdrStates) {
   expectedDefaultTopologyGuardCall(sequence);
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::RevertingHdrStateFailed);
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::RevertingHdrStatesFailed);
 }
 
 TEST_F_S_MOCKED(RevertModifiedSettings, FailedToRevertDisplayModes) {
@@ -383,7 +383,7 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToRevertDisplayModes) {
   expectedDefaultTopologyGuardCall(sequence);
   expectedHdrWorkaroundCalls(sequence);
 
-  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::RevertingDisplayModeFailed);
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::RevertingDisplayModesFailed);
 }
 
 TEST_F_S_MOCKED(RevertModifiedSettings, RevertedDisplayModes, PersistenceFailed, GuardNotInvoked) {
