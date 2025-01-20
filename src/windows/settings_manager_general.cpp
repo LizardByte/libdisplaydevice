@@ -15,13 +15,14 @@ namespace display_device {
     std::shared_ptr<WinDisplayDeviceInterface> dd_api,
     std::shared_ptr<AudioContextInterface> audio_context_api,
     std::unique_ptr<PersistentState> persistent_state,
-    WinWorkarounds workarounds):
-      m_dd_api { std::move(dd_api) },
-      m_audio_context_api { std::move(audio_context_api) },
-      m_persistence_state { std::move(persistent_state) },
-      m_workarounds { std::move(workarounds) } {
+    WinWorkarounds workarounds
+  ):
+      m_dd_api {std::move(dd_api)},
+      m_audio_context_api {std::move(audio_context_api)},
+      m_persistence_state {std::move(persistent_state)},
+      m_workarounds {std::move(workarounds)} {
     if (!m_dd_api) {
-      throw std::logic_error { "Nullptr provided for WinDisplayDeviceInterface in SettingsManager!" };
+      throw std::logic_error {"Nullptr provided for WinDisplayDeviceInterface in SettingsManager!"};
     }
 
     if (!m_audio_context_api) {
@@ -29,25 +30,22 @@ namespace display_device {
     }
 
     if (!m_persistence_state) {
-      throw std::logic_error { "Nullptr provided for PersistentState in SettingsManager!" };
+      throw std::logic_error {"Nullptr provided for PersistentState in SettingsManager!"};
     }
 
     DD_LOG(info) << "Provided workaround settings for SettingsManager:\n"
                  << toJson(m_workarounds);
   }
 
-  EnumeratedDeviceList
-  SettingsManager::enumAvailableDevices() const {
+  EnumeratedDeviceList SettingsManager::enumAvailableDevices() const {
     return m_dd_api->enumAvailableDevices();
   }
 
-  std::string
-  SettingsManager::getDisplayName(const std::string &device_id) const {
+  std::string SettingsManager::getDisplayName(const std::string &device_id) const {
     return m_dd_api->getDisplayName(device_id);
   }
 
-  bool
-  SettingsManager::resetPersistence() {
+  bool SettingsManager::resetPersistence() {
     // Trying to revert one more time in case we succeed.
     if (revertSettings() == RevertResult::Ok) {
       return true;

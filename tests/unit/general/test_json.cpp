@@ -27,17 +27,15 @@ namespace display_device {
 
   using TestVariant = std::variant<double, Rational>;
 
-  bool
-  operator==(const TestStruct::Nested &lhs, const TestStruct::Nested &rhs) {
+  bool operator==(const TestStruct::Nested &lhs, const TestStruct::Nested &rhs) {
     return lhs.m_c == rhs.m_c;
   }
 
-  bool
-  operator==(const TestStruct &lhs, const TestStruct &rhs) {
+  bool operator==(const TestStruct &lhs, const TestStruct &rhs) {
     return lhs.m_a == rhs.m_a && lhs.m_b == rhs.m_b;
   }
 
-  DD_JSON_DEFINE_SERIALIZE_ENUM_GCOVR_EXCL_BR_LINE(TestEnum, { { TestEnum::Value1, "Value1" }, { TestEnum::Value2, "ValueMaybe2" } })
+  DD_JSON_DEFINE_SERIALIZE_ENUM_GCOVR_EXCL_BR_LINE(TestEnum, {{TestEnum::Value1, "Value1"}, {TestEnum::Value2, "ValueMaybe2"}})
   DD_JSON_DEFINE_SERIALIZE_STRUCT(TestStruct::Nested, c)
   DD_JSON_DEFINE_SERIALIZE_STRUCT(TestStruct, a, b)
 
@@ -61,56 +59,56 @@ namespace {
 #define TEST_S(...) DD_MAKE_TEST(TEST, JsonTest, __VA_ARGS__)
 
   // Additional convenience global const(s)
-  constexpr auto MIN_NANO_VAL { std::numeric_limits<decltype(std::chrono::nanoseconds {}.count())>::min() };
-  constexpr auto MAX_NANO_VAL { std::numeric_limits<decltype(std::chrono::nanoseconds {}.count())>::max() };
+  constexpr auto MIN_NANO_VAL {std::numeric_limits<decltype(std::chrono::nanoseconds {}.count())>::min()};
+  constexpr auto MAX_NANO_VAL {std::numeric_limits<decltype(std::chrono::nanoseconds {}.count())>::max()};
 }  // namespace
 
 TEST_S(ToJson, NoError, WithSuccessParam) {
-  bool success { false };
-  const auto json_string { display_device::toJson(display_device::TestStruct {}, std::nullopt, &success) };
+  bool success {false};
+  const auto json_string {display_device::toJson(display_device::TestStruct {}, std::nullopt, &success)};
 
   EXPECT_TRUE(success);
   EXPECT_EQ(json_string, R"({"a":"","b":{"c":0}})");
 }
 
 TEST_S(ToJson, NoError, WithoutSuccessParam) {
-  const auto json_string { display_device::toJson(display_device::TestStruct {}, std::nullopt, nullptr) };
+  const auto json_string {display_device::toJson(display_device::TestStruct {}, std::nullopt, nullptr)};
   EXPECT_EQ(json_string, R"({"a":"","b":{"c":0}})");
 }
 
 TEST_S(ToJson, Error, WithSuccessParam) {
-  bool success { true };
-  const auto json_string { display_device::toJson(display_device::TestStruct { "123\xC2" }, std::nullopt, &success) };
+  bool success {true};
+  const auto json_string {display_device::toJson(display_device::TestStruct {"123\xC2"}, std::nullopt, &success)};
 
   EXPECT_FALSE(success);
   EXPECT_EQ(json_string, "[json.exception.type_error.316] incomplete UTF-8 string; last byte: 0xC2");
 }
 
 TEST_S(ToJson, Error, WithoutSuccessParam) {
-  const auto json_string { display_device::toJson(display_device::TestStruct { "123\xC2" }, std::nullopt, nullptr) };
+  const auto json_string {display_device::toJson(display_device::TestStruct {"123\xC2"}, std::nullopt, nullptr)};
   EXPECT_EQ(json_string, "[json.exception.type_error.316] incomplete UTF-8 string; last byte: 0xC2");
 }
 
 TEST_S(ToJson, Compact) {
-  const auto json_string { display_device::toJson(display_device::TestStruct {}, std::nullopt, nullptr) };
+  const auto json_string {display_device::toJson(display_device::TestStruct {}, std::nullopt, nullptr)};
   EXPECT_EQ(json_string, "{\"a\":\"\",\"b\":{\"c\":0}}");
 }
 
 TEST_S(ToJson, NoIndent) {
-  const auto json_string { display_device::toJson(display_device::TestStruct {}, 0, nullptr) };
+  const auto json_string {display_device::toJson(display_device::TestStruct {}, 0, nullptr)};
   EXPECT_EQ(json_string, "{\n\"a\": \"\",\n\"b\": {\n\"c\": 0\n}\n}");
 }
 
 TEST_S(ToJson, WithIndent) {
-  const auto json_string { display_device::toJson(display_device::TestStruct {}, 3, nullptr) };
+  const auto json_string {display_device::toJson(display_device::TestStruct {}, 3, nullptr)};
   EXPECT_EQ(json_string, "{\n   \"a\": \"\",\n   \"b\": {\n      \"c\": 0\n   }\n}");
 }
 
 TEST_S(FromJson, NoError, WithErrorMessageParam) {
-  display_device::TestStruct original { "A", { 1 } };
-  display_device::TestStruct expected { "B", { 2 } };
-  display_device::TestStruct copy { original };
-  std::string error_message { "some_string" };
+  display_device::TestStruct original {"A", {1}};
+  display_device::TestStruct expected {"B", {2}};
+  display_device::TestStruct copy {original};
+  std::string error_message {"some_string"};
 
   EXPECT_EQ(original, copy);
   EXPECT_NE(copy, expected);
@@ -122,9 +120,9 @@ TEST_S(FromJson, NoError, WithErrorMessageParam) {
 }
 
 TEST_S(FromJson, NoError, WithoutErrorMessageParam) {
-  display_device::TestStruct original { "A", { 1 } };
-  display_device::TestStruct expected { "B", { 2 } };
-  display_device::TestStruct copy { original };
+  display_device::TestStruct original {"A", {1}};
+  display_device::TestStruct expected {"B", {2}};
+  display_device::TestStruct copy {original};
 
   EXPECT_EQ(original, copy);
   EXPECT_NE(copy, expected);
@@ -134,8 +132,8 @@ TEST_S(FromJson, NoError, WithoutErrorMessageParam) {
 }
 
 TEST_S(FromJson, Error, WithErrorMessageParam) {
-  display_device::TestStruct original { "A", { 1 } };
-  display_device::TestStruct copy { original };
+  display_device::TestStruct original {"A", {1}};
+  display_device::TestStruct copy {original};
   std::string error_message {};
 
   EXPECT_EQ(original, copy);
@@ -147,8 +145,8 @@ TEST_S(FromJson, Error, WithErrorMessageParam) {
 }
 
 TEST_S(FromJson, Error, WithoutErrorMessageParam) {
-  display_device::TestStruct original { "A", { 1 } };
-  display_device::TestStruct copy { original };
+  display_device::TestStruct original {"A", {1}};
+  display_device::TestStruct copy {original};
 
   EXPECT_EQ(original, copy);
 
@@ -172,7 +170,7 @@ TEST_S(FromJson, Enum) {
 }
 
 TEST_S(ToJson, Enum, MissingMappingValue) {
-  const auto json_string { display_device::toJson(display_device::TestEnum::Value3, std::nullopt, nullptr) };
+  const auto json_string {display_device::toJson(display_device::TestEnum::Value3, std::nullopt, nullptr)};
   EXPECT_EQ(json_string, "TestEnum is missing enum mapping!");
 }
 
@@ -185,8 +183,8 @@ TEST_S(FromJson, Enum, MissingMappingValue) {
 }
 
 TEST_S(ToJson, TestVariant) {
-  EXPECT_EQ(toJson(display_device::TestVariant { 123. }, std::nullopt, nullptr), R"({"type":"double","value":123.0})");
-  EXPECT_EQ(toJson(display_device::TestVariant { display_device::Rational { 1, 2 } }, std::nullopt, nullptr), R"({"type":"rational","value":{"denominator":2,"numerator":1}})");
+  EXPECT_EQ(toJson(display_device::TestVariant {123.}, std::nullopt, nullptr), R"({"type":"double","value":123.0})");
+  EXPECT_EQ(toJson(display_device::TestVariant {display_device::Rational {1, 2}}, std::nullopt, nullptr), R"({"type":"rational","value":{"denominator":2,"numerator":1}})");
 }
 
 TEST_S(FromJson, TestVariant) {
@@ -196,7 +194,7 @@ TEST_S(FromJson, TestVariant) {
   EXPECT_EQ(std::get<double>(variant), 123.0);  // Relying on GTest to properly compare floats
 
   EXPECT_TRUE(display_device::fromJson(R"({"type":"rational","value":{"denominator":2,"numerator":1}})", variant, nullptr));
-  EXPECT_EQ(std::get<display_device::Rational>(variant), display_device::Rational({ 1, 2 }));
+  EXPECT_EQ(std::get<display_device::Rational>(variant), display_device::Rational({1, 2}));
 }
 
 TEST_S(FromJson, TestVariant, UnknownVariantType) {
@@ -210,51 +208,51 @@ TEST_S(FromJson, TestVariant, UnknownVariantType) {
 TEST_S(ToJson, ChronoDuration) {
   using namespace std::chrono;
 
-  EXPECT_EQ(display_device::toJson(nanoseconds { 2000000000 }, std::nullopt, nullptr), R"(2000000000)");
-  EXPECT_EQ(display_device::toJson(microseconds { 2000000 }, std::nullopt, nullptr), R"(2000000)");
-  EXPECT_EQ(display_device::toJson(milliseconds { 2000 }, std::nullopt, nullptr), R"(2000)");
-  EXPECT_EQ(display_device::toJson(seconds { 2 }, std::nullopt, nullptr), R"(2)");
-  EXPECT_EQ(display_device::toJson(minutes { 20 }, std::nullopt, nullptr), R"(20)");
-  EXPECT_EQ(display_device::toJson(hours { 20 }, std::nullopt, nullptr), R"(20)");
-  EXPECT_EQ(display_device::toJson(days { 20 }, std::nullopt, nullptr), R"(20)");
-  EXPECT_EQ(display_device::toJson(weeks { 20 }, std::nullopt, nullptr), R"(20)");
-  EXPECT_EQ(display_device::toJson(months { 20 }, std::nullopt, nullptr), R"(20)");
-  EXPECT_EQ(display_device::toJson(years { 20 }, std::nullopt, nullptr), R"(20)");
+  EXPECT_EQ(display_device::toJson(nanoseconds {2000000000}, std::nullopt, nullptr), R"(2000000000)");
+  EXPECT_EQ(display_device::toJson(microseconds {2000000}, std::nullopt, nullptr), R"(2000000)");
+  EXPECT_EQ(display_device::toJson(milliseconds {2000}, std::nullopt, nullptr), R"(2000)");
+  EXPECT_EQ(display_device::toJson(seconds {2}, std::nullopt, nullptr), R"(2)");
+  EXPECT_EQ(display_device::toJson(minutes {20}, std::nullopt, nullptr), R"(20)");
+  EXPECT_EQ(display_device::toJson(hours {20}, std::nullopt, nullptr), R"(20)");
+  EXPECT_EQ(display_device::toJson(days {20}, std::nullopt, nullptr), R"(20)");
+  EXPECT_EQ(display_device::toJson(weeks {20}, std::nullopt, nullptr), R"(20)");
+  EXPECT_EQ(display_device::toJson(months {20}, std::nullopt, nullptr), R"(20)");
+  EXPECT_EQ(display_device::toJson(years {20}, std::nullopt, nullptr), R"(20)");
 }
 
 TEST_S(FromJson, ChronoDuration) {
-  const auto doTest { []<class T>(const std::string &string_input, T expected_value) {
+  const auto doTest {[]<class T>(const std::string &string_input, T expected_value) {
     T value {};
 
     EXPECT_TRUE(display_device::fromJson(string_input, value, nullptr));
     EXPECT_EQ(value, expected_value);
-  } };
+  }};
 
   using namespace std::chrono;
 
-  doTest(R"(2000000000)", nanoseconds { 2000000000 });
-  doTest(R"(2000000)", microseconds { 2000000 });
-  doTest(R"(2000)", milliseconds { 2000 });
-  doTest(R"(2)", seconds { 2 });
-  doTest(R"(20)", minutes { 20 });
-  doTest(R"(20)", hours { 20 });
-  doTest(R"(20)", days { 20 });
-  doTest(R"(20)", weeks { 20 });
-  doTest(R"(20)", months { 20 });
-  doTest(R"(20)", years { 20 });
+  doTest(R"(2000000000)", nanoseconds {2000000000});
+  doTest(R"(2000000)", microseconds {2000000});
+  doTest(R"(2000)", milliseconds {2000});
+  doTest(R"(2)", seconds {2});
+  doTest(R"(20)", minutes {20});
+  doTest(R"(20)", hours {20});
+  doTest(R"(20)", days {20});
+  doTest(R"(20)", weeks {20});
+  doTest(R"(20)", months {20});
+  doTest(R"(20)", years {20});
 }
 
 TEST_S(ToJson, ChronoDuration, Ranges) {
-  EXPECT_EQ(display_device::toJson(std::chrono::nanoseconds { MIN_NANO_VAL }, std::nullopt, nullptr), std::to_string(MIN_NANO_VAL));
-  EXPECT_EQ(display_device::toJson(std::chrono::nanoseconds { MAX_NANO_VAL }, std::nullopt, nullptr), std::to_string(MAX_NANO_VAL));
+  EXPECT_EQ(display_device::toJson(std::chrono::nanoseconds {MIN_NANO_VAL}, std::nullopt, nullptr), std::to_string(MIN_NANO_VAL));
+  EXPECT_EQ(display_device::toJson(std::chrono::nanoseconds {MAX_NANO_VAL}, std::nullopt, nullptr), std::to_string(MAX_NANO_VAL));
 }
 
 TEST_S(FromJson, ChronoDuration, Ranges) {
   std::chrono::nanoseconds value {};
 
   EXPECT_TRUE(display_device::fromJson(std::to_string(MIN_NANO_VAL), value, nullptr));
-  EXPECT_EQ(value, std::chrono::nanoseconds { MIN_NANO_VAL });
+  EXPECT_EQ(value, std::chrono::nanoseconds {MIN_NANO_VAL});
 
   EXPECT_TRUE(display_device::fromJson(std::to_string(MAX_NANO_VAL), value, nullptr));
-  EXPECT_EQ(value, std::chrono::nanoseconds { MAX_NANO_VAL });
+  EXPECT_EQ(value, std::chrono::nanoseconds {MAX_NANO_VAL});
 }

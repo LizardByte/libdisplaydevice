@@ -17,19 +17,17 @@ namespace {
   // Test fixture(s) for this file
   class WinDisplayDeviceHdr: public BaseTest {
   public:
-    bool
-    isSystemTest() const override {
+    bool isSystemTest() const override {
       return true;
     }
 
-    std::shared_ptr<display_device::WinApiLayer> m_layer { std::make_shared<display_device::WinApiLayer>() };
-    display_device::WinDisplayDevice m_win_dd { m_layer };
+    std::shared_ptr<display_device::WinApiLayer> m_layer {std::make_shared<display_device::WinApiLayer>()};
+    display_device::WinDisplayDevice m_win_dd {m_layer};
   };
 
   class WinDisplayDeviceHdrMocked: public BaseTest {
   public:
-    void
-    setupExpectedGetActivePathCall(int id_number, InSequence & /* To ensure that sequence is created outside this scope */) {
+    void setupExpectedGetActivePathCall(int id_number, InSequence & /* To ensure that sequence is created outside this scope */) {
       for (int i = 1; i <= id_number; ++i) {
         EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
           .Times(1)
@@ -46,8 +44,8 @@ namespace {
       }
     }
 
-    std::shared_ptr<StrictMock<display_device::MockWinApiLayer>> m_layer { std::make_shared<StrictMock<display_device::MockWinApiLayer>>() };
-    display_device::WinDisplayDevice m_win_dd { m_layer };
+    std::shared_ptr<StrictMock<display_device::MockWinApiLayer>> m_layer {std::make_shared<StrictMock<display_device::MockWinApiLayer>>()};
+    display_device::WinDisplayDevice m_win_dd {m_layer};
   };
 
   // Specialized TEST macro(s) for this test file
@@ -55,37 +53,38 @@ namespace {
 #define TEST_F_S_MOCKED(...) DD_MAKE_TEST(TEST_F, WinDisplayDeviceHdrMocked, __VA_ARGS__)
 
   // Helper functions
-  display_device::ActiveTopology
-  makeExtendedTopology(const std::vector<std::string> &device_ids) {
+  display_device::ActiveTopology makeExtendedTopology(const std::vector<std::string> &device_ids) {
     display_device::ActiveTopology topology;
     for (const auto &device_id : device_ids) {
-      topology.push_back({ device_id });
+      topology.push_back({device_id});
     }
     return topology;
   }
 }  // namespace
 
 TEST_F_S(GetSetHdrStates) {
-  const auto available_devices { getAvailableDevices(*m_layer) };
+  const auto available_devices {getAvailableDevices(*m_layer)};
   ASSERT_TRUE(available_devices);
 
-  const auto topology_guard { makeTopologyGuard(m_win_dd) };
+  const auto topology_guard {makeTopologyGuard(m_win_dd)};
   ASSERT_TRUE(m_win_dd.setTopology(makeExtendedTopology(*available_devices)));
 
-  const auto hdr_states { m_win_dd.getCurrentHdrStates(display_device::win_utils::flattenTopology(m_win_dd.getCurrentTopology())) };
-  if (!std::ranges::any_of(hdr_states, [](auto entry) -> bool { return static_cast<bool>(entry.second); })) {
+  const auto hdr_states {m_win_dd.getCurrentHdrStates(display_device::win_utils::flattenTopology(m_win_dd.getCurrentTopology()))};
+  if (!std::ranges::any_of(hdr_states, [](auto entry) -> bool {
+        return static_cast<bool>(entry.second);
+      })) {
     GTEST_SKIP_("No HDR display is available in the system.");
   }
 
-  auto flipped_states { hdr_states };
+  auto flipped_states {hdr_states};
   for (auto &[key, state] : flipped_states) {
     state = state ? (*state == display_device::HdrState::Disabled ?
-                        display_device::HdrState::Enabled :
-                        display_device::HdrState::Disabled) :
+                       display_device::HdrState::Enabled :
+                       display_device::HdrState::Disabled) :
                     state;
   }
 
-  const auto hdr_state_guard { makeHdrStateGuard(m_win_dd) };
+  const auto hdr_state_guard {makeHdrStateGuard(m_win_dd)};
   ASSERT_TRUE(m_win_dd.setHdrStates(flipped_states));
   ASSERT_TRUE(m_win_dd.setHdrStates(hdr_states));
 }
@@ -116,11 +115,11 @@ TEST_F_S_MOCKED(GetHdrStates) {
     .RetiresOnSaturation();
 
   const display_device::HdrStateMap expected_states {
-    { "DeviceId1", std::make_optional(display_device::HdrState::Disabled) },
-    { "DeviceId2", std::nullopt },
-    { "DeviceId3", std::make_optional(display_device::HdrState::Enabled) }
+    {"DeviceId1", std::make_optional(display_device::HdrState::Disabled)},
+    {"DeviceId2", std::nullopt},
+    {"DeviceId3", std::make_optional(display_device::HdrState::Enabled)}
   };
-  EXPECT_EQ(m_win_dd.getCurrentHdrStates({ "DeviceId1", "DeviceId2", "DeviceId3" }), expected_states);
+  EXPECT_EQ(m_win_dd.getCurrentHdrStates({"DeviceId1", "DeviceId2", "DeviceId3"}), expected_states);
 }
 
 TEST_F_S_MOCKED(GetHdrStates, EmptyIdList) {
@@ -132,7 +131,7 @@ TEST_F_S_MOCKED(GetHdrStates, FailedToGetDisplayData) {
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_NULL));
 
-  EXPECT_EQ(m_win_dd.getCurrentHdrStates({ "DeviceId1" }), display_device::HdrStateMap {});
+  EXPECT_EQ(m_win_dd.getCurrentHdrStates({"DeviceId1"}), display_device::HdrStateMap {});
 }
 
 TEST_F_S_MOCKED(GetHdrStates, FailedToGetActivePath) {
@@ -140,7 +139,7 @@ TEST_F_S_MOCKED(GetHdrStates, FailedToGetActivePath) {
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_EMPTY));
 
-  EXPECT_EQ(m_win_dd.getCurrentHdrStates({ "DeviceId1" }), display_device::HdrStateMap {});
+  EXPECT_EQ(m_win_dd.getCurrentHdrStates({"DeviceId1"}), display_device::HdrStateMap {});
 }
 
 TEST_F_S_MOCKED(SetHdrStates) {
@@ -167,18 +166,18 @@ TEST_F_S_MOCKED(SetHdrStates) {
     .RetiresOnSaturation();
 
   const display_device::HdrStateMap new_states {
-    { "DeviceId1", std::make_optional(display_device::HdrState::Enabled) },
-    { "DeviceId2", std::nullopt },
-    { "DeviceId3", std::make_optional(display_device::HdrState::Enabled) }
+    {"DeviceId1", std::make_optional(display_device::HdrState::Enabled)},
+    {"DeviceId2", std::nullopt},
+    {"DeviceId3", std::make_optional(display_device::HdrState::Enabled)}
   };
   EXPECT_TRUE(m_win_dd.setHdrStates(new_states));
 }
 
 TEST_F_S_MOCKED(SetHdrStates, AllDevicesWithOptStates) {
   const display_device::HdrStateMap new_states {
-    { "DeviceId1", std::nullopt },
-    { "DeviceId2", std::nullopt },
-    { "DeviceId3", std::nullopt }
+    {"DeviceId1", std::nullopt},
+    {"DeviceId2", std::nullopt},
+    {"DeviceId3", std::nullopt}
   };
   EXPECT_TRUE(m_win_dd.setHdrStates(new_states));
 }
@@ -197,9 +196,9 @@ TEST_F_S_MOCKED(SetHdrStates, FailedToGetHdrState) {
     .RetiresOnSaturation();
 
   const display_device::HdrStateMap new_states {
-    { "DeviceId1", std::make_optional(display_device::HdrState::Enabled) },
-    { "DeviceId2", std::nullopt },
-    { "DeviceId3", std::make_optional(display_device::HdrState::Enabled) }
+    {"DeviceId1", std::make_optional(display_device::HdrState::Enabled)},
+    {"DeviceId2", std::nullopt},
+    {"DeviceId3", std::make_optional(display_device::HdrState::Enabled)}
   };
   EXPECT_FALSE(m_win_dd.setHdrStates(new_states));
 }
@@ -250,10 +249,10 @@ TEST_F_S_MOCKED(SetHdrStates, FailedToSetHdrState, LastDevice) {
   }
 
   const display_device::HdrStateMap new_states {
-    { "DeviceId1", std::make_optional(display_device::HdrState::Enabled) },
-    { "DeviceId2", std::nullopt },
-    { "DeviceId3", std::make_optional(display_device::HdrState::Disabled) },
-    { "DeviceId4", std::make_optional(display_device::HdrState::Enabled) }
+    {"DeviceId1", std::make_optional(display_device::HdrState::Enabled)},
+    {"DeviceId2", std::nullopt},
+    {"DeviceId3", std::make_optional(display_device::HdrState::Disabled)},
+    {"DeviceId4", std::make_optional(display_device::HdrState::Enabled)}
   };
   EXPECT_FALSE(m_win_dd.setHdrStates(new_states));
 }
@@ -334,10 +333,10 @@ TEST_F_S_MOCKED(SetHdrStates, FailedToSetHdrState, LastDevice, NoEarlyExitInReco
   }
 
   const display_device::HdrStateMap new_states {
-    { "DeviceId1", std::make_optional(display_device::HdrState::Enabled) },
-    { "DeviceId2", std::make_optional(display_device::HdrState::Enabled) },
-    { "DeviceId3", std::make_optional(display_device::HdrState::Enabled) },
-    { "DeviceId4", std::make_optional(display_device::HdrState::Enabled) }
+    {"DeviceId1", std::make_optional(display_device::HdrState::Enabled)},
+    {"DeviceId2", std::make_optional(display_device::HdrState::Enabled)},
+    {"DeviceId3", std::make_optional(display_device::HdrState::Enabled)},
+    {"DeviceId4", std::make_optional(display_device::HdrState::Enabled)}
   };
   EXPECT_FALSE(m_win_dd.setHdrStates(new_states));
 }
@@ -351,7 +350,7 @@ TEST_F_S_MOCKED(SetHdrStates, FailedToGetDisplayData) {
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_NULL));
 
-  EXPECT_FALSE(m_win_dd.setHdrStates({ { "DeviceId1", std::make_optional(display_device::HdrState::Disabled) } }));
+  EXPECT_FALSE(m_win_dd.setHdrStates({{"DeviceId1", std::make_optional(display_device::HdrState::Disabled)}}));
 }
 
 TEST_F_S_MOCKED(SetHdrStates, FailedToGetActivePath) {
@@ -359,5 +358,5 @@ TEST_F_S_MOCKED(SetHdrStates, FailedToGetActivePath) {
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_EMPTY));
 
-  EXPECT_FALSE(m_win_dd.setHdrStates({ { "DeviceId1", std::make_optional(display_device::HdrState::Disabled) } }));
+  EXPECT_FALSE(m_win_dd.setHdrStates({{"DeviceId1", std::make_optional(display_device::HdrState::Disabled)}}));
 }

@@ -19,14 +19,14 @@ namespace {
   // Test fixture(s) for this file
   class WinDisplayDeviceGeneral: public BaseTest {
   public:
-    std::shared_ptr<display_device::WinApiLayer> m_layer { std::make_shared<display_device::WinApiLayer>() };
-    display_device::WinDisplayDevice m_win_dd { m_layer };
+    std::shared_ptr<display_device::WinApiLayer> m_layer {std::make_shared<display_device::WinApiLayer>()};
+    display_device::WinDisplayDevice m_win_dd {m_layer};
   };
 
   class WinDisplayDeviceGeneralMocked: public BaseTest {
   public:
-    std::shared_ptr<StrictMock<display_device::MockWinApiLayer>> m_layer { std::make_shared<StrictMock<display_device::MockWinApiLayer>>() };
-    display_device::WinDisplayDevice m_win_dd { m_layer };
+    std::shared_ptr<StrictMock<display_device::MockWinApiLayer>> m_layer {std::make_shared<StrictMock<display_device::MockWinApiLayer>>()};
+    display_device::WinDisplayDevice m_win_dd {m_layer};
   };
 
   // Specialized TEST macro(s) for this test file
@@ -34,12 +34,14 @@ namespace {
 #define TEST_F_S_MOCKED(...) DD_MAKE_TEST(TEST_F, WinDisplayDeviceGeneralMocked, __VA_ARGS__)
 
   // Additional convenience global const(s)
-  const UINT32 FLAGS { SDC_VALIDATE | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_VIRTUAL_MODE_AWARE };
+  const UINT32 FLAGS {SDC_VALIDATE | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_VIRTUAL_MODE_AWARE};
 }  // namespace
 
 TEST_F_S(NullptrLayerProvided) {
-  EXPECT_THAT([]() { const auto win_dd { display_device::WinDisplayDevice { nullptr } }; },
-    ThrowsMessage<std::logic_error>(HasSubstr("Nullptr provided for WinApiLayerInterface in WinDisplayDevice!")));
+  EXPECT_THAT([]() {
+    const auto win_dd {display_device::WinDisplayDevice {nullptr}};
+  },
+              ThrowsMessage<std::logic_error>(HasSubstr("Nullptr provided for WinApiLayerInterface in WinDisplayDevice!")));
 }
 
 TEST_F_S(IsApiAccessAvailable) {
@@ -87,17 +89,17 @@ TEST_F_S(EnumAvailableDevices) {
   // Note: we can't verify live data precisely, so just basic check
   // is performed regarding active vs. inactive devices
 
-  const auto available_devices { getAvailableDevices(*m_layer, false) };
+  const auto available_devices {getAvailableDevices(*m_layer, false)};
   ASSERT_TRUE(available_devices);
 
-  const auto enum_devices { m_win_dd.enumAvailableDevices() };
+  const auto enum_devices {m_win_dd.enumAvailableDevices()};
   ASSERT_EQ(available_devices->size(), enum_devices.size());
 
-  const auto topology { display_device::win_utils::flattenTopology(m_win_dd.getCurrentTopology()) };
+  const auto topology {display_device::win_utils::flattenTopology(m_win_dd.getCurrentTopology())};
   for (const auto &device_id : *available_devices) {
-    auto enum_it { std::find_if(std::begin(enum_devices), std::end(enum_devices), [&device_id](const auto &entry) {
+    auto enum_it {std::find_if(std::begin(enum_devices), std::end(enum_devices), [&device_id](const auto &entry) {
       return entry.m_device_id == device_id;
-    }) };
+    })};
 
     ASSERT_TRUE(enum_it != std::end(enum_devices));
     EXPECT_EQ(enum_it->m_info.has_value(), topology.contains(device_id));
@@ -105,12 +107,12 @@ TEST_F_S(EnumAvailableDevices) {
 }
 
 TEST_F_S_MOCKED(EnumAvailableDevices) {
-  const auto pam_active_and_inactive { []() {
-    auto pam { ut_consts::PAM_3_ACTIVE };
+  const auto pam_active_and_inactive {[]() {
+    auto pam {ut_consts::PAM_3_ACTIVE};
     pam->m_paths.at(0).targetInfo.refreshRate.Denominator = 0;
     pam->m_paths.at(2).flags &= ~DISPLAYCONFIG_PATH_ACTIVE;
     return pam;
-  }() };
+  }()};
 
   InSequence sequence;
   EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
@@ -160,7 +162,7 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
     .RetiresOnSaturation();
   EXPECT_CALL(*m_layer, getDisplayScale(_, _))
     .Times(1)
-    .WillOnce(Return(display_device::Rational { 175, 100 }))
+    .WillOnce(Return(display_device::Rational {175, 100}))
     .RetiresOnSaturation();
   EXPECT_CALL(*m_layer, getHdrState(_))
     .Times(1)
@@ -173,36 +175,38 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
     .RetiresOnSaturation();
 
   const display_device::EnumeratedDeviceList expected_list {
-    { "DeviceId1",
-      "DisplayName1",
-      "FriendlyName1",
-      display_device::EnumeratedDevice::Info {
-        { 1920, 1080 },
-        display_device::Rational { 0, 1 },
-        display_device::Rational { 0, 1 },
-        true,
-        { 0, 0 },
-        std::nullopt } },
-    { "DeviceId2",
-      "DisplayName2",
-      "FriendlyName2",
-      display_device::EnumeratedDevice::Info {
-        { 1920, 2160 },
-        display_device::Rational { 175, 100 },
-        display_device::Rational { 119995, 1000 },
-        false,
-        { 1921, 0 },
-        display_device::HdrState::Enabled } },
-    { "DeviceId3",
-      "",
-      "FriendlyName3",
-      std::nullopt }
+    {"DeviceId1",
+     "DisplayName1",
+     "FriendlyName1",
+     display_device::EnumeratedDevice::Info {
+       {1920, 1080},
+       display_device::Rational {0, 1},
+       display_device::Rational {0, 1},
+       true,
+       {0, 0},
+       std::nullopt
+     }},
+    {"DeviceId2",
+     "DisplayName2",
+     "FriendlyName2",
+     display_device::EnumeratedDevice::Info {
+       {1920, 2160},
+       display_device::Rational {175, 100},
+       display_device::Rational {119995, 1000},
+       false,
+       {1921, 0},
+       display_device::HdrState::Enabled
+     }},
+    {"DeviceId3",
+     "",
+     "FriendlyName3",
+     std::nullopt}
   };
   EXPECT_EQ(m_win_dd.enumAvailableDevices(), expected_list);
 }
 
 TEST_F_S_MOCKED(EnumAvailableDevices, MissingSourceModes) {
-  auto pam_missing_modes { ut_consts::PAM_3_ACTIVE };
+  auto pam_missing_modes {ut_consts::PAM_3_ACTIVE};
   pam_missing_modes->m_paths.resize(2);
   pam_missing_modes->m_modes.resize(1);
 
@@ -254,20 +258,21 @@ TEST_F_S_MOCKED(EnumAvailableDevices, MissingSourceModes) {
     .RetiresOnSaturation();
 
   const display_device::EnumeratedDeviceList expected_list {
-    { "DeviceId1",
-      "DisplayName1",
-      "FriendlyName1",
-      display_device::EnumeratedDevice::Info {
-        { 1920, 1080 },
-        display_device::Rational { 0, 1 },
-        display_device::Rational { 120, 1 },
-        true,
-        { 0, 0 },
-        std::nullopt } },
-    { "DeviceId2",
-      "DisplayName2",
-      "FriendlyName2",
-      std::nullopt }
+    {"DeviceId1",
+     "DisplayName1",
+     "FriendlyName1",
+     display_device::EnumeratedDevice::Info {
+       {1920, 1080},
+       display_device::Rational {0, 1},
+       display_device::Rational {120, 1},
+       true,
+       {0, 0},
+       std::nullopt
+     }},
+    {"DeviceId2",
+     "DisplayName2",
+     "FriendlyName2",
+     std::nullopt}
   };
   EXPECT_EQ(m_win_dd.enumAvailableDevices(), expected_list);
 }
@@ -289,18 +294,17 @@ TEST_F_S_MOCKED(EnumAvailableDevices, FailedToCollectSourceData) {
 }
 
 TEST_F_S(GetDisplayName) {
-  const auto all_devices { m_layer->queryDisplayConfig(display_device::QueryType::All) };
+  const auto all_devices {m_layer->queryDisplayConfig(display_device::QueryType::All)};
   ASSERT_TRUE(all_devices);
 
   for (const auto &path : all_devices->m_paths) {
-    const auto device_id { m_layer->getDeviceId(path) };
-    const auto display_name { m_win_dd.getDisplayName(device_id) };
-    const auto active_path { display_device::win_utils::getActivePath(*m_layer, device_id, all_devices->m_paths) };
+    const auto device_id {m_layer->getDeviceId(path)};
+    const auto display_name {m_win_dd.getDisplayName(device_id)};
+    const auto active_path {display_device::win_utils::getActivePath(*m_layer, device_id, all_devices->m_paths)};
 
     if (&path == active_path) {
       EXPECT_EQ(display_name, m_layer->getDisplayName(path));
-    }
-    else {
+    } else {
       EXPECT_EQ(display_name, active_path ? m_layer->getDisplayName(*active_path) : std::string {});
     }
   }

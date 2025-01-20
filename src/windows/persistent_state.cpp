@@ -12,27 +12,26 @@
 
 namespace display_device {
   PersistentState::PersistentState(std::shared_ptr<SettingsPersistenceInterface> settings_persistence_api, const bool throw_on_load_error):
-      m_settings_persistence_api { std::move(settings_persistence_api) } {
+      m_settings_persistence_api {std::move(settings_persistence_api)} {
     if (!m_settings_persistence_api) {
       m_settings_persistence_api = std::make_shared<NoopSettingsPersistence>();
     }
 
     std::string error_message;
-    if (const auto persistent_settings { m_settings_persistence_api->load() }) {
+    if (const auto persistent_settings {m_settings_persistence_api->load()}) {
       if (!persistent_settings->empty()) {
         m_cached_state = SingleDisplayConfigState {};
-        if (!fromJson({ std::begin(*persistent_settings), std::end(*persistent_settings) }, *m_cached_state, &error_message)) {
+        if (!fromJson({std::begin(*persistent_settings), std::end(*persistent_settings)}, *m_cached_state, &error_message)) {
           error_message = "Failed to parse persistent settings! Error:\n" + error_message;
         }
       }
-    }
-    else {
+    } else {
       error_message = "Failed to load persistent settings!";
     }
 
     if (!error_message.empty()) {
       if (throw_on_load_error) {
-        throw std::runtime_error { error_message };
+        throw std::runtime_error {error_message};
       }
 
       DD_LOG(error) << error_message;
@@ -40,8 +39,7 @@ namespace display_device {
     }
   }
 
-  bool
-  PersistentState::persistState(const std::optional<SingleDisplayConfigState> &state) {
+  bool PersistentState::persistState(const std::optional<SingleDisplayConfigState> &state) {
     if (m_cached_state == state) {
       return true;
     }
@@ -55,15 +53,15 @@ namespace display_device {
       return true;
     }
 
-    bool success { false };
-    const auto json_string { toJson(*state, 2, &success) };
+    bool success {false};
+    const auto json_string {toJson(*state, 2, &success)};
     if (!success) {
       DD_LOG(error) << "Failed to serialize new persistent state! Error:\n"
                     << json_string;
       return false;
     }
 
-    if (!m_settings_persistence_api->store({ std::begin(json_string), std::end(json_string) })) {
+    if (!m_settings_persistence_api->store({std::begin(json_string), std::end(json_string)})) {
       return false;
     }
 
@@ -71,8 +69,7 @@ namespace display_device {
     return true;
   }
 
-  const std::optional<SingleDisplayConfigState> &
-  PersistentState::getState() const {
+  const std::optional<SingleDisplayConfigState> &PersistentState::getState() const {
     return m_cached_state;
   }
 }  // namespace display_device

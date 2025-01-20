@@ -30,27 +30,23 @@ namespace display_device {
       std::shared_ptr<WinDisplayDeviceInterface> dd_api,
       std::shared_ptr<AudioContextInterface> audio_context_api,
       std::unique_ptr<PersistentState> persistent_state,
-      WinWorkarounds workarounds);
+      WinWorkarounds workarounds
+    );
 
     /** For details @see SettingsManagerInterface::enumAvailableDevices */
-    [[nodiscard]] EnumeratedDeviceList
-    enumAvailableDevices() const override;
+    [[nodiscard]] EnumeratedDeviceList enumAvailableDevices() const override;
 
     /** For details @see SettingsManagerInterface::getDisplayName */
-    [[nodiscard]] std::string
-    getDisplayName(const std::string &device_id) const override;
+    [[nodiscard]] std::string getDisplayName(const std::string &device_id) const override;
 
     /** For details @see SettingsManagerInterface::applySettings */
-    [[nodiscard]] ApplyResult
-    applySettings(const SingleDisplayConfiguration &config) override;
+    [[nodiscard]] ApplyResult applySettings(const SingleDisplayConfiguration &config) override;
 
     /** For details @see SettingsManagerInterface::revertSettings */
-    [[nodiscard]] RevertResult
-    revertSettings() override;
+    [[nodiscard]] RevertResult revertSettings() override;
 
     /** For details @see SettingsManagerInterface::resetPersistence */
-    [[nodiscard]] bool
-    resetPersistence() override;
+    [[nodiscard]] bool resetPersistence() override;
 
   protected:
     /**
@@ -61,8 +57,7 @@ namespace display_device {
      * @param system_settings_touched Inticates whether a "write" operation could have been performed on the OS.
      * @return A tuple of (new_state that is to be updated/persisted, device_to_configure, additional_devices_to_configure).
      */
-    [[nodiscard]] std::optional<std::tuple<SingleDisplayConfigState, std::string, std::set<std::string>>>
-    prepareTopology(const SingleDisplayConfiguration &config, const ActiveTopology &topology_before_changes, bool &release_context, bool &system_settings_touched);
+    [[nodiscard]] std::optional<std::tuple<SingleDisplayConfigState, std::string, std::set<std::string>>> prepareTopology(const SingleDisplayConfiguration &config, const ActiveTopology &topology_before_changes, bool &release_context, bool &system_settings_touched);
 
     /**
      * @brief Changes or restores the primary device based on the cached state, new state and configuration.
@@ -73,8 +68,7 @@ namespace display_device {
      * @param system_settings_touched Inticates whether a "write" operation could have been performed on the OS.
      * @return True if no errors have occured, false otherwise.
      */
-    [[nodiscard]] bool
-    preparePrimaryDevice(const SingleDisplayConfiguration &config, const std::string &device_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched);
+    [[nodiscard]] bool preparePrimaryDevice(const SingleDisplayConfiguration &config, const std::string &device_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched);
 
     /**
      * @brief Changes or restores the display modes based on the cached state, new state and configuration.
@@ -86,8 +80,7 @@ namespace display_device {
      * @param system_settings_touched Inticates whether a "write" operation could have been performed on the OS.
      * @return True if no errors have occured, false otherwise.
      */
-    [[nodiscard]] bool
-    prepareDisplayModes(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched);
+    [[nodiscard]] bool prepareDisplayModes(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched);
 
     /**
      * @brief Changes or restores the HDR states based on the cached state, new state and configuration.
@@ -99,8 +92,7 @@ namespace display_device {
      * @param system_settings_touched Inticates whether a "write" operation could have been performed on the OS.
      * @return True if no errors have occured, false otherwise.
      */
-    [[nodiscard]] bool
-    prepareHdrStates(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched);
+    [[nodiscard]] bool prepareHdrStates(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched);
 
     /**
      * @brief Try to revert the modified settings.
@@ -111,8 +103,7 @@ namespace display_device {
      * @warning The method assumes that the caller will ensure restoring the topology
      *          in case of a failure!
      */
-    [[nodiscard]] RevertResult
-    revertModifiedSettings(const ActiveTopology &current_topology, bool &system_settings_touched, bool *switched_topology = nullptr);
+    [[nodiscard]] RevertResult revertModifiedSettings(const ActiveTopology &current_topology, bool &system_settings_touched, bool *switched_topology = nullptr);
 
     std::shared_ptr<WinDisplayDeviceInterface> m_dd_api;
     std::shared_ptr<AudioContextInterface> m_audio_context_api;

@@ -14,8 +14,7 @@ namespace {
   // Test fixture(s) for this file
   class WinApiUtilsMocked: public BaseTest {
   public:
-    void
-    setupExpectCallForValidPaths(int number_of_calls, InSequence & /* To ensure that sequence is created outside this scope */) {
+    void setupExpectCallForValidPaths(int number_of_calls, InSequence & /* To ensure that sequence is created outside this scope */) {
       for (int i = 1; i <= number_of_calls; ++i) {
         EXPECT_CALL(m_layer, getMonitorDevicePath(_))
           .Times(1)
@@ -96,31 +95,31 @@ namespace {
       std::vector<DISPLAYCONFIG_PATH_INFO> paths;
 
       paths.push_back(AVAILABLE_AND_ACTIVE_PATH);
-      paths.back().sourceInfo.adapterId = { 1, 1 };
+      paths.back().sourceInfo.adapterId = {1, 1};
       paths.back().sourceInfo.id = 1;
 
       paths.push_back(AVAILABLE_AND_ACTIVE_PATH);
-      paths.back().sourceInfo.adapterId = { 2, 2 };
+      paths.back().sourceInfo.adapterId = {2, 2};
       paths.back().sourceInfo.id = 0;
 
       paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
-      paths.back().sourceInfo.adapterId = { 1, 1 };
+      paths.back().sourceInfo.adapterId = {1, 1};
       paths.back().sourceInfo.id = 0;
 
       paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
-      paths.back().sourceInfo.adapterId = { 3, 3 };
+      paths.back().sourceInfo.adapterId = {3, 3};
       paths.back().sourceInfo.id = 4;
 
       paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
-      paths.back().sourceInfo.adapterId = { 2, 2 };
+      paths.back().sourceInfo.adapterId = {2, 2};
       paths.back().sourceInfo.id = 1;
 
       paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
-      paths.back().sourceInfo.adapterId = { 1, 1 };
+      paths.back().sourceInfo.adapterId = {1, 1};
       paths.back().sourceInfo.id = 0;
 
       paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
-      paths.back().sourceInfo.adapterId = { 1, 1 };
+      paths.back().sourceInfo.adapterId = {1, 1};
       paths.back().sourceInfo.id = 1;
 
       return paths;
@@ -129,15 +128,14 @@ namespace {
   const display_device::PathSourceIndexDataMap EXPECTED_SOURCE_INDEX_DATA {
     // Contains the expected data if generated from PATHS_WITH_SOURCE_IDS and some
     // sensibly chosen device paths and device ids.
-    { "DeviceId1", { { { 0, 2 }, { 1, 0 } }, { 1, 1 }, { 1 } } },
-    { "DeviceId2", { { { 0, 1 }, { 1, 4 } }, { 2, 2 }, { 0 } } },
-    { "DeviceId3", { { { 4, 3 } }, { 3, 3 }, std::nullopt } },
-    { "DeviceId4", { { { 0, 5 }, { 1, 6 } }, { 1, 1 }, std::nullopt } }
+    {"DeviceId1", {{{0, 2}, {1, 0}}, {1, 1}, {1}}},
+    {"DeviceId2", {{{0, 1}, {1, 4}}, {2, 2}, {0}}},
+    {"DeviceId3", {{{4, 3}}, {3, 3}, std::nullopt}},
+    {"DeviceId4", {{{0, 5}, {1, 6}}, {1, 1}, std::nullopt}}
   };
 
   // Helper functions
-  void
-  wipeIndexesAndActivatePaths(std::vector<DISPLAYCONFIG_PATH_INFO> &paths) {
+  void wipeIndexesAndActivatePaths(std::vector<DISPLAYCONFIG_PATH_INFO> &paths) {
     for (auto &path : paths) {
       display_device::win_utils::setSourceIndex(path, std::nullopt);
       display_device::win_utils::setTargetIndex(path, std::nullopt);
@@ -186,9 +184,9 @@ TEST_F_S_MOCKED(IsPrimary) {
   DISPLAYCONFIG_SOURCE_MODE non_primary_mode_1;
   DISPLAYCONFIG_SOURCE_MODE non_primary_mode_2;
 
-  primary_mode.position = { 0, 0 };
-  non_primary_mode_1.position = { 1, 0 };
-  non_primary_mode_2.position = { 0, 2 };
+  primary_mode.position = {0, 0};
+  non_primary_mode_1.position = {1, 0};
+  non_primary_mode_2.position = {0, 2};
 
   EXPECT_TRUE(display_device::win_utils::isPrimary(primary_mode));
   EXPECT_FALSE(display_device::win_utils::isPrimary(non_primary_mode_1));
@@ -280,32 +278,32 @@ TEST_F_S_MOCKED(SetCloneGroupId) {
 }
 
 TEST_F_S_MOCKED(GetSourceMode) {
-  auto *mode { display_device::win_utils::getSourceMode(1, TARGET_AND_SOURCE_MODES) };
-  auto *const_mode { display_device::win_utils::getSourceMode(1, const_cast<const std::vector<DISPLAYCONFIG_MODE_INFO> &>(TARGET_AND_SOURCE_MODES)) };
+  auto *mode {display_device::win_utils::getSourceMode(1, TARGET_AND_SOURCE_MODES)};
+  auto *const_mode {display_device::win_utils::getSourceMode(1, const_cast<const std::vector<DISPLAYCONFIG_MODE_INFO> &>(TARGET_AND_SOURCE_MODES))};
 
   EXPECT_EQ(mode, const_mode);
   EXPECT_EQ(mode, &TARGET_AND_SOURCE_MODES.at(1).sourceMode);
 }
 
 TEST_F_S_MOCKED(GetSourceMode, InvalidIndex) {
-  auto *mode { display_device::win_utils::getSourceMode(std::nullopt, TARGET_AND_SOURCE_MODES) };
-  auto *const_mode { display_device::win_utils::getSourceMode(std::nullopt, const_cast<const std::vector<DISPLAYCONFIG_MODE_INFO> &>(TARGET_AND_SOURCE_MODES)) };
+  auto *mode {display_device::win_utils::getSourceMode(std::nullopt, TARGET_AND_SOURCE_MODES)};
+  auto *const_mode {display_device::win_utils::getSourceMode(std::nullopt, const_cast<const std::vector<DISPLAYCONFIG_MODE_INFO> &>(TARGET_AND_SOURCE_MODES))};
 
   EXPECT_EQ(mode, const_mode);
   EXPECT_EQ(mode, nullptr);
 }
 
 TEST_F_S_MOCKED(GetSourceMode, OutOfRangeIndex) {
-  auto *mode { display_device::win_utils::getSourceMode(2, TARGET_AND_SOURCE_MODES) };
-  auto *const_mode { display_device::win_utils::getSourceMode(2, const_cast<const std::vector<DISPLAYCONFIG_MODE_INFO> &>(TARGET_AND_SOURCE_MODES)) };
+  auto *mode {display_device::win_utils::getSourceMode(2, TARGET_AND_SOURCE_MODES)};
+  auto *const_mode {display_device::win_utils::getSourceMode(2, const_cast<const std::vector<DISPLAYCONFIG_MODE_INFO> &>(TARGET_AND_SOURCE_MODES))};
 
   EXPECT_EQ(mode, const_mode);
   EXPECT_EQ(mode, nullptr);
 }
 
 TEST_F_S_MOCKED(GetSourceMode, InvalidModeType) {
-  auto *mode { display_device::win_utils::getSourceMode(0, TARGET_AND_SOURCE_MODES) };
-  auto *const_mode { display_device::win_utils::getSourceMode(0, const_cast<const std::vector<DISPLAYCONFIG_MODE_INFO> &>(TARGET_AND_SOURCE_MODES)) };
+  auto *mode {display_device::win_utils::getSourceMode(0, TARGET_AND_SOURCE_MODES)};
+  auto *const_mode {display_device::win_utils::getSourceMode(0, const_cast<const std::vector<DISPLAYCONFIG_MODE_INFO> &>(TARGET_AND_SOURCE_MODES))};
 
   EXPECT_EQ(mode, const_mode);
   EXPECT_EQ(mode, nullptr);
@@ -314,8 +312,8 @@ TEST_F_S_MOCKED(GetSourceMode, InvalidModeType) {
 TEST_F_S_MOCKED(GetSourceMode, EmptyList) {
   std::vector<DISPLAYCONFIG_MODE_INFO> modes;
 
-  auto *mode { display_device::win_utils::getSourceMode(2, modes) };
-  auto *const_mode { display_device::win_utils::getSourceMode(2, const_cast<const std::vector<DISPLAYCONFIG_MODE_INFO> &>(modes)) };
+  auto *mode {display_device::win_utils::getSourceMode(2, modes)};
+  auto *const_mode {display_device::win_utils::getSourceMode(2, const_cast<const std::vector<DISPLAYCONFIG_MODE_INFO> &>(modes))};
 
   EXPECT_EQ(mode, const_mode);
   EXPECT_EQ(mode, nullptr);
@@ -332,7 +330,7 @@ TEST_F_S_MOCKED(GetDeviceInfo, AvailablePath, ActivePath, MustBeActiveIsTrue) {
     .Times(1)
     .WillOnce(Return("DisplayName"));
 
-  const auto result { display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_ACTIVE_PATH, display_device::ValidatedPathType::Active) };
+  const auto result {display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_ACTIVE_PATH, display_device::ValidatedPathType::Active)};
   ASSERT_TRUE(result);
 
   EXPECT_EQ(result->m_device_path, "DevicePath");
@@ -350,7 +348,7 @@ TEST_F_S_MOCKED(GetDeviceInfo, AvailablePath, ActivePath, MustBeActiveIsFalse) {
     .Times(1)
     .WillOnce(Return("DisplayName"));
 
-  const auto result { display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_ACTIVE_PATH, display_device::ValidatedPathType::Any) };
+  const auto result {display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_ACTIVE_PATH, display_device::ValidatedPathType::Any)};
   ASSERT_TRUE(result);
 
   EXPECT_EQ(result->m_device_path, "DevicePath");
@@ -382,7 +380,7 @@ TEST_F_S_MOCKED(GetDeviceInfo, AvailablePath, InactivePath, MustBeActiveIsFalse)
     .Times(1)
     .WillOnce(Return("DisplayName"));
 
-  const auto result { display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_INACTIVE_PATH, display_device::ValidatedPathType::Any) };
+  const auto result {display_device::win_utils::getDeviceInfoForValidPath(m_layer, AVAILABLE_AND_INACTIVE_PATH, display_device::ValidatedPathType::Any)};
   ASSERT_TRUE(result);
 
   EXPECT_EQ(result->m_device_path, "DevicePath");
@@ -432,8 +430,8 @@ TEST_F_S_MOCKED(GetActivePath, InstantMatch) {
     .Times(2)
     .WillRepeatedly(Return("DeviceId1"));
 
-  auto *path { display_device::win_utils::getActivePath(m_layer, "DeviceId1", const_cast<std::vector<DISPLAYCONFIG_PATH_INFO> &>(PATHS_WITH_SOURCE_IDS)) };
-  auto *const_path { display_device::win_utils::getActivePath(m_layer, "DeviceId1", PATHS_WITH_SOURCE_IDS) };
+  auto *path {display_device::win_utils::getActivePath(m_layer, "DeviceId1", const_cast<std::vector<DISPLAYCONFIG_PATH_INFO> &>(PATHS_WITH_SOURCE_IDS))};
+  auto *const_path {display_device::win_utils::getActivePath(m_layer, "DeviceId1", PATHS_WITH_SOURCE_IDS)};
 
   EXPECT_EQ(path, const_path);
   EXPECT_EQ(path, &PATHS_WITH_SOURCE_IDS.at(0));
@@ -456,8 +454,8 @@ TEST_F_S_MOCKED(GetActivePath, SecondMatch) {
     .WillOnce(Return("DeviceId1"))
     .WillOnce(Return("DeviceId2"));
 
-  auto *path { display_device::win_utils::getActivePath(m_layer, "DeviceId2", const_cast<std::vector<DISPLAYCONFIG_PATH_INFO> &>(PATHS_WITH_SOURCE_IDS)) };
-  auto *const_path { display_device::win_utils::getActivePath(m_layer, "DeviceId2", PATHS_WITH_SOURCE_IDS) };
+  auto *path {display_device::win_utils::getActivePath(m_layer, "DeviceId2", const_cast<std::vector<DISPLAYCONFIG_PATH_INFO> &>(PATHS_WITH_SOURCE_IDS))};
+  auto *const_path {display_device::win_utils::getActivePath(m_layer, "DeviceId2", PATHS_WITH_SOURCE_IDS)};
 
   EXPECT_EQ(path, const_path);
   EXPECT_EQ(path, &PATHS_WITH_SOURCE_IDS.at(1));
@@ -468,8 +466,8 @@ TEST_F_S_MOCKED(GetActivePath, NoMatch) {
     .Times(4)
     .WillOnce(Return(""));
 
-  auto *path { display_device::win_utils::getActivePath(m_layer, "DeviceId1", const_cast<std::vector<DISPLAYCONFIG_PATH_INFO> &>(PATHS_WITH_SOURCE_IDS)) };
-  auto *const_path { display_device::win_utils::getActivePath(m_layer, "DeviceId1", PATHS_WITH_SOURCE_IDS) };
+  auto *path {display_device::win_utils::getActivePath(m_layer, "DeviceId1", const_cast<std::vector<DISPLAYCONFIG_PATH_INFO> &>(PATHS_WITH_SOURCE_IDS))};
+  auto *const_path {display_device::win_utils::getActivePath(m_layer, "DeviceId1", PATHS_WITH_SOURCE_IDS)};
 
   EXPECT_EQ(path, const_path);
   EXPECT_EQ(path, nullptr);
@@ -523,7 +521,7 @@ TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, TransientPathIssues) {
     .WillOnce(Return("DeviceId4"))
     .WillOnce(Return("DeviceId4"));
 
-  display_device::PathSourceIndexDataMap expected_data { EXPECTED_SOURCE_INDEX_DATA };
+  display_device::PathSourceIndexDataMap expected_data {EXPECTED_SOURCE_INDEX_DATA};
   expected_data.erase(expected_data.find("DeviceId3"));
 
   EXPECT_EQ(display_device::win_utils::collectSourceDataForMatchingPaths(m_layer, PATHS_WITH_SOURCE_IDS), expected_data);
@@ -565,7 +563,7 @@ TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, DifferentPathsWithSameId) {
 }
 
 TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, MismatchingAdapterIdsForPaths, HighPart) {
-  std::vector<DISPLAYCONFIG_PATH_INFO> paths { PATHS_WITH_SOURCE_IDS };
+  std::vector<DISPLAYCONFIG_PATH_INFO> paths {PATHS_WITH_SOURCE_IDS};
 
   // Invalidate the adapter id
   paths.at(2).sourceInfo.adapterId.HighPart++;
@@ -589,7 +587,7 @@ TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, MismatchingAdapterIdsForPaths
 }
 
 TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, MismatchingAdapterIdsForPaths, LowPart) {
-  std::vector<DISPLAYCONFIG_PATH_INFO> paths { PATHS_WITH_SOURCE_IDS };
+  std::vector<DISPLAYCONFIG_PATH_INFO> paths {PATHS_WITH_SOURCE_IDS};
 
   // Invalidate the adapter id
   paths.at(2).sourceInfo.adapterId.LowPart++;
@@ -613,7 +611,7 @@ TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, MismatchingAdapterIdsForPaths
 }
 
 TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, ActiveDeviceNotFirst) {
-  std::vector<DISPLAYCONFIG_PATH_INFO> paths { PATHS_WITH_SOURCE_IDS };
+  std::vector<DISPLAYCONFIG_PATH_INFO> paths {PATHS_WITH_SOURCE_IDS};
 
   // Swapping around the active/inactive pair
   std::swap(paths.at(0), paths.at(2));
@@ -637,7 +635,7 @@ TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, ActiveDeviceNotFirst) {
 }
 
 TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, DuplicateSourceIds) {
-  std::vector<DISPLAYCONFIG_PATH_INFO> paths { PATHS_WITH_SOURCE_IDS };
+  std::vector<DISPLAYCONFIG_PATH_INFO> paths {PATHS_WITH_SOURCE_IDS};
 
   // Making sure source ids match (adapter ids don't matter)
   paths.at(0).sourceInfo.id = paths.at(2).sourceInfo.id;
@@ -668,10 +666,10 @@ TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, EmptyList) {
 }
 
 TEST_F_S_MOCKED(MakePathsForNewTopology) {
-  const display_device::ActiveTopology new_topology { { "DeviceId1" }, { "DeviceId2" }, { "DeviceId3", "DeviceId4" } };
-  const std::vector<DISPLAYCONFIG_PATH_INFO> paths { PATHS_WITH_SOURCE_IDS };
+  const display_device::ActiveTopology new_topology {{"DeviceId1"}, {"DeviceId2"}, {"DeviceId3", "DeviceId4"}};
+  const std::vector<DISPLAYCONFIG_PATH_INFO> paths {PATHS_WITH_SOURCE_IDS};
 
-  std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths { { paths.at(0), paths.at(1), paths.at(3), paths.at(5) } };
+  std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths {{paths.at(0), paths.at(1), paths.at(3), paths.at(5)}};
   wipeIndexesAndActivatePaths(expected_paths);
 
   display_device::win_utils::setCloneGroupId(expected_paths.at(0), 0);
@@ -683,10 +681,10 @@ TEST_F_S_MOCKED(MakePathsForNewTopology) {
 }
 
 TEST_F_S_MOCKED(MakePathsForNewTopology, DevicesFromSameAdapterInAGroup) {
-  const display_device::ActiveTopology new_topology { { "DeviceId1", "DeviceId4" } };
-  const std::vector<DISPLAYCONFIG_PATH_INFO> paths { PATHS_WITH_SOURCE_IDS };
+  const display_device::ActiveTopology new_topology {{"DeviceId1", "DeviceId4"}};
+  const std::vector<DISPLAYCONFIG_PATH_INFO> paths {PATHS_WITH_SOURCE_IDS};
 
-  std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths { paths.at(0), paths.at(6) };
+  std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths {paths.at(0), paths.at(6)};
   wipeIndexesAndActivatePaths(expected_paths);
 
   display_device::win_utils::setCloneGroupId(expected_paths.at(0), 0);
@@ -696,7 +694,7 @@ TEST_F_S_MOCKED(MakePathsForNewTopology, DevicesFromSameAdapterInAGroup) {
 }
 
 TEST_F_S_MOCKED(MakePathsForNewTopology, UnknownDeviceInNewTopology) {
-  const display_device::ActiveTopology new_topology { { "DeviceIdX", "DeviceId4" } };
+  const display_device::ActiveTopology new_topology {{"DeviceIdX", "DeviceId4"}};
 
   const std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths {};
   EXPECT_EQ(display_device::win_utils::makePathsForNewTopology(new_topology, EXPECTED_SOURCE_INDEX_DATA, PATHS_WITH_SOURCE_IDS), expected_paths);
@@ -706,20 +704,20 @@ TEST_F_S_MOCKED(MakePathsForNewTopology, MissingPathsForDuplicatedDisplays) {
   // There must be N-1 (up to a GPU limit) amount of source ids (for each path/deviceId combination) available.
   // For the same adapter, only devices with matching ids can be grouped (duplicated).
   // In this case, have only 0 and 1 ids. You may also notice that 0 != 1, and thus we cannot group them.
-  const display_device::ActiveTopology new_topology { { "DeviceId1", "DeviceId2" } };
+  const display_device::ActiveTopology new_topology {{"DeviceId1", "DeviceId2"}};
   std::vector<DISPLAYCONFIG_PATH_INFO> paths {};
 
   paths.push_back(AVAILABLE_AND_ACTIVE_PATH);
-  paths.back().sourceInfo.adapterId = { 1, 1 };
+  paths.back().sourceInfo.adapterId = {1, 1};
   paths.back().sourceInfo.id = 0;
 
   paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
-  paths.back().sourceInfo.adapterId = { 1, 1 };
+  paths.back().sourceInfo.adapterId = {1, 1};
   paths.back().sourceInfo.id = 1;
 
   const display_device::PathSourceIndexDataMap path_source_data {
-    { "DeviceId1", { { { 0, 0 } }, { 1, 1 }, { 0 } } },
-    { "DeviceId2", { { { 1, 1 } }, { 1, 1 }, std::nullopt } }
+    {"DeviceId1", {{{0, 0}}, {1, 1}, {0}}},
+    {"DeviceId2", {{{1, 1}}, {1, 1}, std::nullopt}}
   };
 
   const std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths {};
@@ -729,23 +727,23 @@ TEST_F_S_MOCKED(MakePathsForNewTopology, MissingPathsForDuplicatedDisplays) {
 TEST_F_S_MOCKED(MakePathsForNewTopology, GpuLimit, DuplicatedDisplays) {
   // We can only render 1 source, however since they are duplicated, source is reused
   // and can be rendered to different devices.
-  const display_device::ActiveTopology new_topology { { "DeviceId1", "DeviceId2" } };
+  const display_device::ActiveTopology new_topology {{"DeviceId1", "DeviceId2"}};
   std::vector<DISPLAYCONFIG_PATH_INFO> paths {};
 
   paths.push_back(AVAILABLE_AND_ACTIVE_PATH);
-  paths.back().sourceInfo.adapterId = { 1, 1 };
+  paths.back().sourceInfo.adapterId = {1, 1};
   paths.back().sourceInfo.id = 0;
 
   paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
-  paths.back().sourceInfo.adapterId = { 1, 1 };
+  paths.back().sourceInfo.adapterId = {1, 1};
   paths.back().sourceInfo.id = 0;
 
   const display_device::PathSourceIndexDataMap path_source_data {
-    { "DeviceId1", { { { 0, 0 } }, { 1, 1 }, { 0 } } },
-    { "DeviceId2", { { { 0, 1 } }, { 1, 1 }, std::nullopt } }
+    {"DeviceId1", {{{0, 0}}, {1, 1}, {0}}},
+    {"DeviceId2", {{{0, 1}}, {1, 1}, std::nullopt}}
   };
 
-  std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths { paths.at(0), paths.at(1) };
+  std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths {paths.at(0), paths.at(1)};
   wipeIndexesAndActivatePaths(expected_paths);
 
   display_device::win_utils::setCloneGroupId(expected_paths.at(0), 0);
@@ -756,20 +754,20 @@ TEST_F_S_MOCKED(MakePathsForNewTopology, GpuLimit, DuplicatedDisplays) {
 
 TEST_F_S_MOCKED(MakePathsForNewTopology, GpuLimit, ExtendedDisplays) {
   // We can only render 1 source and since want extended displays, we must have 2 and that's impossible.
-  const display_device::ActiveTopology new_topology { { "DeviceId1" }, { "DeviceId2" } };
+  const display_device::ActiveTopology new_topology {{"DeviceId1"}, {"DeviceId2"}};
   std::vector<DISPLAYCONFIG_PATH_INFO> paths {};
 
   paths.push_back(AVAILABLE_AND_ACTIVE_PATH);
-  paths.back().sourceInfo.adapterId = { 1, 1 };
+  paths.back().sourceInfo.adapterId = {1, 1};
   paths.back().sourceInfo.id = 0;
 
   paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
-  paths.back().sourceInfo.adapterId = { 1, 1 };
+  paths.back().sourceInfo.adapterId = {1, 1};
   paths.back().sourceInfo.id = 0;
 
   const display_device::PathSourceIndexDataMap path_source_data {
-    { "DeviceId1", { { { 0, 0 } }, { 1, 1 }, { 0 } } },
-    { "DeviceId2", { { { 0, 1 } }, { 1, 1 }, std::nullopt } }
+    {"DeviceId1", {{{0, 0}}, {1, 1}, {0}}},
+    {"DeviceId2", {{{0, 1}}, {1, 1}, std::nullopt}}
   };
 
   const std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths {};
@@ -777,7 +775,7 @@ TEST_F_S_MOCKED(MakePathsForNewTopology, GpuLimit, ExtendedDisplays) {
 }
 
 TEST_F_S_MOCKED(MakePathsForNewTopology, IndexOutOfRange) {
-  const display_device::ActiveTopology new_topology { { "DeviceId1", "DeviceId4" } };
+  const display_device::ActiveTopology new_topology {{"DeviceId1", "DeviceId4"}};
 
   const std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths {};
   EXPECT_EQ(display_device::win_utils::makePathsForNewTopology(new_topology, EXPECTED_SOURCE_INDEX_DATA, {}), expected_paths);
@@ -814,7 +812,7 @@ TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates) {
     setupExpectCallForValidPaths(4, sequence);
   }
 
-  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, { "DeviceId1", "DeviceId2" }), (std::set<std::string> { "DeviceId1", "DeviceId2", "DeviceId3" }));
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {"DeviceId1", "DeviceId2"}), (std::set<std::string> {"DeviceId1", "DeviceId2", "DeviceId3"}));
 }
 
 TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, FailedToQueryDevices) {
@@ -822,7 +820,7 @@ TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, FailedToQueryDevices) {
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_NULL));
 
-  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, { "DeviceId2" }), std::set<std::string> {});
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {"DeviceId2"}), std::set<std::string> {});
 }
 
 TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, EmptyDeviceIdInProvidedList) {
@@ -832,7 +830,7 @@ TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, EmptyDeviceIdInProvidedLis
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES));
 
-  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, { "" }), std::set<std::string> {});
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {""}), std::set<std::string> {});
 }
 
 TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, FailedToFindActivePath) {
@@ -843,11 +841,11 @@ TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, FailedToFindActivePath) {
     .Times(4)
     .WillOnce(Return(""));
 
-  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, { "DeviceId2" }), std::set<std::string> {});
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {"DeviceId2"}), std::set<std::string> {});
 }
 
 TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, NoSourceModeFound) {
-  auto pam_no_modes { ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES };
+  auto pam_no_modes {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   pam_no_modes->m_modes.clear();
 
   InSequence sequence;
@@ -856,11 +854,11 @@ TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, NoSourceModeFound) {
     .WillOnce(Return(pam_no_modes));
   setupExpectCallForValidPaths(2, sequence);
 
-  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, { "DeviceId2" }), std::set<std::string> {});
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {"DeviceId2"}), std::set<std::string> {});
 }
 
 TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, IncompleteListOfSources) {
-  auto pam_no_modes { ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES };
+  auto pam_no_modes {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   pam_no_modes->m_modes.resize(2);
 
   InSequence sequence;
@@ -874,32 +872,20 @@ TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, IncompleteListOfSources) {
     .RetiresOnSaturation();
   setupExpectCallForValidPaths(1, sequence);
 
-  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, { "DeviceId1" }), std::set<std::string> {});
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {"DeviceId1"}), std::set<std::string> {});
 }
 
 TEST_F_S_MOCKED(FuzzyCompareRefreshRates) {
-  EXPECT_EQ(display_device::win_utils::fuzzyCompareRefreshRates(display_device::Rational { 60, 1 }, display_device::Rational { 5985, 100 }), true);
-  EXPECT_EQ(display_device::win_utils::fuzzyCompareRefreshRates(display_device::Rational { 60, 1 }, display_device::Rational { 5920, 100 }), true);
-  EXPECT_EQ(display_device::win_utils::fuzzyCompareRefreshRates(display_device::Rational { 60, 1 }, display_device::Rational { 5900, 100 }), false);
-  EXPECT_EQ(display_device::win_utils::fuzzyCompareRefreshRates(display_device::Rational { 60, 0 }, display_device::Rational { 5985, 100 }), false);
-  EXPECT_EQ(display_device::win_utils::fuzzyCompareRefreshRates(display_device::Rational { 60, 1 }, display_device::Rational { 5985, 0 }), false);
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareRefreshRates(display_device::Rational {60, 1}, display_device::Rational {5985, 100}), true);
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareRefreshRates(display_device::Rational {60, 1}, display_device::Rational {5920, 100}), true);
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareRefreshRates(display_device::Rational {60, 1}, display_device::Rational {5900, 100}), false);
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareRefreshRates(display_device::Rational {60, 0}, display_device::Rational {5985, 100}), false);
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareRefreshRates(display_device::Rational {60, 1}, display_device::Rational {5985, 0}), false);
 }
 
 TEST_F_S_MOCKED(FuzzyCompareModes) {
-  EXPECT_EQ(display_device::win_utils::fuzzyCompareModes(
-              display_device::DisplayMode { 1920, 1080, { 60, 1 } },
-              display_device::DisplayMode { 1920, 1080, { 60, 1 } }),
-    true);
-  EXPECT_EQ(display_device::win_utils::fuzzyCompareModes(
-              display_device::DisplayMode { 123, 1080, { 60, 1 } },
-              display_device::DisplayMode { 1920, 1080, { 60, 1 } }),
-    false);
-  EXPECT_EQ(display_device::win_utils::fuzzyCompareModes(
-              display_device::DisplayMode { 1920, 123, { 60, 1 } },
-              display_device::DisplayMode { 1920, 1080, { 60, 1 } }),
-    false);
-  EXPECT_EQ(display_device::win_utils::fuzzyCompareModes(
-              display_device::DisplayMode { 1920, 1080, { 60, 1 } },
-              display_device::DisplayMode { 1920, 1080, { 50, 1 } }),
-    false);
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareModes(display_device::DisplayMode {1920, 1080, {60, 1}}, display_device::DisplayMode {1920, 1080, {60, 1}}), true);
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareModes(display_device::DisplayMode {123, 1080, {60, 1}}, display_device::DisplayMode {1920, 1080, {60, 1}}), false);
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareModes(display_device::DisplayMode {1920, 123, {60, 1}}, display_device::DisplayMode {1920, 1080, {60, 1}}), false);
+  EXPECT_EQ(display_device::win_utils::fuzzyCompareModes(display_device::DisplayMode {1920, 1080, {60, 1}}, display_device::DisplayMode {1920, 1080, {50, 1}}), false);
 }

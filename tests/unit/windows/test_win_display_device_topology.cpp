@@ -18,19 +18,17 @@ namespace {
   // Test fixture(s) for this file
   class WinDisplayDeviceTopology: public BaseTest {
   public:
-    bool
-    isSystemTest() const override {
+    bool isSystemTest() const override {
       return true;
     }
 
-    std::shared_ptr<display_device::WinApiLayer> m_layer { std::make_shared<display_device::WinApiLayer>() };
-    display_device::WinDisplayDevice m_win_dd { m_layer };
+    std::shared_ptr<display_device::WinApiLayer> m_layer {std::make_shared<display_device::WinApiLayer>()};
+    display_device::WinDisplayDevice m_win_dd {m_layer};
   };
 
   class WinDisplayDeviceTopologyMocked: public BaseTest {
   public:
-    void
-    setupExpectCallFor3ActivePathsAndModes(const display_device::QueryType query_type, InSequence & /* To ensure that sequence is created outside this scope */) {
+    void setupExpectCallFor3ActivePathsAndModes(const display_device::QueryType query_type, InSequence & /* To ensure that sequence is created outside this scope */) {
       EXPECT_CALL(*m_layer, queryDisplayConfig(query_type))
         .Times(1)
         .WillOnce(Return(ut_consts::PAM_3_ACTIVE))
@@ -52,9 +50,8 @@ namespace {
       }
     }
 
-    static std::vector<DISPLAYCONFIG_PATH_INFO>
-    getExpectedPathToBeSet() {
-      auto path { ut_consts::PAM_3_ACTIVE->m_paths.at(0) };
+    static std::vector<DISPLAYCONFIG_PATH_INFO> getExpectedPathToBeSet() {
+      auto path {ut_consts::PAM_3_ACTIVE->m_paths.at(0)};
 
       display_device::win_utils::setCloneGroupId(path, 0);
       display_device::win_utils::setSourceIndex(path, std::nullopt);
@@ -62,11 +59,11 @@ namespace {
       display_device::win_utils::setDesktopIndex(path, std::nullopt);
       display_device::win_utils::setActive(path);
 
-      return std::vector<DISPLAYCONFIG_PATH_INFO> { path };
+      return std::vector<DISPLAYCONFIG_PATH_INFO> {path};
     };
 
-    std::shared_ptr<StrictMock<display_device::MockWinApiLayer>> m_layer { std::make_shared<StrictMock<display_device::MockWinApiLayer>>() };
-    display_device::WinDisplayDevice m_win_dd { m_layer };
+    std::shared_ptr<StrictMock<display_device::MockWinApiLayer>> m_layer {std::make_shared<StrictMock<display_device::MockWinApiLayer>>()};
+    display_device::WinDisplayDevice m_win_dd {m_layer};
   };
 
   // Specialized TEST macro(s) for this test file
@@ -76,7 +73,7 @@ namespace {
 }  // namespace
 
 TEST_F_S(GetCurrentTopology) {
-  const auto active_devices { m_layer->queryDisplayConfig(display_device::QueryType::Active) };
+  const auto active_devices {m_layer->queryDisplayConfig(display_device::QueryType::Active)};
   ASSERT_TRUE(active_devices);
 
   if (active_devices->m_paths.empty()) {
@@ -85,7 +82,7 @@ TEST_F_S(GetCurrentTopology) {
 
   std::set<std::string> expected_devices;
   for (const auto &path : active_devices->m_paths) {
-    const auto device_id { m_layer->getDeviceId(path) };
+    const auto device_id {m_layer->getDeviceId(path)};
     EXPECT_FALSE(device_id.empty());
     EXPECT_TRUE(expected_devices.insert(device_id).second);
   }
@@ -95,60 +92,60 @@ TEST_F_S(GetCurrentTopology) {
 }
 
 TEST_F_S(SetCurrentTopology, ExtendedTopology) {
-  const auto available_devices { getAvailableDevices(*m_layer, false) };
+  const auto available_devices {getAvailableDevices(*m_layer, false)};
   ASSERT_TRUE(available_devices);
 
   if (available_devices->size() < 2) {
     GTEST_SKIP_("Not enough devices are available in the system.");
   }
 
-  const auto cleanup_guard { makeTopologyGuard(m_win_dd) };
+  const auto cleanup_guard {makeTopologyGuard(m_win_dd)};
 
   // We are changing to a single device to ensure that we are not in the "final" state
-  const display_device::ActiveTopology single_device_topology { { available_devices->at(0) } };
+  const display_device::ActiveTopology single_device_topology {{available_devices->at(0)}};
   ASSERT_TRUE(m_win_dd.setTopology(single_device_topology));
 
   // We are limiting ourselves to 3 devices only to avoid GPU limitation issues (even if very unlikely)
-  display_device::ActiveTopology multiple_device_topology { { available_devices->at(0) }, { available_devices->at(1) } };
+  display_device::ActiveTopology multiple_device_topology {{available_devices->at(0)}, {available_devices->at(1)}};
   if (available_devices->size() > 2) {
-    multiple_device_topology.push_back({ available_devices->at(2) });
+    multiple_device_topology.push_back({available_devices->at(2)});
   }
   ASSERT_TRUE(m_win_dd.setTopology(multiple_device_topology));
 }
 
 TEST_F_S(SetCurrentTopology, DuplicatedTopology) {
-  const auto available_devices { getAvailableDevices(*m_layer, false) };
+  const auto available_devices {getAvailableDevices(*m_layer, false)};
   ASSERT_TRUE(available_devices);
 
   if (available_devices->size() < 2) {
     GTEST_SKIP_("Not enough devices are available in the system.");
   }
 
-  const auto cleanup_guard { makeTopologyGuard(m_win_dd) };
+  const auto cleanup_guard {makeTopologyGuard(m_win_dd)};
 
   // We are changing to a single device to ensure that we are not in the "final" state
-  const display_device::ActiveTopology single_device_topology { { available_devices->at(0) } };
+  const display_device::ActiveTopology single_device_topology {{available_devices->at(0)}};
   ASSERT_TRUE(m_win_dd.setTopology(single_device_topology));
 
-  display_device::ActiveTopology multiple_device_topology { { available_devices->at(0), available_devices->at(1) } };
+  display_device::ActiveTopology multiple_device_topology {{available_devices->at(0), available_devices->at(1)}};
   ASSERT_TRUE(m_win_dd.setTopology(multiple_device_topology));
 }
 
 TEST_F_S(SetCurrentTopology, MixedTopology) {
-  const auto available_devices { getAvailableDevices(*m_layer, false) };
+  const auto available_devices {getAvailableDevices(*m_layer, false)};
   ASSERT_TRUE(available_devices);
 
   if (available_devices->size() < 3) {
     GTEST_SKIP_("Not enough devices are available in the system.");
   }
 
-  const auto cleanup_guard { makeTopologyGuard(m_win_dd) };
+  const auto cleanup_guard {makeTopologyGuard(m_win_dd)};
 
   // We are changing to a single device to ensure that we are not in the "final" state
-  const display_device::ActiveTopology single_device_topology { { available_devices->at(0) } };
+  const display_device::ActiveTopology single_device_topology {{available_devices->at(0)}};
   ASSERT_TRUE(m_win_dd.setTopology(single_device_topology));
 
-  display_device::ActiveTopology multiple_device_topology { { available_devices->at(0), available_devices->at(1) }, { available_devices->at(2) } };
+  display_device::ActiveTopology multiple_device_topology {{available_devices->at(0), available_devices->at(1)}, {available_devices->at(2)}};
   ASSERT_TRUE(m_win_dd.setTopology(multiple_device_topology));
 }
 
@@ -156,7 +153,7 @@ TEST_F_S_MOCKED(GetCurrentTopology, ExtendedDisplaysOnly) {
   InSequence sequence;
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::Active, sequence);
 
-  const display_device::ActiveTopology expected_topology { { "DeviceId1" }, { "DeviceId2" }, { "DeviceId3" } };
+  const display_device::ActiveTopology expected_topology {{"DeviceId1"}, {"DeviceId2"}, {"DeviceId3"}};
   EXPECT_EQ(m_win_dd.getCurrentTopology(), expected_topology);
 }
 
@@ -177,7 +174,7 @@ TEST_F_S_MOCKED(GetCurrentTopology, ExtendedAndDuplicatedDisplays) {
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES));
 
-  const display_device::ActiveTopology expected_topology { { "DeviceId1" }, { "DeviceId2", "DeviceId3" }, { "DeviceId4" } };
+  const display_device::ActiveTopology expected_topology {{"DeviceId1"}, {"DeviceId2", "DeviceId3"}, {"DeviceId4"}};
   EXPECT_EQ(m_win_dd.getCurrentTopology(), expected_topology);
 }
 
@@ -217,7 +214,7 @@ TEST_F_S_MOCKED(GetCurrentTopology, TransientDisplayIssues) {
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_3_ACTIVE));
 
-  const display_device::ActiveTopology expected_topology { { "DeviceId1" }, { "DeviceId3" } };
+  const display_device::ActiveTopology expected_topology {{"DeviceId1"}, {"DeviceId3"}};
   EXPECT_EQ(m_win_dd.getCurrentTopology(), expected_topology);
 }
 
@@ -240,31 +237,31 @@ TEST_F_S_MOCKED(GetCurrentTopology, NullDeviceList) {
 }
 
 TEST_F_S_MOCKED(IsTopologyValid) {
-  EXPECT_EQ(m_win_dd.isTopologyValid({ /* no groups */ }), false);
-  EXPECT_EQ(m_win_dd.isTopologyValid({ { /* empty group */ } }), false);
-  EXPECT_EQ(m_win_dd.isTopologyValid({ { "ID_1" } }), true);
-  EXPECT_EQ(m_win_dd.isTopologyValid({ { "ID_1" }, { "ID_2" } }), true);
-  EXPECT_EQ(m_win_dd.isTopologyValid({ { "ID_1", "ID_2" } }), true);
-  EXPECT_EQ(m_win_dd.isTopologyValid({ { "ID_1", "ID_1" } }), false);
-  EXPECT_EQ(m_win_dd.isTopologyValid({ { "ID_1" }, { "ID_1" } }), false);
-  EXPECT_EQ(m_win_dd.isTopologyValid({ { "ID_1", "ID_2", "ID_3" } }), false);
-  EXPECT_EQ(m_win_dd.isTopologyValid({ { "ID_1" }, { "ID_2" }, { "ID_3" }, { "ID_4" }, { "ID_5" } }), true);
+  EXPECT_EQ(m_win_dd.isTopologyValid({/* no groups */}), false);
+  EXPECT_EQ(m_win_dd.isTopologyValid({{/* empty group */}}), false);
+  EXPECT_EQ(m_win_dd.isTopologyValid({{"ID_1"}}), true);
+  EXPECT_EQ(m_win_dd.isTopologyValid({{"ID_1"}, {"ID_2"}}), true);
+  EXPECT_EQ(m_win_dd.isTopologyValid({{"ID_1", "ID_2"}}), true);
+  EXPECT_EQ(m_win_dd.isTopologyValid({{"ID_1", "ID_1"}}), false);
+  EXPECT_EQ(m_win_dd.isTopologyValid({{"ID_1"}, {"ID_1"}}), false);
+  EXPECT_EQ(m_win_dd.isTopologyValid({{"ID_1", "ID_2", "ID_3"}}), false);
+  EXPECT_EQ(m_win_dd.isTopologyValid({{"ID_1"}, {"ID_2"}, {"ID_3"}, {"ID_4"}, {"ID_5"}}), true);
 }
 
 TEST_F_S_MOCKED(isTopologyTheSame) {
-  EXPECT_EQ(m_win_dd.isTopologyTheSame({ /* no groups */ }, { /* no groups */ }), true);
-  EXPECT_EQ(m_win_dd.isTopologyTheSame({ { /* empty group */ } }, { { /* empty group */ } }), true);
-  EXPECT_EQ(m_win_dd.isTopologyTheSame({ { /* empty group */ } }, { { /* empty group */ }, { /* empty group */ } }), false);
-  EXPECT_EQ(m_win_dd.isTopologyTheSame({ { "ID_1" } }, { { "ID_1" } }), true);
-  EXPECT_EQ(m_win_dd.isTopologyTheSame({ { "ID_1" } }, { { "ID_1" }, { "ID_2" } }), false);
-  EXPECT_EQ(m_win_dd.isTopologyTheSame({ { "ID_1" }, { "ID_2" } }, { { "ID_1" }, { "ID_2" } }), true);
-  EXPECT_EQ(m_win_dd.isTopologyTheSame({ { "ID_1" }, { "ID_2" } }, { { "ID_2" }, { "ID_1" } }), true);
-  EXPECT_EQ(m_win_dd.isTopologyTheSame({ { "ID_1" }, { "ID_2" } }, { { "ID_1", "ID_2" } }), false);
-  EXPECT_EQ(m_win_dd.isTopologyTheSame({ { "ID_1", "ID_2" } }, { { "ID_1", "ID_2" } }), true);
-  EXPECT_EQ(m_win_dd.isTopologyTheSame({ { "ID_1", "ID_2" } }, { { "ID_2", "ID_1" } }), true);
-  EXPECT_EQ(m_win_dd.isTopologyTheSame({ { "ID_1", "ID_2" } }, { { "ID_2", "ID_1" }, { "ID_3" } }), false);
-  EXPECT_EQ(m_win_dd.isTopologyTheSame({ { "ID_1", "ID_2" }, { "ID_3" } }, { { "ID_2", "ID_1" }, { "ID_3" } }), true);
-  EXPECT_EQ(m_win_dd.isTopologyTheSame({ { "ID_3" }, { "ID_1", "ID_2" } }, { { "ID_2", "ID_1" }, { "ID_3" } }), true);
+  EXPECT_EQ(m_win_dd.isTopologyTheSame({/* no groups */}, {/* no groups */}), true);
+  EXPECT_EQ(m_win_dd.isTopologyTheSame({{/* empty group */}}, {{/* empty group */}}), true);
+  EXPECT_EQ(m_win_dd.isTopologyTheSame({{/* empty group */}}, {{/* empty group */}, {/* empty group */}}), false);
+  EXPECT_EQ(m_win_dd.isTopologyTheSame({{"ID_1"}}, {{"ID_1"}}), true);
+  EXPECT_EQ(m_win_dd.isTopologyTheSame({{"ID_1"}}, {{"ID_1"}, {"ID_2"}}), false);
+  EXPECT_EQ(m_win_dd.isTopologyTheSame({{"ID_1"}, {"ID_2"}}, {{"ID_1"}, {"ID_2"}}), true);
+  EXPECT_EQ(m_win_dd.isTopologyTheSame({{"ID_1"}, {"ID_2"}}, {{"ID_2"}, {"ID_1"}}), true);
+  EXPECT_EQ(m_win_dd.isTopologyTheSame({{"ID_1"}, {"ID_2"}}, {{"ID_1", "ID_2"}}), false);
+  EXPECT_EQ(m_win_dd.isTopologyTheSame({{"ID_1", "ID_2"}}, {{"ID_1", "ID_2"}}), true);
+  EXPECT_EQ(m_win_dd.isTopologyTheSame({{"ID_1", "ID_2"}}, {{"ID_2", "ID_1"}}), true);
+  EXPECT_EQ(m_win_dd.isTopologyTheSame({{"ID_1", "ID_2"}}, {{"ID_2", "ID_1"}, {"ID_3"}}), false);
+  EXPECT_EQ(m_win_dd.isTopologyTheSame({{"ID_1", "ID_2"}, {"ID_3"}}, {{"ID_2", "ID_1"}, {"ID_3"}}), true);
+  EXPECT_EQ(m_win_dd.isTopologyTheSame({{"ID_3"}, {"ID_1", "ID_2"}}, {{"ID_2", "ID_1"}, {"ID_3"}}), true);
 }
 
 TEST_F_S_MOCKED(SetCurrentTopology) {
@@ -272,15 +269,15 @@ TEST_F_S_MOCKED(SetCurrentTopology) {
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::Active, sequence);
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::All, sequence);
 
-  auto expected_path { ut_consts::PAM_3_ACTIVE->m_paths.at(0) };
+  auto expected_path {ut_consts::PAM_3_ACTIVE->m_paths.at(0)};
   display_device::win_utils::setCloneGroupId(expected_path, 0);
   display_device::win_utils::setSourceIndex(expected_path, std::nullopt);
   display_device::win_utils::setTargetIndex(expected_path, std::nullopt);
   display_device::win_utils::setDesktopIndex(expected_path, std::nullopt);
   display_device::win_utils::setActive(expected_path);
 
-  UINT32 expected_flags { SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE };
-  EXPECT_CALL(*m_layer, setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> { expected_path }, std::vector<DISPLAYCONFIG_MODE_INFO> {}, expected_flags))
+  UINT32 expected_flags {SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE};
+  EXPECT_CALL(*m_layer, setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> {expected_path}, std::vector<DISPLAYCONFIG_MODE_INFO> {}, expected_flags))
     .Times(1)
     .WillOnce(Return(ERROR_SUCCESS));
 
@@ -288,8 +285,9 @@ TEST_F_S_MOCKED(SetCurrentTopology) {
   EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
     .Times(1)
     .WillOnce(Return(display_device::PathAndModeData {
-      { ut_consts::PAM_3_ACTIVE->m_paths.at(0) },
-      { ut_consts::PAM_3_ACTIVE->m_modes.at(0) } }))
+      {ut_consts::PAM_3_ACTIVE->m_paths.at(0)},
+      {ut_consts::PAM_3_ACTIVE->m_modes.at(0)}
+    }))
     .RetiresOnSaturation();
   EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
     .Times(1)
@@ -304,7 +302,7 @@ TEST_F_S_MOCKED(SetCurrentTopology) {
     .WillOnce(Return("DisplayName1"))
     .RetiresOnSaturation();
 
-  EXPECT_TRUE(m_win_dd.setTopology({ { "DeviceId1" } }));
+  EXPECT_TRUE(m_win_dd.setTopology({{"DeviceId1"}}));
 }
 
 TEST_F_S_MOCKED(SetCurrentTopology, InvalidTopologyProvided) {
@@ -316,14 +314,14 @@ TEST_F_S_MOCKED(SetCurrentTopology, FailedToGetCurrentTopology) {
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_NULL));
 
-  EXPECT_FALSE(m_win_dd.setTopology({ { "DeviceId1" } }));
+  EXPECT_FALSE(m_win_dd.setTopology({{"DeviceId1"}}));
 }
 
 TEST_F_S_MOCKED(SetCurrentTopology, CurrentTopologyIsTheSame) {
   InSequence sequence;
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::Active, sequence);
 
-  const display_device::ActiveTopology current_topology { { "DeviceId1" }, { "DeviceId2" }, { "DeviceId3" } };
+  const display_device::ActiveTopology current_topology {{"DeviceId1"}, {"DeviceId2"}, {"DeviceId3"}};
   EXPECT_TRUE(m_win_dd.setTopology(current_topology));
 }
 
@@ -334,7 +332,7 @@ TEST_F_S_MOCKED(SetCurrentTopology, FailedToQueryForAllDevices) {
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_NULL));
 
-  EXPECT_FALSE(m_win_dd.setTopology({ { "DeviceId1" } }));
+  EXPECT_FALSE(m_win_dd.setTopology({{"DeviceId1"}}));
 }
 
 TEST_F_S_MOCKED(SetCurrentTopology, DevicePathsAreNoLongerAvailable) {
@@ -344,7 +342,7 @@ TEST_F_S_MOCKED(SetCurrentTopology, DevicePathsAreNoLongerAvailable) {
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_EMPTY));
 
-  EXPECT_FALSE(m_win_dd.setTopology({ { "DeviceId1" } }));
+  EXPECT_FALSE(m_win_dd.setTopology({{"DeviceId1"}}));
 }
 
 TEST_F_S_MOCKED(SetCurrentTopology, FailedToMakePathSourceData) {
@@ -352,7 +350,7 @@ TEST_F_S_MOCKED(SetCurrentTopology, FailedToMakePathSourceData) {
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::Active, sequence);
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::All, sequence);
 
-  EXPECT_FALSE(m_win_dd.setTopology({ { "DeviceIdUnknown" } }));
+  EXPECT_FALSE(m_win_dd.setTopology({{"DeviceIdUnknown"}}));
 }
 
 TEST_F_S_MOCKED(SetCurrentTopology, WindowsDoesNotKnowAboutTheTopology, FailedToSetTopology) {
@@ -360,7 +358,7 @@ TEST_F_S_MOCKED(SetCurrentTopology, WindowsDoesNotKnowAboutTheTopology, FailedTo
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::Active, sequence);
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::All, sequence);
 
-  UINT32 expected_flags { SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE };
+  UINT32 expected_flags {SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE};
   EXPECT_CALL(*m_layer, setDisplayConfig(getExpectedPathToBeSet(), std::vector<DISPLAYCONFIG_MODE_INFO> {}, expected_flags))
     .Times(1)
     .WillOnce(Return(ERROR_GEN_FAILURE));
@@ -378,7 +376,7 @@ TEST_F_S_MOCKED(SetCurrentTopology, WindowsDoesNotKnowAboutTheTopology, FailedTo
     .Times(1)
     .WillRepeatedly(Return("ErrorDesc"));
 
-  EXPECT_FALSE(m_win_dd.setTopology({ { "DeviceId1" } }));
+  EXPECT_FALSE(m_win_dd.setTopology({{"DeviceId1"}}));
 }
 
 TEST_F_S_MOCKED(SetCurrentTopology, FailedToSetTopology, NoRecovery) {
@@ -386,7 +384,7 @@ TEST_F_S_MOCKED(SetCurrentTopology, FailedToSetTopology, NoRecovery) {
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::Active, sequence);
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::All, sequence);
 
-  UINT32 expected_flags { SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE };
+  UINT32 expected_flags {SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE};
   EXPECT_CALL(*m_layer, setDisplayConfig(getExpectedPathToBeSet(), std::vector<DISPLAYCONFIG_MODE_INFO> {}, expected_flags))
     .Times(1)
     .WillOnce(Return(ERROR_INVALID_PARAMETER));
@@ -395,7 +393,7 @@ TEST_F_S_MOCKED(SetCurrentTopology, FailedToSetTopology, NoRecovery) {
     .Times(1)
     .WillRepeatedly(Return("ErrorDesc"));
 
-  EXPECT_FALSE(m_win_dd.setTopology({ { "DeviceId1" } }));
+  EXPECT_FALSE(m_win_dd.setTopology({{"DeviceId1"}}));
 }
 
 TEST_F_S_MOCKED(SetCurrentTopology, TopologyWasSetAccordingToWinApi, CouldNotGetCurrentTopologyToVerify) {
@@ -403,7 +401,7 @@ TEST_F_S_MOCKED(SetCurrentTopology, TopologyWasSetAccordingToWinApi, CouldNotGet
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::Active, sequence);
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::All, sequence);
 
-  UINT32 expected_flags { SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE };
+  UINT32 expected_flags {SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE};
   EXPECT_CALL(*m_layer, setDisplayConfig(getExpectedPathToBeSet(), std::vector<DISPLAYCONFIG_MODE_INFO> {}, expected_flags))
     .Times(1)
     .WillOnce(Return(ERROR_SUCCESS));
@@ -419,7 +417,7 @@ TEST_F_S_MOCKED(SetCurrentTopology, TopologyWasSetAccordingToWinApi, CouldNotGet
     .Times(1)
     .WillOnce(Return(ERROR_SUCCESS));
 
-  EXPECT_FALSE(m_win_dd.setTopology({ { "DeviceId1" } }));
+  EXPECT_FALSE(m_win_dd.setTopology({{"DeviceId1"}}));
 }
 
 TEST_F_S_MOCKED(SetCurrentTopology, TopologyWasSetAccordingToWinApi, WinApiLied) {
@@ -427,7 +425,7 @@ TEST_F_S_MOCKED(SetCurrentTopology, TopologyWasSetAccordingToWinApi, WinApiLied)
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::Active, sequence);
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::All, sequence);
 
-  UINT32 expected_flags { SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE };
+  UINT32 expected_flags {SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE};
   EXPECT_CALL(*m_layer, setDisplayConfig(getExpectedPathToBeSet(), std::vector<DISPLAYCONFIG_MODE_INFO> {}, expected_flags))
     .Times(1)
     .WillOnce(Return(ERROR_SUCCESS));
@@ -441,5 +439,5 @@ TEST_F_S_MOCKED(SetCurrentTopology, TopologyWasSetAccordingToWinApi, WinApiLied)
     .Times(1)
     .WillOnce(Return(ERROR_SUCCESS));
 
-  EXPECT_FALSE(m_win_dd.setTopology({ { "DeviceId1" } }));
+  EXPECT_FALSE(m_win_dd.setTopology({{"DeviceId1"}}));
 }

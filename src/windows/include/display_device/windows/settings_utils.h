@@ -25,8 +25,7 @@ namespace display_device::win_utils {
    * const auto device_ids { flattenTopology(topology) };
    * @examples_end
    */
-  std::set<std::string>
-  flattenTopology(const ActiveTopology &topology);
+  std::set<std::string> flattenTopology(const ActiveTopology &topology);
 
   /**
    * @brief Create extended topology from all the available devices.
@@ -37,8 +36,7 @@ namespace display_device::win_utils {
    * const auto extended_topology { stripTopologyOfUnavailableDevices(*iface) };
    * @examples_end
    */
-  ActiveTopology
-  createFullExtendedTopology(WinDisplayDeviceInterface &win_dd);
+  ActiveTopology createFullExtendedTopology(WinDisplayDeviceInterface &win_dd);
 
   /**
    * @brief Get one primary device from the provided topology.
@@ -51,8 +49,7 @@ namespace display_device::win_utils {
    * const auto primary_device_id { getPrimaryDevice(*iface, topology) };
    * @examples_end
    */
-  std::string
-  getPrimaryDevice(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
+  std::string getPrimaryDevice(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
 
   /**
    * @brief Compute the new intial state from arbitrary data.
@@ -68,10 +65,7 @@ namespace display_device::win_utils {
    * const auto new_initial_state { computeInitialState(prev_state, topology_before_changes, devices) };
    * @examples_end
    */
-  std::optional<SingleDisplayConfigState::Initial>
-  computeInitialState(const std::optional<SingleDisplayConfigState::Initial> &prev_state,
-    const ActiveTopology &topology_before_changes,
-    const EnumeratedDeviceList &devices);
+  std::optional<SingleDisplayConfigState::Initial> computeInitialState(const std::optional<SingleDisplayConfigState::Initial> &prev_state, const ActiveTopology &topology_before_changes, const EnumeratedDeviceList &devices);
 
   /**
    * @brief Strip the initial state of non-existing devices.
@@ -79,8 +73,7 @@ namespace display_device::win_utils {
    * @param devices Currently available device list.
    * @return Stripped initial state.
    */
-  std::optional<SingleDisplayConfigState::Initial>
-  stripInitialState(const SingleDisplayConfigState::Initial &initial_state, const EnumeratedDeviceList &devices);
+  std::optional<SingleDisplayConfigState::Initial> stripInitialState(const SingleDisplayConfigState::Initial &initial_state, const EnumeratedDeviceList &devices);
 
   /**
    * @brief Compute new topology from arbitrary data.
@@ -91,12 +84,7 @@ namespace display_device::win_utils {
    * @param initial_topology The initial topology from `computeInitialState(...)`.
    * @return New topology that should be set.
    */
-  ActiveTopology
-  computeNewTopology(SingleDisplayConfiguration::DevicePreparation device_prep,
-    bool configuring_primary_devices,
-    const std::string &device_to_configure,
-    const std::set<std::string> &additional_devices_to_configure,
-    const ActiveTopology &initial_topology);
+  ActiveTopology computeNewTopology(SingleDisplayConfiguration::DevicePreparation device_prep, bool configuring_primary_devices, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, const ActiveTopology &initial_topology);
 
   /**
    * @brief Compute new topology + metadata from config settings and initial state.
@@ -105,10 +93,7 @@ namespace display_device::win_utils {
    * @param initial_state The initial topology from `computeInitialState(...)` or `stripInitialState(...)` (or both).
    * @return A tuple of (new_topology, device_to_configure, addotional_devices_to_configure).
    */
-  std::tuple<ActiveTopology, std::string, std::set<std::string>>
-  computeNewTopologyAndMetadata(SingleDisplayConfiguration::DevicePreparation device_prep,
-    const std::string &device_id,
-    const SingleDisplayConfigState::Initial &initial_state);
+  std::tuple<ActiveTopology, std::string, std::set<std::string>> computeNewTopologyAndMetadata(SingleDisplayConfiguration::DevicePreparation device_prep, const std::string &device_id, const SingleDisplayConfigState::Initial &initial_state);
 
   /**
    * @brief Compute new display modes from arbitrary data.
@@ -120,13 +105,7 @@ namespace display_device::win_utils {
    * @param original_modes Display modes to be used as a base onto which changes are made.
    * @return New display modes that should be set.
    */
-  DeviceDisplayModeMap
-  computeNewDisplayModes(const std::optional<Resolution> &resolution,
-    const std::optional<FloatingPoint> &refresh_rate,
-    bool configuring_primary_devices,
-    const std::string &device_to_configure,
-    const std::set<std::string> &additional_devices_to_configure,
-    const DeviceDisplayModeMap &original_modes);
+  DeviceDisplayModeMap computeNewDisplayModes(const std::optional<Resolution> &resolution, const std::optional<FloatingPoint> &refresh_rate, bool configuring_primary_devices, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, const DeviceDisplayModeMap &original_modes);
 
   /**
    * @brief Compute new HDR states from arbitrary data.
@@ -137,12 +116,7 @@ namespace display_device::win_utils {
    * @param original_states HDR states to be used as a base onto which changes are made.
    * @return New HDR states that should be set.
    */
-  HdrStateMap
-  computeNewHdrStates(const std::optional<HdrState> &hdr_state,
-    bool configuring_primary_devices,
-    const std::string &device_to_configure,
-    const std::set<std::string> &additional_devices_to_configure,
-    const HdrStateMap &original_states);
+  HdrStateMap computeNewHdrStates(const std::optional<HdrState> &hdr_state, bool configuring_primary_devices, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, const HdrStateMap &original_states);
 
   /**
    * @brief Toggle enabled HDR states off and on again if quick succession.
@@ -165,8 +139,7 @@ namespace display_device::win_utils {
    * @param delay Delay between OFF and ON states (ON -> OFF -> DELAY -> ON).
    *              If null optional is provided, the function does nothing.
    */
-  void
-  blankHdrStates(WinDisplayDeviceInterface &win_dd, const std::optional<std::chrono::milliseconds> &delay);
+  void blankHdrStates(WinDisplayDeviceInterface &win_dd, const std::optional<std::chrono::milliseconds> &delay);
 
   /**
    * @brief Make guard function for the topology.
@@ -178,8 +151,7 @@ namespace display_device::win_utils {
    * boost::scope::scope_exit guard { topologyGuardFn(*iface, iface->getCurrentTopology()) };
    * @examples_end
    */
-  DdGuardFn
-  topologyGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
+  DdGuardFn topologyGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
 
   /**
    * @brief Make guard function for the display modes.
@@ -191,8 +163,7 @@ namespace display_device::win_utils {
    * boost::scope::scope_exit guard { modeGuardFn(*iface, iface->getCurrentTopology()) };
    * @examples_end
    */
-  DdGuardFn
-  modeGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
+  DdGuardFn modeGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
 
   /**
    * @brief Make guard function for the display modes.
@@ -206,8 +177,7 @@ namespace display_device::win_utils {
    * boost::scope::scope_exit guard { modeGuardFn(*iface, modes) };
    * @examples_end
    */
-  DdGuardFn
-  modeGuardFn(WinDisplayDeviceInterface &win_dd, const DeviceDisplayModeMap &modes);
+  DdGuardFn modeGuardFn(WinDisplayDeviceInterface &win_dd, const DeviceDisplayModeMap &modes);
 
   /**
    * @brief Make guard function for the primary display.
@@ -219,8 +189,7 @@ namespace display_device::win_utils {
    * boost::scope::scope_exit guard { primaryGuardFn(*iface, iface->getCurrentTopology()) };
    * @examples_end
    */
-  DdGuardFn
-  primaryGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
+  DdGuardFn primaryGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
 
   /**
    * @brief Make guard function for the primary display.
@@ -234,8 +203,7 @@ namespace display_device::win_utils {
    * boost::scope::scope_exit guard { primaryGuardFn(*iface, prev_primary_device) };
    * @examples_end
    */
-  DdGuardFn
-  primaryGuardFn(WinDisplayDeviceInterface &win_dd, const std::string &primary_device);
+  DdGuardFn primaryGuardFn(WinDisplayDeviceInterface &win_dd, const std::string &primary_device);
 
   /**
    * @brief Make guard function for the HDR states.
@@ -247,8 +215,7 @@ namespace display_device::win_utils {
    * boost::scope::scope_exit guard { hdrStateGuardFn(*iface, iface->getCurrentTopology()) };
    * @examples_end
    */
-  DdGuardFn
-  hdrStateGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
+  DdGuardFn hdrStateGuardFn(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
 
   /**
    * @brief Make guard function for the HDR states.
@@ -262,6 +229,5 @@ namespace display_device::win_utils {
    * boost::scope::scope_exit guard { hdrStateGuardFn(*iface, states) };
    * @examples_end
    */
-  DdGuardFn
-  hdrStateGuardFn(WinDisplayDeviceInterface &win_dd, const HdrStateMap &states);
+  DdGuardFn hdrStateGuardFn(WinDisplayDeviceInterface &win_dd, const HdrStateMap &states);
 }  // namespace display_device::win_utils

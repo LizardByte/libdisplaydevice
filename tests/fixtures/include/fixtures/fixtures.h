@@ -16,9 +16,8 @@
 #undef TEST
 
 // Redefine TEST to use our BaseTest class, to automatically use our BaseTest fixture
-#define TEST(test_case_name, test_name)              \
-  GTEST_TEST_(test_case_name, test_name, ::BaseTest, \
-    ::testing::internal::GetTypeId<::BaseTest>())
+#define TEST(test_case_name, test_name) \
+  GTEST_TEST_(test_case_name, test_name, ::BaseTest, ::testing::internal::GetTypeId<::BaseTest>())
 
 // Helper macros for concatenating macro variables with an underscore separator (https://stackoverflow.com/questions/74505380/how-to-concatenate-join-va-args-with-delimiters-separators)
 #define DD_CAT_OP_(index, state, elem) BOOST_PP_CAT(state, BOOST_PP_CAT(_, elem))
@@ -44,18 +43,15 @@ class BaseTest: public ::testing::Test {
 protected:
   ~BaseTest() override = default;
 
-  void
-  SetUp() override;
+  void SetUp() override;
 
-  void
-  TearDown() override;
+  void TearDown() override;
 
   /**
    * @brief Get available command line arguments.
    * @return Command line args from GTest.
    */
-  [[nodiscard]] virtual const std::vector<std::string> &
-  getArgs() const;
+  [[nodiscard]] virtual const std::vector<std::string> &getArgs() const;
 
   /**
    * @brief Get the command line argument that matches the pattern.
@@ -63,43 +59,38 @@ protected:
    * @param remove_match Specify if the matched pattern should be removed before returning argument.
    * @return Matching command line argument or null optional if nothing matched.
    */
-  [[nodiscard]] virtual std::optional<std::string>
-  getArgWithMatchingPattern(const std::string &pattern, bool remove_match) const;
+  [[nodiscard]] virtual std::optional<std::string> getArgWithMatchingPattern(const std::string &pattern, bool remove_match) const;
 
   /**
    * @brief Check if the test output is to be redirected and printed out only if test fails.
    * @return True if output is to be suppressed, false otherwise.
    * @note It is useful for suppressing noise in automatic tests, but not so much in manual ones.
    */
-  [[nodiscard]] virtual bool
-  isOutputSuppressed() const;
+  [[nodiscard]] virtual bool isOutputSuppressed() const;
 
   /**
    * @brief Check if the test interacts/modifies with the system settings.
    * @returns True if it does, false otherwise.
    * @note By setting SKIP_SYSTEM_TESTS=1 env, these tests will be skipped (useful during development).
    */
-  [[nodiscard]] virtual bool
-  isSystemTest() const;
+  [[nodiscard]] virtual bool isSystemTest() const;
 
   /**
    * @brief Skip the test by specifying the reason.
    * @returns A non-empty string (reason) if test needs to be skipped, empty string otherwise.
    */
-  [[nodiscard]] virtual std::string
-  skipTest() const;
+  [[nodiscard]] virtual std::string skipTest() const;
 
   /**
    * @brief Get the default log level for the test base.
    * @returns A log level set in the env OR null optional if fallback should be used (verbose).
    * @note By setting LOG_LEVEL=<level> env you can change the level (e.g. LOG_LEVEL=error).
    */
-  [[nodiscard]] virtual std::optional<display_device::Logger::LogLevel>
-  getDefaultLogLevel() const;
+  [[nodiscard]] virtual std::optional<display_device::Logger::LogLevel> getDefaultLogLevel() const;
 
   std::stringstream m_cout_buffer; /**< Stores the cout in case the output is suppressed. */
 
 private:
-  std::streambuf *m_sbuf { nullptr }; /**< Stores the handle to the original cout stream. */
-  bool m_test_skipped_at_setup { false }; /**< Indicates whether the SetUp method was skipped. */
+  std::streambuf *m_sbuf {nullptr}; /**< Stores the handle to the original cout stream. */
+  bool m_test_skipped_at_setup {false}; /**< Indicates whether the SetUp method was skipped. */
 };

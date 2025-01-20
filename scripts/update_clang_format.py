@@ -8,7 +8,9 @@ directories = [
     'tests',
 ]
 file_types = [
+    'c',
     'cpp',
+    'h',
     'h',
     'm',
     'mm'

@@ -7,7 +7,7 @@
 
 namespace display_device {
   SchedulerStopToken::SchedulerStopToken(std::function<void()> cleanup):
-      m_cleanup { std::move(cleanup) } {
+      m_cleanup {std::move(cleanup)} {
   }
 
   SchedulerStopToken::~SchedulerStopToken() {
@@ -16,13 +16,11 @@ namespace display_device {
     }
   }
 
-  void
-  SchedulerStopToken::requestStop() {
+  void SchedulerStopToken::requestStop() {
     m_stop_requested = true;
   }
 
-  bool
-  SchedulerStopToken::stopRequested() const {
+  bool SchedulerStopToken::stopRequested() const {
     return m_stop_requested;
   }
 }  // namespace display_device

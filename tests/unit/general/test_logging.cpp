@@ -9,7 +9,7 @@ namespace {
 
 TEST_S(LogLevelVerbose) {
   using level = display_device::Logger::LogLevel;
-  auto &logger { display_device::Logger::get() };
+  auto &logger {display_device::Logger::get()};
 
   logger.setLogLevel(level::verbose);
 
@@ -23,7 +23,7 @@ TEST_S(LogLevelVerbose) {
 
 TEST_S(LogLevelDebug) {
   using level = display_device::Logger::LogLevel;
-  auto &logger { display_device::Logger::get() };
+  auto &logger {display_device::Logger::get()};
 
   logger.setLogLevel(level::debug);
 
@@ -37,7 +37,7 @@ TEST_S(LogLevelDebug) {
 
 TEST_S(LogLevelInfo) {
   using level = display_device::Logger::LogLevel;
-  auto &logger { display_device::Logger::get() };
+  auto &logger {display_device::Logger::get()};
 
   logger.setLogLevel(level::info);
 
@@ -51,7 +51,7 @@ TEST_S(LogLevelInfo) {
 
 TEST_S(LogLevelWarning) {
   using level = display_device::Logger::LogLevel;
-  auto &logger { display_device::Logger::get() };
+  auto &logger {display_device::Logger::get()};
 
   logger.setLogLevel(level::warning);
 
@@ -65,7 +65,7 @@ TEST_S(LogLevelWarning) {
 
 TEST_S(LogLevelError) {
   using level = display_device::Logger::LogLevel;
-  auto &logger { display_device::Logger::get() };
+  auto &logger {display_device::Logger::get()};
 
   logger.setLogLevel(level::error);
 
@@ -79,7 +79,7 @@ TEST_S(LogLevelError) {
 
 TEST_S(LogLevelFatal) {
   using level = display_device::Logger::LogLevel;
-  auto &logger { display_device::Logger::get() };
+  auto &logger {display_device::Logger::get()};
 
   logger.setLogLevel(level::fatal);
 
@@ -93,13 +93,13 @@ TEST_S(LogLevelFatal) {
 
 TEST_S(DefaultLogger) {
   using level = display_device::Logger::LogLevel;
-  auto &logger { display_device::Logger::get() };
+  auto &logger {display_device::Logger::get()};
 
-  const auto write_and_get_cout { [this, &logger](level level, std::string value) -> std::string {
+  const auto write_and_get_cout {[this, &logger](level level, std::string value) -> std::string {
     m_cout_buffer.str(std::string {});  // reset the buffer
     logger.write(level, std::move(value));
     return m_cout_buffer.str();
-  } };
+  }};
 
   logger.setLogLevel(level::verbose);
   // clang-format off
@@ -115,7 +115,7 @@ TEST_S(DefaultLogger) {
 TEST_S(CustomCallback) {
   using level = display_device::Logger::LogLevel;
   using level_t = std::underlying_type_t<level>;
-  auto &logger { display_device::Logger::get() };
+  auto &logger {display_device::Logger::get()};
 
   std::string output;
   logger.setLogLevel(level::verbose);
@@ -150,7 +150,7 @@ TEST_S(CustomCallback) {
 
 TEST_S(WriteMethodRespectsLogLevel, DefaultLogger) {
   using level = display_device::Logger::LogLevel;
-  auto &logger { display_device::Logger::get() };
+  auto &logger {display_device::Logger::get()};
 
   EXPECT_TRUE(m_cout_buffer.str().empty());
 
@@ -165,9 +165,9 @@ TEST_S(WriteMethodRespectsLogLevel, DefaultLogger) {
 
 TEST_S(WriteMethodRespectsLogLevel, CustomCallback) {
   using level = display_device::Logger::LogLevel;
-  auto &logger { display_device::Logger::get() };
+  auto &logger {display_device::Logger::get()};
 
-  bool callback_invoked { false };
+  bool callback_invoked {false};
   logger.setCustomCallback([&callback_invoked](auto, auto) {
     callback_invoked = true;
   });
@@ -183,18 +183,18 @@ TEST_S(WriteMethodRespectsLogLevel, CustomCallback) {
 
 TEST_S(LogMacroDisablesStreamChain) {
   using level = display_device::Logger::LogLevel;
-  auto &logger { display_device::Logger::get() };
+  auto &logger {display_device::Logger::get()};
 
-  bool output_logged { false };
+  bool output_logged {false};
   logger.setCustomCallback([&output_logged](auto, auto) {
     output_logged = true;
   });
 
-  bool some_function_invoked { false };
-  const auto some_function { [&some_function_invoked]() {
+  bool some_function_invoked {false};
+  const auto some_function {[&some_function_invoked]() {
     some_function_invoked = true;
     return "some string";
-  } };
+  }};
 
   logger.setLogLevel(level::error);
   DD_LOG(info) << some_function();

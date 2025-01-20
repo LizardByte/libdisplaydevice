@@ -29,8 +29,7 @@ namespace display_device {
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool
-    operator==(const Resolution &lhs, const Resolution &rhs);
+    friend bool operator==(const Resolution &lhs, const Resolution &rhs);
   };
 
   /**
@@ -43,8 +42,7 @@ namespace display_device {
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool
-    operator==(const Point &lhs, const Point &rhs);
+    friend bool operator==(const Point &lhs, const Point &rhs);
   };
 
   /**
@@ -57,8 +55,7 @@ namespace display_device {
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool
-    operator==(const Rational &lhs, const Rational &rhs);
+    friend bool operator==(const Rational &lhs, const Rational &rhs);
   };
 
   /**
@@ -84,8 +81,7 @@ namespace display_device {
       /**
        * @brief Comparator for strict equality.
        */
-      friend bool
-      operator==(const Info &lhs, const Info &rhs);
+      friend bool operator==(const Info &lhs, const Info &rhs);
     };
 
     std::string m_device_id {}; /**< A unique device ID used by this API to identify the device. */
@@ -96,8 +92,7 @@ namespace display_device {
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool
-    operator==(const EnumeratedDevice &lhs, const EnumeratedDevice &rhs);
+    friend bool operator==(const EnumeratedDevice &lhs, const EnumeratedDevice &rhs);
   };
 
   /**
@@ -131,7 +126,6 @@ namespace display_device {
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool
-    operator==(const SingleDisplayConfiguration &lhs, const SingleDisplayConfiguration &rhs);
+    friend bool operator==(const SingleDisplayConfiguration &lhs, const SingleDisplayConfiguration &rhs);
   };
 }  // namespace display_device

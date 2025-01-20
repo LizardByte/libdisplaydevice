@@ -54,8 +54,7 @@ namespace display_device {
      * const auto devices { iface->enumAvailableDevices() };
      * @examples_end
      */
-    [[nodiscard]] virtual EnumeratedDeviceList
-    enumAvailableDevices() const = 0;
+    [[nodiscard]] virtual EnumeratedDeviceList enumAvailableDevices() const = 0;
 
     /**
      * @brief Get display name associated with the device.
@@ -68,8 +67,7 @@ namespace display_device {
      * const std::string display_name = iface->getDisplayName(device_id);
      * @examples_end
      */
-    [[nodiscard]] virtual std::string
-    getDisplayName(const std::string &device_id) const = 0;
+    [[nodiscard]] virtual std::string getDisplayName(const std::string &device_id) const = 0;
 
     /**
      * @brief Apply the provided configuration to the system.
@@ -82,8 +80,7 @@ namespace display_device {
      * const auto result = iface->applySettings(config);
      * @examples_end
      */
-    [[nodiscard]] virtual ApplyResult
-    applySettings(const SingleDisplayConfiguration &config) = 0;
+    [[nodiscard]] virtual ApplyResult applySettings(const SingleDisplayConfiguration &config) = 0;
 
     /**
      * @brief Revert the applied configuration and restore the previous settings.
@@ -93,8 +90,7 @@ namespace display_device {
      * const auto result = iface->revertSettings();
      * @examples_end
      */
-    [[nodiscard]] virtual RevertResult
-    revertSettings() = 0;
+    [[nodiscard]] virtual RevertResult revertSettings() = 0;
 
     /**
      * @brief Reset the persistence in case the settings cannot be reverted.
@@ -118,7 +114,6 @@ namespace display_device {
      * }
      * @examples_end
      */
-    [[nodiscard]] virtual bool
-    resetPersistence() = 0;
+    [[nodiscard]] virtual bool resetPersistence() = 0;
   };
 }  // namespace display_device

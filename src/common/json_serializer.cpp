@@ -11,12 +11,8 @@
 
 namespace display_device {
   // Enums
-  DD_JSON_DEFINE_SERIALIZE_ENUM_GCOVR_EXCL_BR_LINE(HdrState, { { HdrState::Disabled, "Disabled" },
-                                                               { HdrState::Enabled, "Enabled" } })
-  DD_JSON_DEFINE_SERIALIZE_ENUM_GCOVR_EXCL_BR_LINE(SingleDisplayConfiguration::DevicePreparation, { { SingleDisplayConfiguration::DevicePreparation::VerifyOnly, "VerifyOnly" },
-                                                                                                    { SingleDisplayConfiguration::DevicePreparation::EnsureActive, "EnsureActive" },
-                                                                                                    { SingleDisplayConfiguration::DevicePreparation::EnsurePrimary, "EnsurePrimary" },
-                                                                                                    { SingleDisplayConfiguration::DevicePreparation::EnsureOnlyDisplay, "EnsureOnlyDisplay" } })
+  DD_JSON_DEFINE_SERIALIZE_ENUM_GCOVR_EXCL_BR_LINE(HdrState, {{HdrState::Disabled, "Disabled"}, {HdrState::Enabled, "Enabled"}})
+  DD_JSON_DEFINE_SERIALIZE_ENUM_GCOVR_EXCL_BR_LINE(SingleDisplayConfiguration::DevicePreparation, {{SingleDisplayConfiguration::DevicePreparation::VerifyOnly, "VerifyOnly"}, {SingleDisplayConfiguration::DevicePreparation::EnsureActive, "EnsureActive"}, {SingleDisplayConfiguration::DevicePreparation::EnsurePrimary, "EnsurePrimary"}, {SingleDisplayConfiguration::DevicePreparation::EnsureOnlyDisplay, "EnsureOnlyDisplay"}})
 
   // Structs
   DD_JSON_DEFINE_SERIALIZE_STRUCT(Resolution, width, height)

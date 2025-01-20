@@ -18,22 +18,21 @@ namespace display_device {
     /**
      * @see set_topology for a description as this was split off to reduce cognitive complexity.
      */
-    bool
-    doSetTopology(WinApiLayerInterface &w_api, const ActiveTopology &new_topology, const PathAndModeData &display_data) {
-      const auto path_data { win_utils::collectSourceDataForMatchingPaths(w_api, display_data.m_paths) };
+    bool doSetTopology(WinApiLayerInterface &w_api, const ActiveTopology &new_topology, const PathAndModeData &display_data) {
+      const auto path_data {win_utils::collectSourceDataForMatchingPaths(w_api, display_data.m_paths)};
       if (path_data.empty()) {
         // Error already logged
         return false;
       }
 
-      auto paths { win_utils::makePathsForNewTopology(new_topology, path_data, display_data.m_paths) };
+      auto paths {win_utils::makePathsForNewTopology(new_topology, path_data, display_data.m_paths)};
       if (paths.empty()) {
         // Error already logged
         return false;
       }
 
-      UINT32 flags { SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE };
-      LONG result { w_api.setDisplayConfig(paths, {}, flags) };
+      UINT32 flags {SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE};
+      LONG result {w_api.setDisplayConfig(paths, {}, flags)};
       if (result == ERROR_GEN_FAILURE) {
         DD_LOG(warning) << w_api.getErrorString(result) << " failed to change topology using the topology from Windows DB! Asking Windows to create the topology.";
 
@@ -43,8 +42,7 @@ namespace display_device {
           DD_LOG(error) << w_api.getErrorString(result) << " failed to create new topology configuration!";
           return false;
         }
-      }
-      else if (result != ERROR_SUCCESS) {
+      } else if (result != ERROR_SUCCESS) {
         DD_LOG(error) << w_api.getErrorString(result) << " failed to change topology configuration!";
         return false;
       }
@@ -53,9 +51,8 @@ namespace display_device {
     }
   }  // namespace
 
-  ActiveTopology
-  WinDisplayDevice::getCurrentTopology() const {
-    const auto display_data { m_w_api->queryDisplayConfig(QueryType::Active) };
+  ActiveTopology WinDisplayDevice::getCurrentTopology() const {
+    const auto display_data {m_w_api->queryDisplayConfig(QueryType::Active)};
     if (!display_data) {
       // Error already logged
       return {};
@@ -67,25 +64,24 @@ namespace display_device {
     std::unordered_map<std::string, std::size_t> position_to_topology_index;
     ActiveTopology topology;
     for (const auto &path : display_data->m_paths) {
-      const auto device_info { win_utils::getDeviceInfoForValidPath(*m_w_api, path, display_device::ValidatedPathType::Active) };
+      const auto device_info {win_utils::getDeviceInfoForValidPath(*m_w_api, path, display_device::ValidatedPathType::Active)};
       if (!device_info) {
         continue;
       }
 
-      const auto source_mode { win_utils::getSourceMode(win_utils::getSourceIndex(path, display_data->m_modes), display_data->m_modes) };
+      const auto source_mode {win_utils::getSourceMode(win_utils::getSourceIndex(path, display_data->m_modes), display_data->m_modes)};
       if (!source_mode) {
         DD_LOG(error) << "Active device does not have a source mode: " << device_info->m_device_id << "!";
         return {};
       }
 
-      const std::string lazy_lookup { std::to_string(source_mode->position.x) + std::to_string(source_mode->position.y) };
-      auto index_it { position_to_topology_index.find(lazy_lookup) };
+      const std::string lazy_lookup {std::to_string(source_mode->position.x) + std::to_string(source_mode->position.y)};
+      auto index_it {position_to_topology_index.find(lazy_lookup)};
 
       if (index_it == std::end(position_to_topology_index)) {
         position_to_topology_index[lazy_lookup] = topology.size();
-        topology.push_back({ device_info->m_device_id });
-      }
-      else {
+        topology.push_back({device_info->m_device_id});
+      } else {
         topology.at(index_it->second).push_back(device_info->m_device_id);
       }
     }
@@ -93,8 +89,7 @@ namespace display_device {
     return topology;
   }
 
-  bool
-  WinDisplayDevice::isTopologyValid(const ActiveTopology &topology) const {
+  bool WinDisplayDevice::isTopologyValid(const ActiveTopology &topology) const {
     if (topology.empty()) {
       DD_LOG(warning) << "Topology input is empty!";
       return false;
@@ -121,8 +116,7 @@ namespace display_device {
     return true;
   }
 
-  bool
-  WinDisplayDevice::isTopologyTheSame(const ActiveTopology &lhs, const ActiveTopology &rhs) const {
+  bool WinDisplayDevice::isTopologyTheSame(const ActiveTopology &lhs, const ActiveTopology &rhs) const {
     const auto sort_topology = [](ActiveTopology &topology) {
       for (auto &group : topology) {
         std::sort(std::begin(group), std::end(group));
@@ -131,8 +125,8 @@ namespace display_device {
       std::sort(std::begin(topology), std::end(topology));
     };
 
-    auto lhs_copy { lhs };
-    auto rhs_copy { rhs };
+    auto lhs_copy {lhs};
+    auto rhs_copy {rhs};
 
     // On Windows order does not matter.
     sort_topology(lhs_copy);
@@ -141,14 +135,13 @@ namespace display_device {
     return lhs_copy == rhs_copy;
   }
 
-  bool
-  WinDisplayDevice::setTopology(const ActiveTopology &new_topology) {
+  bool WinDisplayDevice::setTopology(const ActiveTopology &new_topology) {
     if (!isTopologyValid(new_topology)) {
       DD_LOG(error) << "Topology input is invalid!";
       return false;
     }
 
-    const auto current_topology { getCurrentTopology() };
+    const auto current_topology {getCurrentTopology()};
     if (!isTopologyValid(current_topology)) {
       DD_LOG(error) << "Failed to get current topology!";
       return false;
@@ -159,19 +152,18 @@ namespace display_device {
       return true;
     }
 
-    const auto &original_data { m_w_api->queryDisplayConfig(QueryType::All) };
+    const auto &original_data {m_w_api->queryDisplayConfig(QueryType::All)};
     if (!original_data) {
       // Error already logged
       return false;
     }
 
     if (doSetTopology(*m_w_api, new_topology, *original_data)) {
-      const auto updated_topology { getCurrentTopology() };
+      const auto updated_topology {getCurrentTopology()};
       if (isTopologyValid(updated_topology)) {
         if (isTopologyTheSame(new_topology, updated_topology)) {
           return true;
-        }
-        else {
+        } else {
           // There is an interesting bug in Windows when you have nearly
           // identical devices, drivers or something. For example, imagine you have:
           //    AM   - Actual Monitor
@@ -198,13 +190,12 @@ namespace display_device {
           // regardless of what Windows report back to us.
           DD_LOG(error) << "Failed to change topology due to Windows bug or because the display is in deep sleep!";
         }
-      }
-      else {
+      } else {
         DD_LOG(error) << "Failed to get updated topology!";
       }
 
       // Revert back to the original topology
-      const UINT32 flags { SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE };
+      const UINT32 flags {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE};
       static_cast<void>(m_w_api->setDisplayConfig(original_data->m_paths, original_data->m_modes, flags));  // Return value does not matter as we are trying out best to undo
     }
 

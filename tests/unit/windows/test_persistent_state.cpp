@@ -16,8 +16,7 @@ namespace {
   // Test fixture(s) for this file
   class PersistentStateMocked: public BaseTest {
   public:
-    display_device::PersistentState &
-    getImpl(bool throw_on_load_error = false) {
+    display_device::PersistentState &getImpl(bool throw_on_load_error = false) {
       if (!m_impl) {
         m_impl = std::make_unique<display_device::PersistentState>(m_settings_persistence_api, throw_on_load_error);
       }
@@ -25,7 +24,7 @@ namespace {
       return *m_impl;
     }
 
-    std::shared_ptr<StrictMock<display_device::MockSettingsPersistence>> m_settings_persistence_api { std::make_shared<StrictMock<display_device::MockSettingsPersistence>>() };
+    std::shared_ptr<StrictMock<display_device::MockSettingsPersistence>> m_settings_persistence_api {std::make_shared<StrictMock<display_device::MockSettingsPersistence>>()};
 
   private:
     std::unique_ptr<display_device::PersistentState> m_impl;
@@ -42,7 +41,7 @@ TEST_F_S_MOCKED(NoopSettingsPersistence) {
     using PersistentState::PersistentState;
   };
 
-  const NakedPersistentState persistent_state { nullptr };
+  const NakedPersistentState persistent_state {nullptr};
   EXPECT_TRUE(std::dynamic_pointer_cast<display_device::NoopSettingsPersistence>(persistent_state.m_settings_persistence_api) != nullptr);
 }
 
@@ -51,7 +50,10 @@ TEST_F_S_MOCKED(FailedToLoadPersitence) {
     .Times(1)
     .WillOnce(Return(serializeState(ut_consts::SDCS_NULL)));
 
-  EXPECT_THAT([this]() { getImpl(true); }, ThrowsMessage<std::runtime_error>(HasSubstr("Failed to load persistent settings!")));
+  EXPECT_THAT([this]() {
+    getImpl(true);
+  },
+              ThrowsMessage<std::runtime_error>(HasSubstr("Failed to load persistent settings!")));
 }
 
 TEST_F_S_MOCKED(FailedToLoadPersitence, ThrowIsSuppressed) {
@@ -63,21 +65,23 @@ TEST_F_S_MOCKED(FailedToLoadPersitence, ThrowIsSuppressed) {
 }
 
 TEST_F_S_MOCKED(InvalidPersitenceData) {
-  const std::string data_string { "SOMETHING" };
-  const std::vector<std::uint8_t> data { std::begin(data_string), std::end(data_string) };
+  const std::string data_string {"SOMETHING"};
+  const std::vector<std::uint8_t> data {std::begin(data_string), std::end(data_string)};
 
   EXPECT_CALL(*m_settings_persistence_api, load())
     .Times(1)
     .WillOnce(Return(data));
 
-  EXPECT_THAT([this]() { getImpl(true); },
-    ThrowsMessage<std::runtime_error>(HasSubstr("Failed to parse persistent settings! Error:\n"
-                                                "[json.exception.parse_error.101] parse error at line 1, column 1: syntax error while parsing value - invalid literal; last read: 'S'")));
+  EXPECT_THAT([this]() {
+    getImpl(true);
+  },
+              ThrowsMessage<std::runtime_error>(HasSubstr("Failed to parse persistent settings! Error:\n"
+                                                          "[json.exception.parse_error.101] parse error at line 1, column 1: syntax error while parsing value - invalid literal; last read: 'S'")));
 }
 
 TEST_F_S_MOCKED(InvalidPersitenceData, ThrowIsSuppressed) {
-  const std::string data_string { "SOMETHING" };
-  const std::vector<std::uint8_t> data { std::begin(data_string), std::end(data_string) };
+  const std::string data_string {"SOMETHING"};
+  const std::vector<std::uint8_t> data {std::begin(data_string), std::end(data_string)};
 
   EXPECT_CALL(*m_settings_persistence_api, load())
     .Times(1)

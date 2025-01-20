@@ -29,15 +29,13 @@ namespace display_device {
      * @param state New state to be set.
      * @return True if the state was succesfully updated, false otherwise.
      */
-    [[nodiscard]] bool
-    persistState(const std::optional<SingleDisplayConfigState> &state);
+    [[nodiscard]] bool persistState(const std::optional<SingleDisplayConfigState> &state);
 
     /**
      * @brief Get cached state.
      * @return Cached state
      */
-    [[nodiscard]] const std::optional<SingleDisplayConfigState> &
-    getState() const;
+    [[nodiscard]] const std::optional<SingleDisplayConfigState> &getState() const;
 
   protected:
     std::shared_ptr<SettingsPersistenceInterface> m_settings_persistence_api;

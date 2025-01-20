@@ -15,7 +15,7 @@ namespace {
 
 TEST_F_S(Store) {
   EXPECT_TRUE(m_impl.store({}));
-  EXPECT_TRUE(m_impl.store({ 0x01, 0x02, 0x03 }));
+  EXPECT_TRUE(m_impl.store({0x01, 0x02, 0x03}));
 }
 
 TEST_F_S(Load) {

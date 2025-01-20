@@ -28,23 +28,20 @@ namespace display_device {
      * @warning The method does not create missing directories!
      * @see SettingsPersistenceInterface::store for more details.
      */
-    [[nodiscard]] bool
-    store(const std::vector<std::uint8_t> &data) override;
+    [[nodiscard]] bool store(const std::vector<std::uint8_t> &data) override;
 
     /**
      * Read the data from the file specified in constructor.
      * @note If file does not exist, an empty data list will be returned instead of null optional.
      * @see SettingsPersistenceInterface::load for more details.
      */
-    [[nodiscard]] std::optional<std::vector<std::uint8_t>>
-    load() const override;
+    [[nodiscard]] std::optional<std::vector<std::uint8_t>> load() const override;
 
     /**
      * Remove the file specified in constructor (if it exists).
      * @see SettingsPersistenceInterface::clear for more details.
      */
-    [[nodiscard]] bool
-    clear() override;
+    [[nodiscard]] bool clear() override;
 
   private:
     std::filesystem::path m_filepath;
