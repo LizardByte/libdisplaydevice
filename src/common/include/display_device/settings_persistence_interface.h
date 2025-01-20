@@ -30,8 +30,7 @@ namespace display_device {
      * const auto result = iface->store(data);
      * @examples_end
      */
-    [[nodiscard]] virtual bool
-    store(const std::vector<std::uint8_t> &data) = 0;
+    [[nodiscard]] virtual bool store(const std::vector<std::uint8_t> &data) = 0;
 
     /**
      * @brief Load saved settings data.
@@ -43,8 +42,7 @@ namespace display_device {
      * const auto opt_data = iface->load();
      * @examples_end
      */
-    [[nodiscard]] virtual std::optional<std::vector<std::uint8_t>>
-    load() const = 0;
+    [[nodiscard]] virtual std::optional<std::vector<std::uint8_t>> load() const = 0;
 
     /**
      * @brief Clear the persistent settings data.
@@ -54,7 +52,6 @@ namespace display_device {
      * const auto result = iface->clear();
      * @examples_end
      */
-    [[nodiscard]] virtual bool
-    clear() = 0;
+    [[nodiscard]] virtual bool clear() = 0;
   };
 }  // namespace display_device

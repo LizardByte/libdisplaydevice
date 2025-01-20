@@ -4,9 +4,8 @@
 // system includes
 #include <regex>
 
-void
-BaseTest::SetUp() {
-  if (const auto skip_reason { skipTest() }; !skip_reason.empty()) {
+void BaseTest::SetUp() {
+  if (const auto skip_reason {skipTest()}; !skip_reason.empty()) {
     m_test_skipped_at_setup = true;
     GTEST_SKIP() << skip_reason;
   }
@@ -21,8 +20,7 @@ BaseTest::SetUp() {
   display_device::Logger::get().setLogLevel(getDefaultLogLevel().value_or(display_device::Logger::LogLevel::verbose));
 }
 
-void
-BaseTest::TearDown() {
+void BaseTest::TearDown() {
   if (m_test_skipped_at_setup) {
     // We are not using the IsSkipped() state here. Here we are skipping
     // teardown, because we have skipped the setup entirely, but during normal
@@ -49,20 +47,18 @@ BaseTest::TearDown() {
   }
 }
 
-const std::vector<std::string> &
-BaseTest::getArgs() const {
-  static const auto args { ::testing::internal::GetArgvs() };
+const std::vector<std::string> &BaseTest::getArgs() const {
+  static const auto args {::testing::internal::GetArgvs()};
   return args;
 }
 
-std::optional<std::string>
-BaseTest::getArgWithMatchingPattern(const std::string &pattern, bool remove_match) const {
-  const auto &args { getArgs() };
+std::optional<std::string> BaseTest::getArgWithMatchingPattern(const std::string &pattern, bool remove_match) const {
+  const auto &args {getArgs()};
   if (!args.empty()) {
-    const std::regex re_pattern { pattern };
+    const std::regex re_pattern {pattern};
 
     // We are skipping the first arg which is always binary name/path.
-    for (auto it { std::next(std::begin(args)) }; it != std::end(args); ++it) {
+    for (auto it {std::next(std::begin(args))}; it != std::end(args); ++it) {
       if (std::smatch match; std::regex_search(*it, match, re_pattern)) {
         return remove_match ? std::regex_replace(*it, re_pattern, "") : *it;
       }
@@ -72,22 +68,19 @@ BaseTest::getArgWithMatchingPattern(const std::string &pattern, bool remove_matc
   return std::nullopt;
 }
 
-bool
-BaseTest::isOutputSuppressed() const {
+bool BaseTest::isOutputSuppressed() const {
   return true;
 }
 
-bool
-BaseTest::isSystemTest() const {
+bool BaseTest::isSystemTest() const {
   return false;
 }
 
-std::string
-BaseTest::skipTest() const {
+std::string BaseTest::skipTest() const {
   if (isSystemTest()) {
     const static bool is_system_test_skippable {
       []() {
-        const auto value { getEnv("SKIP_SYSTEM_TESTS") };
+        const auto value {getEnv("SKIP_SYSTEM_TESTS")};
         return value == "1";
       }()
     };
@@ -99,11 +92,10 @@ BaseTest::skipTest() const {
   return {};
 }
 
-std::optional<display_device::Logger::LogLevel>
-BaseTest::getDefaultLogLevel() const {
+std::optional<display_device::Logger::LogLevel> BaseTest::getDefaultLogLevel() const {
   const static auto default_log_level {
     []() -> std::optional<display_device::Logger::LogLevel> {
-      const auto value { getEnv("LOG_LEVEL") };
+      const auto value {getEnv("LOG_LEVEL")};
       if (value == "verbose") {
         return display_device::Logger::LogLevel::verbose;
       }

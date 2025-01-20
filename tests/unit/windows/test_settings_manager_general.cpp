@@ -20,8 +20,7 @@ namespace {
   // Test fixture(s) for this file
   class SettingsManagerGeneralMocked: public BaseTest {
   public:
-    display_device::SettingsManager &
-    getImpl() {
+    display_device::SettingsManager &getImpl() {
       if (!m_impl) {
         m_impl = std::make_unique<display_device::SettingsManager>(m_dd_api, m_audio_context_api, std::make_unique<display_device::PersistentState>(m_settings_persistence_api), display_device::WinWorkarounds {});
       }
@@ -29,9 +28,9 @@ namespace {
       return *m_impl;
     }
 
-    std::shared_ptr<StrictMock<display_device::MockWinDisplayDevice>> m_dd_api { std::make_shared<StrictMock<display_device::MockWinDisplayDevice>>() };
-    std::shared_ptr<StrictMock<display_device::MockSettingsPersistence>> m_settings_persistence_api { std::make_shared<StrictMock<display_device::MockSettingsPersistence>>() };
-    std::shared_ptr<StrictMock<display_device::MockAudioContext>> m_audio_context_api { std::make_shared<StrictMock<display_device::MockAudioContext>>() };
+    std::shared_ptr<StrictMock<display_device::MockWinDisplayDevice>> m_dd_api {std::make_shared<StrictMock<display_device::MockWinDisplayDevice>>()};
+    std::shared_ptr<StrictMock<display_device::MockSettingsPersistence>> m_settings_persistence_api {std::make_shared<StrictMock<display_device::MockSettingsPersistence>>()};
+    std::shared_ptr<StrictMock<display_device::MockAudioContext>> m_audio_context_api {std::make_shared<StrictMock<display_device::MockAudioContext>>()};
 
   private:
     std::unique_ptr<display_device::SettingsManager> m_impl;
@@ -42,8 +41,10 @@ namespace {
 }  // namespace
 
 TEST_F_S_MOCKED(NullptrDisplayDeviceApiProvided) {
-  EXPECT_THAT([]() { const display_device::SettingsManager settings_manager(nullptr, nullptr, nullptr, {}); },
-    ThrowsMessage<std::logic_error>(HasSubstr("Nullptr provided for WinDisplayDeviceInterface in SettingsManager!")));
+  EXPECT_THAT([]() {
+    const display_device::SettingsManager settings_manager(nullptr, nullptr, nullptr, {});
+  },
+              ThrowsMessage<std::logic_error>(HasSubstr("Nullptr provided for WinDisplayDeviceInterface in SettingsManager!")));
 }
 
 TEST_F_S_MOCKED(NoopAudioContext) {
@@ -53,21 +54,23 @@ TEST_F_S_MOCKED(NoopAudioContext) {
     using SettingsManager::SettingsManager;
   };
 
-  const NakedSettingsManager settings_manager { m_dd_api, nullptr, std::make_unique<display_device::PersistentState>(nullptr), {} };
+  const NakedSettingsManager settings_manager {m_dd_api, nullptr, std::make_unique<display_device::PersistentState>(nullptr), {}};
   EXPECT_TRUE(std::dynamic_pointer_cast<display_device::NoopAudioContext>(settings_manager.m_audio_context_api) != nullptr);
 }
 
 TEST_F_S_MOCKED(NullptrPersistentStateProvided) {
-  EXPECT_THAT([this]() { const display_device::SettingsManager settings_manager(m_dd_api, nullptr, nullptr, {}); },
-    ThrowsMessage<std::logic_error>(HasSubstr("Nullptr provided for PersistentState in SettingsManager!")));
+  EXPECT_THAT([this]() {
+    const display_device::SettingsManager settings_manager(m_dd_api, nullptr, nullptr, {});
+  },
+              ThrowsMessage<std::logic_error>(HasSubstr("Nullptr provided for PersistentState in SettingsManager!")));
 }
 
 TEST_F_S_MOCKED(EnumAvailableDevices) {
   const display_device::EnumeratedDeviceList test_list {
-    { "DeviceId1",
-      "",
-      "FriendlyName1",
-      std::nullopt }
+    {"DeviceId1",
+     "",
+     "FriendlyName1",
+     std::nullopt}
   };
 
   EXPECT_CALL(*m_settings_persistence_api, load())

@@ -21,19 +21,17 @@ namespace {
   // Test fixture(s) for this file
   class WinDisplayDeviceModes: public BaseTest {
   public:
-    bool
-    isSystemTest() const override {
+    bool isSystemTest() const override {
       return true;
     }
 
-    std::shared_ptr<display_device::WinApiLayer> m_layer { std::make_shared<display_device::WinApiLayer>() };
-    display_device::WinDisplayDevice m_win_dd { m_layer };
+    std::shared_ptr<display_device::WinApiLayer> m_layer {std::make_shared<display_device::WinApiLayer>()};
+    display_device::WinDisplayDevice m_win_dd {m_layer};
   };
 
   class WinDisplayDeviceModesMocked: public BaseTest {
   public:
-    void
-    setupExpectedGetActivePathCall(int id_number, InSequence & /* To ensure that sequence is created outside this scope */) {
+    void setupExpectedGetActivePathCall(int id_number, InSequence & /* To ensure that sequence is created outside this scope */) {
       for (int i = 1; i <= id_number; ++i) {
         EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
           .Times(1)
@@ -50,8 +48,7 @@ namespace {
       }
     }
 
-    void
-    setupExpectedGetCurrentDisplayModesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::PathAndModeData> &pam = ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES) {
+    void setupExpectedGetCurrentDisplayModesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::PathAndModeData> &pam = ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES) {
       EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
         .Times(1)
         .WillOnce(Return(pam))
@@ -62,8 +59,7 @@ namespace {
       }
     }
 
-    void
-    setupExpectedGetAllDeviceIdsCall(InSequence & /* To ensure that sequence is created outside this scope */, const std::set<int> &entries = { 1, 2, 3, 4 }) {
+    void setupExpectedGetAllDeviceIdsCall(InSequence & /* To ensure that sequence is created outside this scope */, const std::set<int> &entries = {1, 2, 3, 4}) {
       EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
         .Times(1)
         .WillOnce(Return(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES))
@@ -102,8 +98,8 @@ namespace {
       }
     }
 
-    std::shared_ptr<StrictMock<display_device::MockWinApiLayer>> m_layer { std::make_shared<StrictMock<display_device::MockWinApiLayer>>() };
-    display_device::WinDisplayDevice m_win_dd { m_layer };
+    std::shared_ptr<StrictMock<display_device::MockWinApiLayer>> m_layer {std::make_shared<StrictMock<display_device::MockWinApiLayer>>()};
+    display_device::WinDisplayDevice m_win_dd {m_layer};
   };
 
   // Specialized TEST macro(s) for this test file
@@ -111,13 +107,12 @@ namespace {
 #define TEST_F_S_MOCKED(...) DD_MAKE_TEST(TEST_F, WinDisplayDeviceModesMocked, __VA_ARGS__)
 
   // Additional convenience global const(s)
-  const UINT32 RELAXED_FLAGS { SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE | SDC_ALLOW_CHANGES };
-  const UINT32 STRICT_FLAGS { SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE };
-  const UINT32 UNDO_FLAGS { SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE };
+  const UINT32 RELAXED_FLAGS {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE | SDC_ALLOW_CHANGES};
+  const UINT32 STRICT_FLAGS {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE};
+  const UINT32 UNDO_FLAGS {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE};
 
   // Helper functions
-  std::optional<display_device::PathAndModeData>
-  applyExpectedModesOntoInput(std::optional<display_device::PathAndModeData> input, const display_device::DeviceDisplayModeMap &modes, const std::set<std::string> &excluded_ids = {}) {
+  std::optional<display_device::PathAndModeData> applyExpectedModesOntoInput(std::optional<display_device::PathAndModeData> input, const display_device::DeviceDisplayModeMap &modes, const std::set<std::string> &excluded_ids = {}) {
     if (!input) {
       return std::nullopt;
     }
@@ -127,8 +122,8 @@ namespace {
         continue;
       }
 
-      auto path_index { std::stoi(device_id.substr(device_id.size() - 1, 1)) - 1 };
-      input->m_paths.at(path_index).targetInfo.refreshRate = { mode.m_refresh_rate.m_numerator, mode.m_refresh_rate.m_denominator };
+      auto path_index {std::stoi(device_id.substr(device_id.size() - 1, 1)) - 1};
+      input->m_paths.at(path_index).targetInfo.refreshRate = {mode.m_refresh_rate.m_numerator, mode.m_refresh_rate.m_denominator};
       input->m_modes.at(input->m_paths.at(path_index).sourceInfo.sourceModeInfoIdx).sourceMode.width = mode.m_resolution.m_width;
       input->m_modes.at(input->m_paths.at(path_index).sourceInfo.sourceModeInfoIdx).sourceMode.height = mode.m_resolution.m_height;
 
@@ -139,104 +134,103 @@ namespace {
     return input;
   }
 
-  display_device::DisplayMode
-  getTestMode(const int number) {
+  display_device::DisplayMode getTestMode(const int number) {
     if (number == 1) {
-      return { 1024, 768, { 60, 1 } };
+      return {1024, 768, {60, 1}};
     }
 
-    return { 1920, 1080, { 60, 1 } };
+    return {1920, 1080, {60, 1}};
   }
 }  // namespace
 
 TEST_F_S(GetCurrentDisplayModes) {
-  const auto flattened_topology { display_device::win_utils::flattenTopology(m_win_dd.getCurrentTopology()) };
-  const auto current_modes { m_win_dd.getCurrentDisplayModes(flattened_topology) };
+  const auto flattened_topology {display_device::win_utils::flattenTopology(m_win_dd.getCurrentTopology())};
+  const auto current_modes {m_win_dd.getCurrentDisplayModes(flattened_topology)};
 
   // Can't really compare anything else without knowing system specs
-  const auto mode_keys_view { std::ranges::views::keys(current_modes) };
-  const std::set<std::string> mode_keys { std::begin(mode_keys_view), std::end(mode_keys_view) };
+  const auto mode_keys_view {std::ranges::views::keys(current_modes)};
+  const std::set<std::string> mode_keys {std::begin(mode_keys_view), std::end(mode_keys_view)};
   EXPECT_EQ(flattened_topology, mode_keys);
 }
 
 TEST_F_S(SetCurrentDisplayModes, ExtendedTopology) {
-  const auto available_devices { getAvailableDevices(*m_layer) };
+  const auto available_devices {getAvailableDevices(*m_layer)};
   ASSERT_TRUE(available_devices);
 
   if (available_devices->size() < 2) {
     GTEST_SKIP_("Not enough devices are available in the system.");
   }
 
-  const auto topology_guard { makeTopologyGuard(m_win_dd) };
-  ASSERT_TRUE(m_win_dd.setTopology({ { available_devices->at(0) }, { available_devices->at(1) } }));
+  const auto topology_guard {makeTopologyGuard(m_win_dd)};
+  ASSERT_TRUE(m_win_dd.setTopology({{available_devices->at(0)}, {available_devices->at(1)}}));
 
   const display_device::DeviceDisplayModeMap mixed_modes_1 {
-    { available_devices->at(0), getTestMode(0) },
-    { available_devices->at(1), getTestMode(1) }
+    {available_devices->at(0), getTestMode(0)},
+    {available_devices->at(1), getTestMode(1)}
   };
   const display_device::DeviceDisplayModeMap mixed_modes_2 {
-    { available_devices->at(0), getTestMode(1) },
-    { available_devices->at(1), getTestMode(0) }
+    {available_devices->at(0), getTestMode(1)},
+    {available_devices->at(1), getTestMode(0)}
   };
 
-  const auto mode_guard { makeModeGuard(m_win_dd) };
+  const auto mode_guard {makeModeGuard(m_win_dd)};
   ASSERT_TRUE(m_win_dd.setDisplayModes(mixed_modes_1));
   ASSERT_TRUE(m_win_dd.setDisplayModes(mixed_modes_2));
 }
 
 TEST_F_S(SetCurrentDisplayModes, DuplicatedTopology) {
-  const auto available_devices { getAvailableDevices(*m_layer) };
+  const auto available_devices {getAvailableDevices(*m_layer)};
   ASSERT_TRUE(available_devices);
 
   if (available_devices->size() < 2) {
     GTEST_SKIP_("Not enough devices are available in the system.");
   }
 
-  const auto topology_guard { makeTopologyGuard(m_win_dd) };
-  ASSERT_TRUE(m_win_dd.setTopology({ { available_devices->at(0), available_devices->at(1) } }));
+  const auto topology_guard {makeTopologyGuard(m_win_dd)};
+  ASSERT_TRUE(m_win_dd.setTopology({{available_devices->at(0), available_devices->at(1)}}));
 
   const display_device::DeviceDisplayModeMap same_modes_1 {
-    { available_devices->at(0), getTestMode(1) },
-    { available_devices->at(1), getTestMode(1) }
+    {available_devices->at(0), getTestMode(1)},
+    {available_devices->at(1), getTestMode(1)}
   };
   const display_device::DeviceDisplayModeMap same_modes_2 {
-    { available_devices->at(0), getTestMode(0) },
-    { available_devices->at(1), getTestMode(0) }
+    {available_devices->at(0), getTestMode(0)},
+    {available_devices->at(1), getTestMode(0)}
   };
   const display_device::DeviceDisplayModeMap mixed_modes {
-    { available_devices->at(0), getTestMode(1) },
-    { available_devices->at(1), getTestMode(0) }
+    {available_devices->at(0), getTestMode(1)},
+    {available_devices->at(1), getTestMode(0)}
   };
 
-  const auto mode_guard { makeModeGuard(m_win_dd) };
+  const auto mode_guard {makeModeGuard(m_win_dd)};
   ASSERT_TRUE(m_win_dd.setDisplayModes(same_modes_1));
   ASSERT_TRUE(m_win_dd.setDisplayModes(same_modes_2));
   ASSERT_FALSE(m_win_dd.setDisplayModes(mixed_modes));
 }
 
 TEST_F_S(SetCurrentDisplayModes, MixedTopology) {
-  const auto available_devices { getAvailableDevices(*m_layer) };
+  const auto available_devices {getAvailableDevices(*m_layer)};
   ASSERT_TRUE(available_devices);
 
   if (available_devices->size() < 3) {
     GTEST_SKIP_("Not enough devices are available in the system.");
   }
 
-  const auto topology_guard { makeTopologyGuard(m_win_dd) };
-  ASSERT_TRUE(m_win_dd.setTopology({ { available_devices->at(0) }, { available_devices->at(1), available_devices->at(2) } }));
+  const auto topology_guard {makeTopologyGuard(m_win_dd)};
+  ASSERT_TRUE(m_win_dd.setTopology({{available_devices->at(0)}, {available_devices->at(1), available_devices->at(2)}}));
 
   const display_device::DeviceDisplayModeMap mixed_modes_1 {
-    { available_devices->at(0), getTestMode(0) },
-    { available_devices->at(1), getTestMode(1) },
-    { available_devices->at(2), getTestMode(1) }
+    {available_devices->at(0), getTestMode(0)},
+    {available_devices->at(1), getTestMode(1)},
+    {available_devices->at(2), getTestMode(1)}
   };
   const display_device::DeviceDisplayModeMap mixed_modes_2 {
-    { available_devices->at(0), getTestMode(1) },
-    { available_devices->at(1), getTestMode(0) },
-    { available_devices->at(2), getTestMode(0) }
+    {available_devices->at(0), getTestMode(1)},
+    {available_devices->at(1), getTestMode(0)},
+    {available_devices->at(2), getTestMode(0)}
   };
 
-  const auto mode_guard { makeModeGuard(m_win_dd) };
+  const auto mode_guard {makeModeGuard(m_win_dd)};
   ASSERT_TRUE(m_win_dd.setDisplayModes(mixed_modes_1));
   ASSERT_TRUE(m_win_dd.setDisplayModes(mixed_modes_2));
 }
@@ -245,18 +239,18 @@ TEST_F_S_MOCKED(GetCurrentDisplayModes) {
   InSequence sequence;
   setupExpectedGetCurrentDisplayModesCall(sequence);
 
-  const auto current_modes { m_win_dd.getCurrentDisplayModes({ "DeviceId1", "DeviceId2", "DeviceId3", "DeviceId4" }) };
+  const auto current_modes {m_win_dd.getCurrentDisplayModes({"DeviceId1", "DeviceId2", "DeviceId3", "DeviceId4"})};
   const display_device::DeviceDisplayModeMap expected_modes {
-    { "DeviceId1", { 1920, 1080, { 120, 1 } } },
-    { "DeviceId2", { 1920, 2160, { 119995, 1000 } } },
-    { "DeviceId3", { 1920, 2160, { 60, 1 } } },
-    { "DeviceId4", { 3840, 2160, { 90, 1 } } },
+    {"DeviceId1", {1920, 1080, {120, 1}}},
+    {"DeviceId2", {1920, 2160, {119995, 1000}}},
+    {"DeviceId3", {1920, 2160, {60, 1}}},
+    {"DeviceId4", {3840, 2160, {90, 1}}},
   };
   EXPECT_EQ(current_modes, expected_modes);
 }
 
 TEST_F_S_MOCKED(GetCurrentDisplayModes, EmptyIdList) {
-  const auto current_modes { m_win_dd.getCurrentDisplayModes({}) };
+  const auto current_modes {m_win_dd.getCurrentDisplayModes({})};
   EXPECT_TRUE(current_modes.empty());
 }
 
@@ -265,7 +259,7 @@ TEST_F_S_MOCKED(GetCurrentDisplayModes, NoDisplayData) {
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_NULL));
 
-  const auto current_modes { m_win_dd.getCurrentDisplayModes({ "DeviceId1" }) };
+  const auto current_modes {m_win_dd.getCurrentDisplayModes({"DeviceId1"})};
   EXPECT_TRUE(current_modes.empty());
 }
 
@@ -274,7 +268,7 @@ TEST_F_S_MOCKED(GetCurrentDisplayModes, EmptyDeviceId) {
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES));
 
-  const auto current_modes { m_win_dd.getCurrentDisplayModes({ "", "DeviceId2" }) };
+  const auto current_modes {m_win_dd.getCurrentDisplayModes({"", "DeviceId2"})};
   EXPECT_TRUE(current_modes.empty());
 }
 
@@ -283,12 +277,12 @@ TEST_F_S_MOCKED(GetCurrentDisplayModes, FailedToGetActivePath) {
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_EMPTY));
 
-  const auto current_modes { m_win_dd.getCurrentDisplayModes({ "DeviceId1" }) };
+  const auto current_modes {m_win_dd.getCurrentDisplayModes({"DeviceId1"})};
   EXPECT_TRUE(current_modes.empty());
 }
 
 TEST_F_S_MOCKED(GetCurrentDisplayModes, FailedToGetSourceMode) {
-  auto pam_no_modes { ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES };
+  auto pam_no_modes {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   pam_no_modes->m_modes.clear();
 
   EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
@@ -304,20 +298,20 @@ TEST_F_S_MOCKED(GetCurrentDisplayModes, FailedToGetSourceMode) {
     .Times(1)
     .WillOnce(Return(pam_no_modes));
 
-  const auto current_modes { m_win_dd.getCurrentDisplayModes({ "DeviceId1" }) };
+  const auto current_modes {m_win_dd.getCurrentDisplayModes({"DeviceId1"})};
   EXPECT_TRUE(current_modes.empty());
 }
 
 TEST_F_S_MOCKED(SetDisplayModes, Relaxed) {
   const display_device::DeviceDisplayModeMap new_modes {
-    { "DeviceId1", { 1920, 1080, { 120, 1 } } },
-    { "DeviceId2", { 1920, 1000, { 144, 1 } } },
-    { "DeviceId3", { 1000, 1000, { 90, 1 } } },
-    { "DeviceId4", { 1000, 2160, { 90, 10 } } },
+    {"DeviceId1", {1920, 1080, {120, 1}}},
+    {"DeviceId2", {1920, 1000, {144, 1}}},
+    {"DeviceId3", {1000, 1000, {90, 1}}},
+    {"DeviceId4", {1000, 2160, {90, 10}}},
   };
 
-  const auto pam_initial { ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES };
-  const auto pam_submitted { applyExpectedModesOntoInput(pam_initial, new_modes, { "DeviceId1" }) };
+  const auto pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId1"})};
 
   InSequence sequence;
   setupExpectedGetAllDeviceIdsCall(sequence);
@@ -345,14 +339,14 @@ TEST_F_S_MOCKED(SetDisplayModes, Relaxed) {
 
 TEST_F_S_MOCKED(SetDisplayModes, Strict) {
   const display_device::DeviceDisplayModeMap new_modes {
-    { "DeviceId1", { 1920, 1080, { 120, 10 } } },
-    { "DeviceId2", { 1000, 2160, { 119995, 100 } } },
-    { "DeviceId3", { 1000, 1000, { 90, 1 } } },
-    { "DeviceId4", { 3840, 2160, { 90, 1 } } },
+    {"DeviceId1", {1920, 1080, {120, 10}}},
+    {"DeviceId2", {1000, 2160, {119995, 100}}},
+    {"DeviceId3", {1000, 1000, {90, 1}}},
+    {"DeviceId4", {3840, 2160, {90, 1}}},
   };
 
-  const auto pam_initial { ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES };
-  const auto pam_submitted { applyExpectedModesOntoInput(pam_initial, new_modes, { "DeviceId4" }) };
+  const auto pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId4"})};
 
   InSequence sequence;
   setupExpectedGetAllDeviceIdsCall(sequence);
@@ -402,10 +396,10 @@ TEST_F_S_MOCKED(SetDisplayModes, Strict) {
 
 TEST_F_S_MOCKED(SetDisplayModes, NoChanges) {
   const display_device::DeviceDisplayModeMap new_modes {
-    { "DeviceId1", { 1920, 1080, { 120, 1 } } },
-    { "DeviceId2", { 1920, 2160, { 119995, 1000 } } },
-    { "DeviceId3", { 1920, 2160, { 60, 1 } } },
-    { "DeviceId4", { 3840, 2160, { 90, 1 } } },
+    {"DeviceId1", {1920, 1080, {120, 1}}},
+    {"DeviceId2", {1920, 2160, {119995, 1000}}},
+    {"DeviceId3", {1920, 2160, {60, 1}}},
+    {"DeviceId4", {3840, 2160, {90, 1}}},
   };
 
   InSequence sequence;
@@ -437,30 +431,30 @@ TEST_F_S_MOCKED(SetDisplayModes, FailedToGetDuplicateDevices) {
     .WillOnce(Return(ut_consts::PAM_NULL))
     .RetiresOnSaturation();
 
-  EXPECT_FALSE(m_win_dd.setDisplayModes({ { "DeviceId1", {} } }));
+  EXPECT_FALSE(m_win_dd.setDisplayModes({{"DeviceId1", {}}}));
 }
 
 TEST_F_S_MOCKED(SetDisplayModes, MissingDuplicateDisplayModes) {
   InSequence sequence;
-  setupExpectedGetAllDeviceIdsCall(sequence, { 2 });
+  setupExpectedGetAllDeviceIdsCall(sequence, {2});
 
-  EXPECT_FALSE(m_win_dd.setDisplayModes({ { "DeviceId2", {} } }));
+  EXPECT_FALSE(m_win_dd.setDisplayModes({{"DeviceId2", {}}}));
 }
 
 TEST_F_S_MOCKED(SetDisplayModes, FailedToGetOriginalData) {
   InSequence sequence;
-  setupExpectedGetAllDeviceIdsCall(sequence, { 1 });
+  setupExpectedGetAllDeviceIdsCall(sequence, {1});
   EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_NULL))
     .RetiresOnSaturation();
 
-  EXPECT_FALSE(m_win_dd.setDisplayModes({ { "DeviceId1", {} } }));
+  EXPECT_FALSE(m_win_dd.setDisplayModes({{"DeviceId1", {}}}));
 }
 
 TEST_F_S_MOCKED(SetDisplayModes, DoSetModes, FailedToGetDisplayConfig) {
   InSequence sequence;
-  setupExpectedGetAllDeviceIdsCall(sequence, { 1 });
+  setupExpectedGetAllDeviceIdsCall(sequence, {1});
   EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES))
@@ -470,12 +464,12 @@ TEST_F_S_MOCKED(SetDisplayModes, DoSetModes, FailedToGetDisplayConfig) {
     .WillOnce(Return(ut_consts::PAM_NULL))
     .RetiresOnSaturation();
 
-  EXPECT_FALSE(m_win_dd.setDisplayModes({ { "DeviceId1", {} } }));
+  EXPECT_FALSE(m_win_dd.setDisplayModes({{"DeviceId1", {}}}));
 }
 
 TEST_F_S_MOCKED(SetDisplayModes, DoSetModes, EmptyListFromGetDisplayConfig) {
   InSequence sequence;
-  setupExpectedGetAllDeviceIdsCall(sequence, { 1 });
+  setupExpectedGetAllDeviceIdsCall(sequence, {1});
   EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES))
@@ -485,12 +479,12 @@ TEST_F_S_MOCKED(SetDisplayModes, DoSetModes, EmptyListFromGetDisplayConfig) {
     .WillOnce(Return(ut_consts::PAM_EMPTY))
     .RetiresOnSaturation();
 
-  EXPECT_FALSE(m_win_dd.setDisplayModes({ { "DeviceId1", {} } }));
+  EXPECT_FALSE(m_win_dd.setDisplayModes({{"DeviceId1", {}}}));
 }
 
 TEST_F_S_MOCKED(SetDisplayModes, DoSetModes, FailedToGetActivePath) {
   InSequence sequence;
-  setupExpectedGetAllDeviceIdsCall(sequence, { 1 });
+  setupExpectedGetAllDeviceIdsCall(sequence, {1});
   EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES))
@@ -504,15 +498,15 @@ TEST_F_S_MOCKED(SetDisplayModes, DoSetModes, FailedToGetActivePath) {
     .WillOnce(Return(""))
     .RetiresOnSaturation();
 
-  EXPECT_FALSE(m_win_dd.setDisplayModes({ { "DeviceId1", {} } }));
+  EXPECT_FALSE(m_win_dd.setDisplayModes({{"DeviceId1", {}}}));
 }
 
 TEST_F_S_MOCKED(SetDisplayModes, DoSetModes, FailedToGetSourceMode) {
-  auto pam_no_modes { ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES };
+  auto pam_no_modes {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   pam_no_modes->m_modes.clear();
 
   InSequence sequence;
-  setupExpectedGetAllDeviceIdsCall(sequence, { 1 });
+  setupExpectedGetAllDeviceIdsCall(sequence, {1});
   EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES))
@@ -523,19 +517,19 @@ TEST_F_S_MOCKED(SetDisplayModes, DoSetModes, FailedToGetSourceMode) {
     .RetiresOnSaturation();
   setupExpectedGetActivePathCall(1, sequence);
 
-  EXPECT_FALSE(m_win_dd.setDisplayModes({ { "DeviceId1", {} } }));
+  EXPECT_FALSE(m_win_dd.setDisplayModes({{"DeviceId1", {}}}));
 }
 
 TEST_F_S_MOCKED(SetDisplayModes, Relaxed, FailedToSetDisplayConfig) {
   const display_device::DeviceDisplayModeMap new_modes {
-    { "DeviceId1", { 1920, 1080, { 120, 1 } } },
-    { "DeviceId2", { 1920, 1000, { 144, 1 } } },
-    { "DeviceId3", { 1000, 1000, { 90, 1 } } },
-    { "DeviceId4", { 1000, 2160, { 90, 10 } } },
+    {"DeviceId1", {1920, 1080, {120, 1}}},
+    {"DeviceId2", {1920, 1000, {144, 1}}},
+    {"DeviceId3", {1000, 1000, {90, 1}}},
+    {"DeviceId4", {1000, 2160, {90, 10}}},
   };
 
-  const auto pam_initial { ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES };
-  const auto pam_submitted { applyExpectedModesOntoInput(pam_initial, new_modes, { "DeviceId1" }) };
+  const auto pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId1"})};
 
   InSequence sequence;
   setupExpectedGetAllDeviceIdsCall(sequence);
@@ -566,14 +560,14 @@ TEST_F_S_MOCKED(SetDisplayModes, Relaxed, FailedToSetDisplayConfig) {
 
 TEST_F_S_MOCKED(SetDisplayModes, Relaxed, FailedToGetCurrentDisplayModes) {
   const display_device::DeviceDisplayModeMap new_modes {
-    { "DeviceId1", { 1920, 1080, { 120, 1 } } },
-    { "DeviceId2", { 1920, 1000, { 144, 1 } } },
-    { "DeviceId3", { 1000, 1000, { 90, 1 } } },
-    { "DeviceId4", { 1000, 2160, { 90, 10 } } },
+    {"DeviceId1", {1920, 1080, {120, 1}}},
+    {"DeviceId2", {1920, 1000, {144, 1}}},
+    {"DeviceId3", {1000, 1000, {90, 1}}},
+    {"DeviceId4", {1000, 2160, {90, 10}}},
   };
 
-  const auto pam_initial { ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES };
-  const auto pam_submitted { applyExpectedModesOntoInput(pam_initial, new_modes, { "DeviceId1" }) };
+  const auto pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId1"})};
 
   InSequence sequence;
   setupExpectedGetAllDeviceIdsCall(sequence);
@@ -608,14 +602,14 @@ TEST_F_S_MOCKED(SetDisplayModes, Relaxed, FailedToGetCurrentDisplayModes) {
 
 TEST_F_S_MOCKED(SetDisplayModes, Strict, FailedToSetDisplayConfig) {
   const display_device::DeviceDisplayModeMap new_modes {
-    { "DeviceId1", { 1920, 1080, { 120, 10 } } },
-    { "DeviceId2", { 1000, 2160, { 119995, 100 } } },
-    { "DeviceId3", { 1000, 1000, { 90, 1 } } },
-    { "DeviceId4", { 3840, 2160, { 90, 1 } } },
+    {"DeviceId1", {1920, 1080, {120, 10}}},
+    {"DeviceId2", {1000, 2160, {119995, 100}}},
+    {"DeviceId3", {1000, 1000, {90, 1}}},
+    {"DeviceId4", {3840, 2160, {90, 1}}},
   };
 
-  const auto pam_initial { ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES };
-  const auto pam_submitted { applyExpectedModesOntoInput(pam_initial, new_modes, { "DeviceId4" }) };
+  const auto pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId4"})};
 
   InSequence sequence;
   setupExpectedGetAllDeviceIdsCall(sequence);
@@ -672,14 +666,14 @@ TEST_F_S_MOCKED(SetDisplayModes, Strict, FailedToSetDisplayConfig) {
 
 TEST_F_S_MOCKED(SetDisplayModes, Strict, FailedToGetCurrentDisplayModes) {
   const display_device::DeviceDisplayModeMap new_modes {
-    { "DeviceId1", { 1920, 1080, { 120, 10 } } },
-    { "DeviceId2", { 1000, 2160, { 119995, 100 } } },
-    { "DeviceId3", { 1000, 1000, { 90, 1 } } },
-    { "DeviceId4", { 3840, 2160, { 90, 1 } } },
+    {"DeviceId1", {1920, 1080, {120, 10}}},
+    {"DeviceId2", {1000, 2160, {119995, 100}}},
+    {"DeviceId3", {1000, 1000, {90, 1}}},
+    {"DeviceId4", {3840, 2160, {90, 1}}},
   };
 
-  const auto pam_initial { ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES };
-  const auto pam_submitted { applyExpectedModesOntoInput(pam_initial, new_modes, { "DeviceId4" }) };
+  const auto pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId4"})};
 
   InSequence sequence;
   setupExpectedGetAllDeviceIdsCall(sequence);
@@ -736,14 +730,14 @@ TEST_F_S_MOCKED(SetDisplayModes, Strict, FailedToGetCurrentDisplayModes) {
 
 TEST_F_S_MOCKED(SetDisplayModes, Strict, ModesDidNotChange) {
   const display_device::DeviceDisplayModeMap new_modes {
-    { "DeviceId1", { 1920, 1080, { 120, 10 } } },
-    { "DeviceId2", { 1000, 2160, { 119995, 100 } } },
-    { "DeviceId3", { 1000, 1000, { 90, 1 } } },
-    { "DeviceId4", { 3840, 2160, { 90, 1 } } },
+    {"DeviceId1", {1920, 1080, {120, 10}}},
+    {"DeviceId2", {1000, 2160, {119995, 100}}},
+    {"DeviceId3", {1000, 1000, {90, 1}}},
+    {"DeviceId4", {3840, 2160, {90, 1}}},
   };
 
-  const auto pam_initial { ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES };
-  const auto pam_submitted { applyExpectedModesOntoInput(pam_initial, new_modes, { "DeviceId4" }) };
+  const auto pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId4"})};
 
   InSequence sequence;
   setupExpectedGetAllDeviceIdsCall(sequence);

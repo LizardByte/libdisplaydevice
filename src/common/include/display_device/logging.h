@@ -46,8 +46,7 @@ namespace display_device {
      * Logger& logger { Logger::get() };
      * @examples_end
      */
-    static Logger &
-    get();
+    static Logger &get();
 
     /**
      * @brief Set the log level for the logger.
@@ -56,8 +55,7 @@ namespace display_device {
      * Logger::get().setLogLevel(Logger::LogLevel::Info);
      * @examples_end
      */
-    void
-    setLogLevel(LogLevel log_level);
+    void setLogLevel(LogLevel log_level);
 
     /**
      * @brief Check if log level is currently enabled.
@@ -67,8 +65,7 @@ namespace display_device {
      * const bool is_enabled { Logger::get().isLogLevelEnabled(Logger::LogLevel::Info) };
      * @examples_end
      */
-    [[nodiscard]] bool
-    isLogLevelEnabled(LogLevel log_level) const;
+    [[nodiscard]] bool isLogLevelEnabled(LogLevel log_level) const;
 
     /**
      * @brief Set custom callback for writing the logs.
@@ -79,8 +76,7 @@ namespace display_device {
      * });
      * @examples_end
      */
-    void
-    setCustomCallback(Callback callback);
+    void setCustomCallback(Callback callback);
 
     /**
      * @brief Write the string to the output (via callback) if the log level is enabled.
@@ -90,8 +86,7 @@ namespace display_device {
      * Logger::get().write(Logger::LogLevel::Info, "Hello World!");
      * @examples_end
      */
-    void
-    write(LogLevel log_level, std::string value);
+    void write(LogLevel log_level, std::string value);
 
     /**
      * @brief A deleted copy constructor for singleton pattern.
@@ -103,8 +98,7 @@ namespace display_device {
      * @brief A deleted assignment operator for singleton pattern.
      * @note Public to ensure better compiler error message.
      */
-    void
-    operator=(Logger const &) = delete;
+    void operator=(Logger const &) = delete;
 
   private:
     /**
@@ -137,9 +131,8 @@ namespace display_device {
      * @param value Arbitrary value to be written to the buffer.
      * @returns Reference to the writer utility for chaining the operators.
      */
-    template <class T>
-    LogWriter &
-    operator<<(T &&value) {
+    template<class T>
+    LogWriter &operator<<(T &&value) {
       m_buffer << std::forward<T>(value);
       return *this;
     }
@@ -157,6 +150,6 @@ namespace display_device {
  * DD_LOG(error) << "OH MY GAWD!";
  * @examples_end
  */
-#define DD_LOG(level)                                                                                                                                \
-  for (bool is_enabled { display_device::Logger::get().isLogLevelEnabled(display_device::Logger::LogLevel::level) }; is_enabled; is_enabled = false) \
+#define DD_LOG(level) \
+  for (bool is_enabled {display_device::Logger::get().isLogLevelEnabled(display_device::Logger::LogLevel::level)}; is_enabled; is_enabled = false) \
   display_device::LogWriter(display_device::Logger::LogLevel::level)

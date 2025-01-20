@@ -27,8 +27,7 @@ namespace display_device {
      * const std::string error_message = iface->getErrorString(ERROR_NOT_SUPPORTED);
      * @examples_end
      */
-    [[nodiscard]] virtual std::string
-    getErrorString(LONG error_code) const = 0;
+    [[nodiscard]] virtual std::string getErrorString(LONG error_code) const = 0;
 
     /**
      * @brief Query Windows for the device paths and associated modes.
@@ -39,8 +38,7 @@ namespace display_device {
      * const auto display_data = iface->queryDisplayConfig(QueryType::Active);
      * @examples_end
      */
-    [[nodiscard]] virtual std::optional<PathAndModeData>
-    queryDisplayConfig(QueryType type) const = 0;
+    [[nodiscard]] virtual std::optional<PathAndModeData> queryDisplayConfig(QueryType type) const = 0;
 
     /**
      * @brief Get a stable and persistent device id for the path.
@@ -84,8 +82,7 @@ namespace display_device {
      * const std::string device_path = iface->getDeviceId(path);
      * @examples_end
      */
-    [[nodiscard]] virtual std::string
-    getDeviceId(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
+    [[nodiscard]] virtual std::string getDeviceId(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
 
     /**
      * @brief Get a string that represents a path from the adapter to the display target.
@@ -101,8 +98,7 @@ namespace display_device {
      * const std::string device_path = iface->getMonitorDevicePath(path);
      * @examples_end
      */
-    [[nodiscard]] virtual std::string
-    getMonitorDevicePath(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
+    [[nodiscard]] virtual std::string getMonitorDevicePath(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
 
     /**
      * @brief Get the user friendly name for the path.
@@ -116,8 +112,7 @@ namespace display_device {
      * const std::string friendly_name = iface->getFriendlyName(path);
      * @examples_end
      */
-    [[nodiscard]] virtual std::string
-    getFriendlyName(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
+    [[nodiscard]] virtual std::string getFriendlyName(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
 
     /**
      * @brief Get the logical display name for the path.
@@ -136,8 +131,7 @@ namespace display_device {
      * const std::string display_name = iface->getDisplayName(path);
      * @examples_end
      */
-    [[nodiscard]] virtual std::string
-    getDisplayName(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
+    [[nodiscard]] virtual std::string getDisplayName(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
 
     /**
      * @brief Direct wrapper around the SetDisplayConfig WinAPI.
@@ -154,8 +148,7 @@ namespace display_device {
      * const auto result = iface->setDisplayConfig(paths, {}, 0);
      * @examples_end
      */
-    [[nodiscard]] virtual LONG
-    setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> paths, std::vector<DISPLAYCONFIG_MODE_INFO> modes, UINT32 flags) = 0;
+    [[nodiscard]] virtual LONG setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> paths, std::vector<DISPLAYCONFIG_MODE_INFO> modes, UINT32 flags) = 0;
 
     /**
      * @brief Get the HDR state the path.
@@ -167,8 +160,7 @@ namespace display_device {
      * const auto hdr_state = iface->getHdrState(path);
      * @examples_end
      */
-    [[nodiscard]] virtual std::optional<HdrState>
-    getHdrState(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
+    [[nodiscard]] virtual std::optional<HdrState> getHdrState(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
 
     /**
      * @brief Set the HDR state for the path.
@@ -181,8 +173,7 @@ namespace display_device {
      * const bool success = iface->setHdrState(path, HdrState::Enabled);
      * @examples_end
      */
-    [[nodiscard]] virtual bool
-    setHdrState(const DISPLAYCONFIG_PATH_INFO &path, HdrState state) = 0;
+    [[nodiscard]] virtual bool setHdrState(const DISPLAYCONFIG_PATH_INFO &path, HdrState state) = 0;
 
     /**
      * @brief Get the scaling value for the display.
@@ -197,7 +188,6 @@ namespace display_device {
      * const auto scale = iface->getDisplayScale(iface->getDisplayName(path), source_mode);
      * @examples_end
      */
-    [[nodiscard]] virtual std::optional<Rational>
-    getDisplayScale(const std::string &display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const = 0;
+    [[nodiscard]] virtual std::optional<Rational> getDisplayScale(const std::string &display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const = 0;
   };
 }  // namespace display_device

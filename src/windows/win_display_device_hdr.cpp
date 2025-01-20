@@ -20,17 +20,16 @@ namespace display_device {
     /**
      * @see setHdrStates for a description as this was split off to reduce cognitive complexity.
      */
-    bool
-    doSetHdrStates(WinApiLayerInterface &w_api, const PathAndModeData &display_data, const HdrStateMapNoOpt &states, HdrStateMapNoOpt *changed_states) {
+    bool doSetHdrStates(WinApiLayerInterface &w_api, const PathAndModeData &display_data, const HdrStateMapNoOpt &states, HdrStateMapNoOpt *changed_states) {
       const auto try_set_state {
         [&w_api, &display_data](const auto &device_id, const auto &state, auto &current_state) {
-          const auto path { win_utils::getActivePath(w_api, device_id, display_data.m_paths) };
+          const auto path {win_utils::getActivePath(w_api, device_id, display_data.m_paths)};
           if (!path) {
             DD_LOG(error) << "Failed to find device for " << device_id << "!";
             return false;
           }
 
-          const auto current_state_int { w_api.getHdrState(*path) };
+          const auto current_state_int {w_api.getHdrState(*path)};
           if (!current_state_int) {
             DD_LOG(error) << "HDR state cannot be changed for " << device_id << "!";
             return false;
@@ -67,14 +66,13 @@ namespace display_device {
 
   }  // namespace
 
-  HdrStateMap
-  WinDisplayDevice::getCurrentHdrStates(const std::set<std::string> &device_ids) const {
+  HdrStateMap WinDisplayDevice::getCurrentHdrStates(const std::set<std::string> &device_ids) const {
     if (device_ids.empty()) {
       DD_LOG(error) << "Device id set is empty!";
       return {};
     }
 
-    const auto display_data { m_w_api->queryDisplayConfig(QueryType::Active) };
+    const auto display_data {m_w_api->queryDisplayConfig(QueryType::Active)};
     if (!display_data) {
       // Error already logged
       return {};
@@ -82,7 +80,7 @@ namespace display_device {
 
     HdrStateMap states;
     for (const auto &device_id : device_ids) {
-      const auto path { win_utils::getActivePath(*m_w_api, device_id, display_data->m_paths) };
+      const auto path {win_utils::getActivePath(*m_w_api, device_id, display_data->m_paths)};
       if (!path) {
         DD_LOG(error) << "Failed to find device for " << device_id << "!";
         return {};
@@ -94,25 +92,27 @@ namespace display_device {
     return states;
   }
 
-  bool
-  WinDisplayDevice::setHdrStates(const HdrStateMap &states) {
+  bool WinDisplayDevice::setHdrStates(const HdrStateMap &states) {
     if (states.empty()) {
       DD_LOG(error) << "States map is empty!";
       return false;
     }
 
     HdrStateMapNoOpt states_without_opt;
-    std::ranges::copy(states |
-                        std::ranges::views::filter([](const auto &entry) { return static_cast<bool>(entry.second); }) |
-                        std::views::transform([](const auto &entry) { return std::make_pair(entry.first, *entry.second); }),
-      std::inserter(states_without_opt, std::begin(states_without_opt)));
+    std::ranges::copy(states | std::ranges::views::filter([](const auto &entry) {
+                        return static_cast<bool>(entry.second);
+                      }) |
+                        std::views::transform([](const auto &entry) {
+                          return std::make_pair(entry.first, *entry.second);
+                        }),
+                      std::inserter(states_without_opt, std::begin(states_without_opt)));
 
     if (states_without_opt.empty()) {
       // Return early as there is nothing to do...
       return true;
     }
 
-    const auto display_data { m_w_api->queryDisplayConfig(QueryType::Active) };
+    const auto display_data {m_w_api->queryDisplayConfig(QueryType::Active)};
     if (!display_data) {
       // Error already logged
       return {};

@@ -13,7 +13,7 @@
 // clang-format on
 
 namespace display_device {
-  const std::optional<unsigned int> JSON_COMPACT { std::nullopt };
+  const std::optional<unsigned int> JSON_COMPACT {std::nullopt};
 
   DD_JSON_DEFINE_CONVERTER(ActiveTopology)
   DD_JSON_DEFINE_CONVERTER(DeviceDisplayModeMap)

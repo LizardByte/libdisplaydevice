@@ -95,8 +95,7 @@ namespace display_device {
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool
-    operator==(const DisplayMode &lhs, const DisplayMode &rhs);
+    friend bool operator==(const DisplayMode &lhs, const DisplayMode &rhs);
   };
 
   /**
@@ -124,8 +123,7 @@ namespace display_device {
       /**
        * @brief Comparator for strict equality.
        */
-      friend bool
-      operator==(const Initial &lhs, const Initial &rhs);
+      friend bool operator==(const Initial &lhs, const Initial &rhs);
     };
 
     /**
@@ -148,14 +146,12 @@ namespace display_device {
        * const has_modifications = state.hasModifications();
        * @examples_end
        */
-      [[nodiscard]] bool
-      hasModifications() const;
+      [[nodiscard]] bool hasModifications() const;
 
       /**
        * @brief Comparator for strict equality.
        */
-      friend bool
-      operator==(const Modified &lhs, const Modified &rhs);
+      friend bool operator==(const Modified &lhs, const Modified &rhs);
     };
 
     Initial m_initial;
@@ -164,8 +160,7 @@ namespace display_device {
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool
-    operator==(const SingleDisplayConfigState &lhs, const SingleDisplayConfigState &rhs);
+    friend bool operator==(const SingleDisplayConfigState &lhs, const SingleDisplayConfigState &rhs);
   };
 
   /**
@@ -177,12 +172,11 @@ namespace display_device {
    * @brief Settings for workarounds/hacks for Windows.
    */
   struct WinWorkarounds {
-    std::optional<std::chrono::milliseconds> m_hdr_blank_delay { std::nullopt };  ///< @seealso{win_utils::blankHdrStates for more details.}
+    std::optional<std::chrono::milliseconds> m_hdr_blank_delay {std::nullopt};  ///< @seealso{win_utils::blankHdrStates for more details.}
 
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool
-    operator==(const WinWorkarounds &lhs, const WinWorkarounds &rhs);
+    friend bool operator==(const WinWorkarounds &lhs, const WinWorkarounds &rhs);
   };
 }  // namespace display_device

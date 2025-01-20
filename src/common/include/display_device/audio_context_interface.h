@@ -27,8 +27,7 @@ namespace display_device {
      * const auto result { iface->capture() };
      * @examples_end
      */
-    [[nodiscard]] virtual bool
-    capture() = 0;
+    [[nodiscard]] virtual bool capture() = 0;
 
     /**
      * @brief Check if the context is already captured.
@@ -38,8 +37,7 @@ namespace display_device {
      * const auto result { iface->isCaptured() };
      * @examples_end
      */
-    [[nodiscard]] virtual bool
-    isCaptured() const = 0;
+    [[nodiscard]] virtual bool isCaptured() const = 0;
 
     /**
      * @brief Release captured audio context for the devices (if any).
@@ -48,7 +46,6 @@ namespace display_device {
      * const auto result { iface->release() };
      * @examples_end
      */
-    virtual void
-    release() = 0;
+    virtual void release() = 0;
   };
 }  // namespace display_device

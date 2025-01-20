@@ -29,8 +29,7 @@ namespace display_device {
      * const bool have_access { iface->isApiAccessAvailable() };
      * @examples_end
      */
-    [[nodiscard]] virtual bool
-    isApiAccessAvailable() const = 0;
+    [[nodiscard]] virtual bool isApiAccessAvailable() const = 0;
 
     /**
      * @brief Enumerate the available (active and inactive) devices.
@@ -40,8 +39,7 @@ namespace display_device {
      * const auto devices { enumAvailableDevices() };
      * @examples_end
      */
-    [[nodiscard]] virtual EnumeratedDeviceList
-    enumAvailableDevices() const = 0;
+    [[nodiscard]] virtual EnumeratedDeviceList enumAvailableDevices() const = 0;
 
     /**
      * @brief Get display name associated with the device.
@@ -54,8 +52,7 @@ namespace display_device {
      * const std::string display_name = iface->getDisplayName(device_id);
      * @examples_end
      */
-    [[nodiscard]] virtual std::string
-    getDisplayName(const std::string &device_id) const = 0;
+    [[nodiscard]] virtual std::string getDisplayName(const std::string &device_id) const = 0;
 
     /**
      * @brief Get the active (current) topology.
@@ -66,8 +63,7 @@ namespace display_device {
      * const auto current_topology { iface->getCurrentTopology() };
      * @examples_end
      */
-    [[nodiscard]] virtual ActiveTopology
-    getCurrentTopology() const = 0;
+    [[nodiscard]] virtual ActiveTopology getCurrentTopology() const = 0;
 
     /**
      * @brief Verify if the active topology is valid.
@@ -84,8 +80,7 @@ namespace display_device {
      * const bool is_valid = iface->isTopologyValid(current_topology);
      * @examples_end
      */
-    [[nodiscard]] virtual bool
-    isTopologyValid(const ActiveTopology &topology) const = 0;
+    [[nodiscard]] virtual bool isTopologyValid(const ActiveTopology &topology) const = 0;
 
     /**
      * @brief Check if the topologies are close enough to be considered the same by the OS.
@@ -100,8 +95,7 @@ namespace display_device {
      * const bool is_the_same = iface->isTopologyTheSame(current_topology, new_topology);
      * @examples_end
      */
-    [[nodiscard]] virtual bool
-    isTopologyTheSame(const ActiveTopology &lhs, const ActiveTopology &rhs) const = 0;
+    [[nodiscard]] virtual bool isTopologyTheSame(const ActiveTopology &lhs, const ActiveTopology &rhs) const = 0;
 
     /**
      * @brief Set a new active topology for the OS.
@@ -114,8 +108,7 @@ namespace display_device {
      * const bool success = iface->setTopology(current_topology);
      * @examples_end
      */
-    [[nodiscard]] virtual bool
-    setTopology(const ActiveTopology &new_topology) = 0;
+    [[nodiscard]] virtual bool setTopology(const ActiveTopology &new_topology) = 0;
 
     /**
      * @brief Get current display modes for the devices.
@@ -128,8 +121,7 @@ namespace display_device {
      * const auto current_modes = iface->getCurrentDisplayModes(device_ids);
      * @examples_end
      */
-    [[nodiscard]] virtual DeviceDisplayModeMap
-    getCurrentDisplayModes(const std::set<std::string> &device_ids) const = 0;
+    [[nodiscard]] virtual DeviceDisplayModeMap getCurrentDisplayModes(const std::set<std::string> &device_ids) const = 0;
 
     /**
      * @brief Set new display modes for the devices.
@@ -145,8 +137,7 @@ namespace display_device {
      *                                               { display_b, { { 1920, 1080 }, { 120, 1 } } } });
      * @examples_end
      */
-    [[nodiscard]] virtual bool
-    setDisplayModes(const DeviceDisplayModeMap &modes) = 0;
+    [[nodiscard]] virtual bool setDisplayModes(const DeviceDisplayModeMap &modes) = 0;
 
     /**
      * @brief Check whether the specified device is primary.
@@ -158,8 +149,7 @@ namespace display_device {
      * const bool is_primary = iface->isPrimary(device_id);
      * @examples_end
      */
-    [[nodiscard]] virtual bool
-    isPrimary(const std::string &device_id) const = 0;
+    [[nodiscard]] virtual bool isPrimary(const std::string &device_id) const = 0;
 
     /**
      * @brief Set the device as a primary display.
@@ -172,8 +162,7 @@ namespace display_device {
      * const bool success = iface->set_as_primary_device(device_id);
      * @examples_end
      */
-    [[nodiscard]] virtual bool
-    setAsPrimary(const std::string &device_id) = 0;
+    [[nodiscard]] virtual bool setAsPrimary(const std::string &device_id) = 0;
 
     /**
      * @brief Get HDR state for the devices.
@@ -186,8 +175,7 @@ namespace display_device {
      * const auto current_hdr_states = iface->getCurrentHdrStates(device_ids);
      * @examples_end
      */
-    [[nodiscard]] virtual HdrStateMap
-    getCurrentHdrStates(const std::set<std::string> &device_ids) const = 0;
+    [[nodiscard]] virtual HdrStateMap getCurrentHdrStates(const std::set<std::string> &device_ids) const = 0;
 
     /**
      * @brief Set HDR states for the devices.
@@ -203,7 +191,6 @@ namespace display_device {
      *                                            { display_b, HdrState::Disabled } });
      * @examples_end
      */
-    [[nodiscard]] virtual bool
-    setHdrStates(const HdrStateMap &states) = 0;
+    [[nodiscard]] virtual bool setHdrStates(const HdrStateMap &states) = 0;
   };
 }  // namespace display_device

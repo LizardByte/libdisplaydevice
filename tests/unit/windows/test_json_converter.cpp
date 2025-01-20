@@ -10,31 +10,29 @@ namespace {
 
 TEST_F_S(ActiveTopology) {
   executeTestCase(display_device::ActiveTopology {}, R"([])");
-  executeTestCase(display_device::ActiveTopology { { "DeviceId1" }, { "DeviceId2", "DeviceId3" }, { "DeviceId4" } }, R"([["DeviceId1"],["DeviceId2","DeviceId3"],["DeviceId4"]])");
+  executeTestCase(display_device::ActiveTopology {{"DeviceId1"}, {"DeviceId2", "DeviceId3"}, {"DeviceId4"}}, R"([["DeviceId1"],["DeviceId2","DeviceId3"],["DeviceId4"]])");
 }
 
 TEST_F_S(DeviceDisplayModeMap) {
   executeTestCase(display_device::DeviceDisplayModeMap {}, R"({})");
-  executeTestCase(display_device::DeviceDisplayModeMap { { "DeviceId1", {} }, { "DeviceId2", { { 1920, 1080 }, { 120, 1 } } } },
-    R"({"DeviceId1":{"refresh_rate":{"denominator":0,"numerator":0},"resolution":{"height":0,"width":0}},"DeviceId2":{"refresh_rate":{"denominator":1,"numerator":120},"resolution":{"height":1080,"width":1920}}})");
+  executeTestCase(display_device::DeviceDisplayModeMap {{"DeviceId1", {}}, {"DeviceId2", {{1920, 1080}, {120, 1}}}}, R"({"DeviceId1":{"refresh_rate":{"denominator":0,"numerator":0},"resolution":{"height":0,"width":0}},"DeviceId2":{"refresh_rate":{"denominator":1,"numerator":120},"resolution":{"height":1080,"width":1920}}})");
 }
 
 TEST_F_S(HdrStateMap) {
   executeTestCase(display_device::HdrStateMap {}, R"({})");
-  executeTestCase(display_device::HdrStateMap { { "DeviceId1", std::nullopt }, { "DeviceId2", display_device::HdrState::Enabled } },
-    R"({"DeviceId1":null,"DeviceId2":"Enabled"})");
+  executeTestCase(display_device::HdrStateMap {{"DeviceId1", std::nullopt}, {"DeviceId2", display_device::HdrState::Enabled}}, R"({"DeviceId1":null,"DeviceId2":"Enabled"})");
 }
 
 TEST_F_S(SingleDisplayConfigState) {
   const display_device::SingleDisplayConfigState valid_input {
-    { { { "DeviceId1" } },
-      { "DeviceId1" } },
-    { display_device::SingleDisplayConfigState::Modified {
-      { { "DeviceId2" } },
-      { { "DeviceId2", { { 1920, 1080 }, { 120, 1 } } } },
-      { { "DeviceId2", { display_device::HdrState::Disabled } } },
-      { "DeviceId2" },
-    } }
+    {{{"DeviceId1"}},
+     {"DeviceId1"}},
+    {display_device::SingleDisplayConfigState::Modified {
+      {{"DeviceId2"}},
+      {{"DeviceId2", {{1920, 1080}, {120, 1}}}},
+      {{"DeviceId2", {display_device::HdrState::Disabled}}},
+      {"DeviceId2"},
+    }}
   };
 
   executeTestCase(display_device::SingleDisplayConfigState {}, R"({"initial":{"primary_devices":[],"topology":[]},"modified":{"original_hdr_states":{},"original_modes":{},"original_primary_device":"","topology":[]}})");
@@ -43,7 +41,7 @@ TEST_F_S(SingleDisplayConfigState) {
 
 TEST_F_S(WinWorkarounds) {
   display_device::WinWorkarounds input {
-    std::chrono::milliseconds { 500 }
+    std::chrono::milliseconds {500}
   };
 
   executeTestCase(display_device::WinWorkarounds {}, R"({"hdr_blank_delay":null})");

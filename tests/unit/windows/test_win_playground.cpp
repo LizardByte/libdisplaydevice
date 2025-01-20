@@ -14,25 +14,24 @@ namespace {
   class GTEST_DISABLED_CLASS_NAME(WinPlayground):
       public BaseTest {
   public:
-    bool
-    isOutputSuppressed() const override {
+    bool isOutputSuppressed() const override {
       return false;
     }
 
-    std::optional<display_device::Logger::LogLevel>
-    getDefaultLogLevel() const override {
+    std::optional<display_device::Logger::LogLevel> getDefaultLogLevel() const override {
       // Unless user explicitly has overriden the level via ENV, we don't want all
       // that noise from verbose logs...
       return BaseTest::getDefaultLogLevel().value_or(display_device::Logger::LogLevel::info);
     }
 
-    display_device::SettingsManager &
-    getImpl(const display_device::WinWorkarounds &workarounds = {}) {
+    display_device::SettingsManager &getImpl(const display_device::WinWorkarounds &workarounds = {}) {
       if (!m_impl) {
         m_impl = std::make_unique<display_device::SettingsManager>(
           std::make_shared<display_device::WinDisplayDevice>(std::make_shared<display_device::WinApiLayer>()),
           nullptr,
-          std::make_unique<display_device::PersistentState>(nullptr), workarounds);
+          std::make_unique<display_device::PersistentState>(nullptr),
+          workarounds
+        );
       }
 
       return *m_impl;
@@ -61,7 +60,7 @@ TEST_F_S(ApplySettings) {
   // With workarounds (optional):
   //   test_libdisplaydevice.exe --gtest_color=yes --gtest_also_run_disabled_tests --gtest_filter=*WinPlayground.ApplySettings config='...' workarounds='{\"hdr_blank_delay\":500}'
 
-  const auto config_arg { getArgWithMatchingPattern(R"(^config=)", true) };
+  const auto config_arg {getArgWithMatchingPattern(R"(^config=)", true)};
   if (!config_arg) {
     GTEST_FAIL() << "\"config=<json_string>\" argument not found!";
   }
@@ -72,7 +71,7 @@ TEST_F_S(ApplySettings) {
     GTEST_FAIL() << "Config argument could not be parsed!\nArgument:\n  " << *config_arg << "\nError:\n  " << parse_error;
   }
 
-  if (const auto workarounds_arg { getArgWithMatchingPattern(R"(^workarounds=)", true) }) {
+  if (const auto workarounds_arg {getArgWithMatchingPattern(R"(^workarounds=)", true)}) {
     display_device::WinWorkarounds workarounds;
     if (!fromJson(*workarounds_arg, workarounds, &parse_error)) {
       GTEST_FAIL() << "Workarounds argument could not be parsed!\nArgument:\n  " << *workarounds_arg << "\nError:\n  " << parse_error;
@@ -82,7 +81,9 @@ TEST_F_S(ApplySettings) {
     getImpl(workarounds);
   }
 
-  const boost::scope::scope_exit cleanup { [this]() { static_cast<void>(getImpl().revertSettings()); } };
+  const boost::scope::scope_exit cleanup {[this]() {
+    static_cast<void>(getImpl().revertSettings());
+  }};
 
   std::cout << "Applying settings. Press enter to continue..." << std::endl;
   std::cin.get();

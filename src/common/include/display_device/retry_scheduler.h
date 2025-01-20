@@ -38,8 +38,7 @@ namespace display_device {
     /**
      * @brief Deleted copy operator.
      */
-    SchedulerStopToken &
-    operator=(const SchedulerStopToken &) = delete;
+    SchedulerStopToken &operator=(const SchedulerStopToken &) = delete;
 
     /**
      * @brief Executes cleanup logic if scheduler stop was requested.
@@ -49,18 +48,16 @@ namespace display_device {
     /**
      * @brief Request the scheduler to be stopped.
      */
-    void
-    requestStop();
+    void requestStop();
 
     /**
      * @brief Check if stop was requested.
      * @return True if stop was requested, false otherwise.
      */
-    [[nodiscard]] bool
-    stopRequested() const;
+    [[nodiscard]] bool stopRequested() const;
 
   private:
-    bool m_stop_requested { false };
+    bool m_stop_requested {false};
     std::function<void()> m_cleanup;
   };
 
@@ -69,7 +66,7 @@ namespace display_device {
      * @brief Given that we know that we are dealing with a function,
      *        check if it is an optional function (like std::function<...>) or other callable.
      */
-    template <class FunctionT>
+    template<class FunctionT>
     concept OptionalFunction = requires(FunctionT exec_fn) {
       static_cast<bool>(exec_fn);
     };
@@ -77,15 +74,15 @@ namespace display_device {
     /**
      * @brief A convenience template struct helper for adding const to the type.
      */
-    template <class T, bool AddConst>
+    template<class T, bool AddConst>
     struct AutoConst;
 
-    template <class T>
+    template<class T>
     struct AutoConst<T, false> {
       using type = T;
     };
 
-    template <class T>
+    template<class T>
     struct AutoConst<T, true> {
       using type = std::add_const_t<T>;
     };
@@ -93,21 +90,21 @@ namespace display_device {
     /**
      * @brief A convenience template helper for adding const to the type.
      */
-    template <class T, bool AddConst>
+    template<class T, bool AddConst>
     using auto_const_t = typename AutoConst<T, AddConst>::type;
 
     /**
      * @brief Check if the function signature matches the acceptable signature for RetryScheduler::execute
      *        without a stop token.
      */
-    template <class T, class FunctionT>
+    template<class T, class FunctionT>
     concept ExecuteWithoutStopToken = requires(FunctionT exec_fn, T &value) { exec_fn(value); };
 
     /**
      * @brief Check if the function signature matches the acceptable signature for RetryScheduler::execute
      *        with a stop token.
      */
-    template <class T, class FunctionT>
+    template<class T, class FunctionT>
     concept ExecuteWithStopToken = requires(FunctionT exec_fn, T &value, SchedulerStopToken &token) {
       exec_fn(value, token);
     };
@@ -115,7 +112,7 @@ namespace display_device {
     /**
      * @brief Check if the function signature matches the acceptable signature for RetryScheduler::execute.
      */
-    template <class T, class FunctionT>
+    template<class T, class FunctionT>
     concept ExecuteCallbackLike = ExecuteWithoutStopToken<T, FunctionT> || ExecuteWithStopToken<T, FunctionT>;
   }  // namespace detail
 
@@ -133,7 +130,7 @@ namespace display_device {
     };
 
     std::vector<std::chrono::milliseconds> m_sleep_durations;  ///< Specifies for long the scheduled thread sleeps before invoking executor. Last duration is reused indefinitely.
-    Execution m_execution { Execution::Immediate };  ///< Executor's execution logic.
+    Execution m_execution {Execution::Immediate};  ///< Executor's execution logic.
   };
 
   /**
@@ -142,7 +139,7 @@ namespace display_device {
    * @note The scheduler is designed to only schedule 1 callback at a time, until it is either
    *       replaced or stopped.
    */
-  template <class T>
+  template<class T>
   class RetryScheduler final {
   public:
     /**
@@ -150,18 +147,21 @@ namespace display_device {
      * @param iface Interface to be passed around to the executor functions.
      */
     explicit RetryScheduler(std::unique_ptr<T> iface):
-        m_iface { iface ? std::move(iface) : throw std::logic_error { "Nullptr interface provided in RetryScheduler!" } },
-        m_thread { [this]() {
-          std::unique_lock lock { m_mutex };
+        m_iface {iface ? std::move(iface) : throw std::logic_error {"Nullptr interface provided in RetryScheduler!"}},
+        m_thread {[this]() {
+          std::unique_lock lock {m_mutex};
           while (m_keep_alive) {
             m_syncing_thread = false;
-            if (auto duration { takeNextDuration(m_sleep_durations) }; duration > std::chrono::milliseconds::zero()) {
+            if (auto duration {takeNextDuration(m_sleep_durations)}; duration > std::chrono::milliseconds::zero()) {
               // We're going to sleep until manually woken up or the time elapses.
-              m_sleep_cv.wait_for(lock, duration, [this]() { return m_syncing_thread; });
-            }
-            else {
+              m_sleep_cv.wait_for(lock, duration, [this]() {
+                return m_syncing_thread;
+              });
+            } else {
               // We're going to sleep until manually woken up.
-              m_sleep_cv.wait(lock, [this]() { return m_syncing_thread; });
+              m_sleep_cv.wait(lock, [this]() {
+                return m_syncing_thread;
+              });
             }
 
             if (m_syncing_thread) {
@@ -170,18 +170,19 @@ namespace display_device {
             }
 
             try {
-              SchedulerStopToken scheduler_stop_token { [&]() { clearThreadLoopUnlocked(); } };
+              SchedulerStopToken scheduler_stop_token {[&]() {
+                clearThreadLoopUnlocked();
+              }};
               m_retry_function(*m_iface, scheduler_stop_token);
               continue;
-            }
-            catch (const std::exception &error) {
+            } catch (const std::exception &error) {
               DD_LOG(error) << "Exception thrown in the RetryScheduler thread. Stopping scheduler. Error:\n"
                             << error.what();
             }
 
             clearThreadLoopUnlocked();
           }
-        } } {
+        }} {
     }
 
     /**
@@ -189,7 +190,7 @@ namespace display_device {
      */
     ~RetryScheduler() {
       {
-        std::lock_guard lock { m_mutex };
+        std::lock_guard lock {m_mutex};
         m_keep_alive = false;
         syncThreadUnlocked();
       }
@@ -215,22 +216,25 @@ namespace display_device {
      * }, { .m_sleep_durations = { 50ms, 10ms });
      * @examples_end
      */
-    void
-    schedule(std::function<void(T &, SchedulerStopToken &stop_token)> exec_fn, const SchedulerOptions &options) {
+    void schedule(std::function<void(T &, SchedulerStopToken &stop_token)> exec_fn, const SchedulerOptions &options) {
       if (!exec_fn) {
-        throw std::logic_error { "Empty callback function provided in RetryScheduler::schedule!" };
+        throw std::logic_error {"Empty callback function provided in RetryScheduler::schedule!"};
       }
 
       if (options.m_sleep_durations.empty()) {
-        throw std::logic_error { "At least 1 sleep duration must be specified in RetryScheduler::schedule!" };
+        throw std::logic_error {"At least 1 sleep duration must be specified in RetryScheduler::schedule!"};
       }
 
-      if (std::ranges::any_of(options.m_sleep_durations, [&](const auto &duration) { return duration == std::chrono::milliseconds::zero(); })) {
-        throw std::logic_error { "All of the durations specified in RetryScheduler::schedule must be larger than a 0!" };
+      if (std::ranges::any_of(options.m_sleep_durations, [&](const auto &duration) {
+            return duration == std::chrono::milliseconds::zero();
+          })) {
+        throw std::logic_error {"All of the durations specified in RetryScheduler::schedule must be larger than a 0!"};
       }
 
-      std::lock_guard lock { m_mutex };
-      SchedulerStopToken stop_token { [&]() { stopUnlocked(); } };
+      std::lock_guard lock {m_mutex};
+      SchedulerStopToken stop_token {[&]() {
+        stopUnlocked();
+      }};
 
       // We are catching the exception here instead of propagating to have
       // similar try...catch login as in the scheduler thread.
@@ -249,8 +253,7 @@ namespace display_device {
           m_sleep_durations = std::move(sleep_durations);
           syncThreadUnlocked();
         }
-      }
-      catch (const std::exception &error) {
+      } catch (const std::exception &error) {
         stop_token.requestStop();
         DD_LOG(error) << "Exception thrown in the RetryScheduler::schedule. Stopping scheduler. Error:\n"
                       << error.what();
@@ -260,18 +263,16 @@ namespace display_device {
     /**
      * @brief A non-const variant of the `executeImpl` method. See it for details.
      */
-    template <class FunctionT>
-    auto
-    execute(FunctionT &&exec_fn) {
+    template<class FunctionT>
+    auto execute(FunctionT &&exec_fn) {
       return executeImpl(*this, std::forward<FunctionT>(exec_fn));
     }
 
     /**
      * @brief A const variant of the `executeImpl` method. See it for details.
      */
-    template <class FunctionT>
-    auto
-    execute(FunctionT &&exec_fn) const {
+    template<class FunctionT>
+    auto execute(FunctionT &&exec_fn) const {
       return executeImpl(*this, std::forward<FunctionT>(exec_fn));
     }
 
@@ -279,26 +280,23 @@ namespace display_device {
      * @brief Check whether anything is scheduled for execution.
      * @return True if something is scheduled, false otherwise.
      */
-    [[nodiscard]] bool
-    isScheduled() const {
+    [[nodiscard]] bool isScheduled() const {
       return static_cast<bool>(m_retry_function);
     }
 
     /**
      * @brief Stop the scheduled function - will no longer be execute once THIS method returns.
      */
-    void
-    stop() {
-      std::lock_guard lock { m_mutex };
+    void stop() {
+      std::lock_guard lock {m_mutex};
       stopUnlocked();
     }
 
   private:
-    static std::chrono::milliseconds
-    takeNextDuration(std::vector<std::chrono::milliseconds> &durations) {
+    static std::chrono::milliseconds takeNextDuration(std::vector<std::chrono::milliseconds> &durations) {
       if (durations.size() > 1) {
-        const auto front_it { std::begin(durations) };
-        const auto front_value { *front_it };
+        const auto front_it {std::begin(durations)};
+        const auto front_value {*front_it};
         durations.erase(front_it);
         return front_value;
       }
@@ -342,8 +340,7 @@ namespace display_device {
      * });
      * @examples_end
      */
-    static auto
-    executeImpl(auto &self, auto &&exec_fn)
+    static auto executeImpl(auto &self, auto &&exec_fn)
       requires detail::ExecuteCallbackLike<T, decltype(exec_fn)>
     {
       using FunctionT = decltype(exec_fn);
@@ -351,21 +348,20 @@ namespace display_device {
 
       if constexpr (detail::OptionalFunction<FunctionT>) {
         if (!exec_fn) {
-          throw std::logic_error { "Empty callback function provided in RetryScheduler::execute!" };
+          throw std::logic_error {"Empty callback function provided in RetryScheduler::execute!"};
         }
       }
 
-      std::lock_guard lock { self.m_mutex };
-      detail::auto_const_t<std::decay_t<T>, IsConst> &iface_ref { *self.m_iface };
+      std::lock_guard lock {self.m_mutex};
+      detail::auto_const_t<std::decay_t<T>, IsConst> &iface_ref {*self.m_iface};
       if constexpr (detail::ExecuteWithStopToken<T, FunctionT>) {
-        detail::auto_const_t<SchedulerStopToken, IsConst> stop_token { [&self]() {
+        detail::auto_const_t<SchedulerStopToken, IsConst> stop_token {[&self]() {
           if constexpr (!IsConst) {
             self.stopUnlocked();
           }
-        } };
+        }};
         return std::forward<FunctionT>(exec_fn)(iface_ref, stop_token);
-      }
-      else {
+      } else {
         return std::forward<FunctionT>(exec_fn)(iface_ref);
       }
     }
@@ -373,8 +369,7 @@ namespace display_device {
     /**
      * @brief Clear the necessary data so that the thread will go into a deep sleep.
      */
-    void
-    clearThreadLoopUnlocked() {
+    void clearThreadLoopUnlocked() {
       m_sleep_durations = {};
       m_retry_function = nullptr;
     }
@@ -382,8 +377,7 @@ namespace display_device {
     /**
      * @brief Manually wake up the thread for synchronization.
      */
-    void
-    syncThreadUnlocked() {
+    void syncThreadUnlocked() {
       m_syncing_thread = true;
       m_sleep_cv.notify_one();
     }
@@ -391,8 +385,7 @@ namespace display_device {
     /**
      * @brief Stop the scheduled function.
      */
-    void
-    stopUnlocked() {
+    void stopUnlocked() {
       if (isScheduled()) {
         clearThreadLoopUnlocked();
         syncThreadUnlocked();
@@ -401,12 +394,12 @@ namespace display_device {
 
     std::unique_ptr<T> m_iface; /**< Interface to be passed around to the executor functions. */
     std::vector<std::chrono::milliseconds> m_sleep_durations; /**< Sleep times for the timer. */
-    std::function<void(T &, SchedulerStopToken &)> m_retry_function { nullptr }; /**< Function to be executed until it succeeds. */
+    std::function<void(T &, SchedulerStopToken &)> m_retry_function {nullptr}; /**< Function to be executed until it succeeds. */
 
     mutable std::mutex m_mutex {}; /**< A mutex for synchronizing thread and "external" access. */
     std::condition_variable m_sleep_cv {}; /**< Condition variable for waking up thread. */
-    bool m_syncing_thread { false }; /**< Safeguard for the condition variable to prevent sporadic thread wake-ups. */
-    bool m_keep_alive { true }; /**< When set to false, scheduler thread will exit. */
+    bool m_syncing_thread {false}; /**< Safeguard for the condition variable to prevent sporadic thread wake-ups. */
+    bool m_keep_alive {true}; /**< When set to false, scheduler thread will exit. */
 
     // Always the last in the list so that all the members are already initialized!
     std::thread m_thread; /**< A scheduler thread. */

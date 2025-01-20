@@ -29,8 +29,7 @@ namespace display_device::win_utils {
    * const bool available = isAvailable(path);
    * @examples_end
    */
-  [[nodiscard]] bool
-  isAvailable(const DISPLAYCONFIG_PATH_INFO &path);
+  [[nodiscard]] bool isAvailable(const DISPLAYCONFIG_PATH_INFO &path);
 
   /**
    * @brief Check if the display device path is marked as active.
@@ -42,8 +41,7 @@ namespace display_device::win_utils {
    * const bool active = isActive(path);
    * @examples_end
    */
-  [[nodiscard]] bool
-  isActive(const DISPLAYCONFIG_PATH_INFO &path);
+  [[nodiscard]] bool isActive(const DISPLAYCONFIG_PATH_INFO &path);
 
   /**
    * @brief Mark the display device path as active.
@@ -56,8 +54,7 @@ namespace display_device::win_utils {
    * }
    * @examples_end
    */
-  void
-  setActive(DISPLAYCONFIG_PATH_INFO &path);
+  void setActive(DISPLAYCONFIG_PATH_INFO &path);
 
   /**
    * @brief Check if the display's source mode is primary - if the associated device is a primary display device.
@@ -69,8 +66,7 @@ namespace display_device::win_utils {
    * const bool is_primary = isPrimary(mode);
    * @examples_end
    */
-  bool
-  isPrimary(const DISPLAYCONFIG_SOURCE_MODE &mode);
+  bool isPrimary(const DISPLAYCONFIG_SOURCE_MODE &mode);
 
   /**
    * @brief Get the source mode index from the path.
@@ -88,8 +84,7 @@ namespace display_device::win_utils {
    * const auto source_index = getSourceIndex(path, modes);
    * @examples_end
    */
-  [[nodiscard]] std::optional<UINT32>
-  getSourceIndex(const DISPLAYCONFIG_PATH_INFO &path, const std::vector<DISPLAYCONFIG_MODE_INFO> &modes);
+  [[nodiscard]] std::optional<UINT32> getSourceIndex(const DISPLAYCONFIG_PATH_INFO &path, const std::vector<DISPLAYCONFIG_MODE_INFO> &modes);
 
   /**
    * @brief Set the source mode index in the path.
@@ -102,8 +97,7 @@ namespace display_device::win_utils {
    * set_source_index(path, std::nullopt);
    * @examples_end
    */
-  void
-  setSourceIndex(DISPLAYCONFIG_PATH_INFO &path, const std::optional<UINT32> &index);
+  void setSourceIndex(DISPLAYCONFIG_PATH_INFO &path, const std::optional<UINT32> &index);
 
   /**
    * @brief Set the target mode index in the path.
@@ -116,8 +110,7 @@ namespace display_device::win_utils {
    * set_target_index(path, std::nullopt);
    * @examples_end
    */
-  void
-  setTargetIndex(DISPLAYCONFIG_PATH_INFO &path, const std::optional<UINT32> &index);
+  void setTargetIndex(DISPLAYCONFIG_PATH_INFO &path, const std::optional<UINT32> &index);
 
   /**
    * @brief Set the desktop mode index in the path.
@@ -130,8 +123,7 @@ namespace display_device::win_utils {
    * set_desktop_index(path, std::nullopt);
    * @examples_end
    */
-  void
-  setDesktopIndex(DISPLAYCONFIG_PATH_INFO &path, const std::optional<UINT32> &index);
+  void setDesktopIndex(DISPLAYCONFIG_PATH_INFO &path, const std::optional<UINT32> &index);
 
   /**
    * @brief Set the clone group id in the path.
@@ -144,8 +136,7 @@ namespace display_device::win_utils {
    * set_clone_group_id(path, std::nullopt);
    * @examples_end
    */
-  void
-  setCloneGroupId(DISPLAYCONFIG_PATH_INFO &path, const std::optional<UINT32> &id);
+  void setCloneGroupId(DISPLAYCONFIG_PATH_INFO &path, const std::optional<UINT32> &id);
 
   /**
    * @brief Get the source mode from the list at the specified index.
@@ -165,14 +156,12 @@ namespace display_device::win_utils {
    * const DISPLAYCONFIG_SOURCE_MODE* source_mode = getSourceMode(getSourceIndex(path, modes), modes);
    * @examples_end
    */
-  [[nodiscard]] const DISPLAYCONFIG_SOURCE_MODE *
-  getSourceMode(const std::optional<UINT32> &index, const std::vector<DISPLAYCONFIG_MODE_INFO> &modes);
+  [[nodiscard]] const DISPLAYCONFIG_SOURCE_MODE *getSourceMode(const std::optional<UINT32> &index, const std::vector<DISPLAYCONFIG_MODE_INFO> &modes);
 
   /**
    * @see getSourceMode (const version) for the description.
    */
-  [[nodiscard]] DISPLAYCONFIG_SOURCE_MODE *
-  getSourceMode(const std::optional<UINT32> &index, std::vector<DISPLAYCONFIG_MODE_INFO> &modes);
+  [[nodiscard]] DISPLAYCONFIG_SOURCE_MODE *getSourceMode(const std::optional<UINT32> &index, std::vector<DISPLAYCONFIG_MODE_INFO> &modes);
 
   /**
    * @brief Validate the path and get the commonly used information from it.
@@ -198,8 +187,7 @@ namespace display_device::win_utils {
    * const auto device_info = getDeviceInfoForValidPath(*iface, path, ValidatedPathType::Active);
    * @examples_end
    */
-  [[nodiscard]] std::optional<ValidatedDeviceInfo>
-  getDeviceInfoForValidPath(const WinApiLayerInterface &w_api, const DISPLAYCONFIG_PATH_INFO &path, ValidatedPathType type);
+  [[nodiscard]] std::optional<ValidatedDeviceInfo> getDeviceInfoForValidPath(const WinApiLayerInterface &w_api, const DISPLAYCONFIG_PATH_INFO &path, ValidatedPathType type);
 
   /**
    * @brief Get the active path matching the device id.
@@ -214,14 +202,12 @@ namespace display_device::win_utils {
    * const DISPLAYCONFIG_PATH_INFO* active_path = get_active_path(*iface, "MY_DEVICE_ID", paths);
    * @examples_end
    */
-  [[nodiscard]] const DISPLAYCONFIG_PATH_INFO *
-  getActivePath(const WinApiLayerInterface &w_api, const std::string &device_id, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
+  [[nodiscard]] const DISPLAYCONFIG_PATH_INFO *getActivePath(const WinApiLayerInterface &w_api, const std::string &device_id, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
 
   /**
    * @see getActivePath (const version) for the description.
    */
-  [[nodiscard]] DISPLAYCONFIG_PATH_INFO *
-  getActivePath(const WinApiLayerInterface &w_api, const std::string &device_id, std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
+  [[nodiscard]] DISPLAYCONFIG_PATH_INFO *getActivePath(const WinApiLayerInterface &w_api, const std::string &device_id, std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
 
   /**
    * @brief Collect arbitrary source data from provided paths.
@@ -239,8 +225,7 @@ namespace display_device::win_utils {
    * const auto path_data = collectSourceDataForMatchingPaths(*iface, paths);
    * @examples_end
    */
-  [[nodiscard]] PathSourceIndexDataMap
-  collectSourceDataForMatchingPaths(const WinApiLayerInterface &w_api, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
+  [[nodiscard]] PathSourceIndexDataMap collectSourceDataForMatchingPaths(const WinApiLayerInterface &w_api, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
 
   /**
    * @brief Select the best possible paths to be used for the requested topology based on the data that is available to us.
@@ -261,8 +246,7 @@ namespace display_device::win_utils {
    * @param paths Display paths that were used for collecting source data.
    * @return A list of path that will make up new topology, or an empty list if function fails.
    */
-  [[nodiscard]] std::vector<DISPLAYCONFIG_PATH_INFO>
-  makePathsForNewTopology(const ActiveTopology &new_topology, const PathSourceIndexDataMap &path_source_data, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
+  [[nodiscard]] std::vector<DISPLAYCONFIG_PATH_INFO> makePathsForNewTopology(const ActiveTopology &new_topology, const PathSourceIndexDataMap &path_source_data, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
 
   /**
    * @brief Get all the missing duplicate device ids for the provided device ids.
@@ -275,8 +259,7 @@ namespace display_device::win_utils {
    * const auto device_ids_with_duplicates = getAllDeviceIdsAndMatchingDuplicates(*iface, { "MY_ID1" });
    * @examples_end
    */
-  [[nodiscard]] std::set<std::string>
-  getAllDeviceIdsAndMatchingDuplicates(const WinApiLayerInterface &w_api, const std::set<std::string> &device_ids);
+  [[nodiscard]] std::set<std::string> getAllDeviceIdsAndMatchingDuplicates(const WinApiLayerInterface &w_api, const std::set<std::string> &device_ids);
 
   /**
    * @brief Check if the refresh rates are almost equal.
@@ -288,8 +271,7 @@ namespace display_device::win_utils {
    * const bool not_equal = fuzzyCompareRefreshRates(Rational { 60, 1 }, Rational { 5585, 100 });
    * @examples_end
    */
-  [[nodiscard]] bool
-  fuzzyCompareRefreshRates(const Rational &lhs, const Rational &rhs);
+  [[nodiscard]] bool fuzzyCompareRefreshRates(const Rational &lhs, const Rational &rhs);
 
   /**
    * @brief Check if the display modes are almost equal.
@@ -303,6 +285,5 @@ namespace display_device::win_utils {
    *                                          DisplayMode { { 1920, 1080 }, { 5585, 100 } });
    * @examples_end
    */
-  [[nodiscard]] bool
-  fuzzyCompareModes(const DisplayMode &lhs, const DisplayMode &rhs);
+  [[nodiscard]] bool fuzzyCompareModes(const DisplayMode &lhs, const DisplayMode &rhs);
 }  // namespace display_device::win_utils

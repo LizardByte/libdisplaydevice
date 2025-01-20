@@ -15,33 +15,30 @@
 
 namespace display_device {
   FileSettingsPersistence::FileSettingsPersistence(std::filesystem::path filepath):
-      m_filepath { std::move(filepath) } {
+      m_filepath {std::move(filepath)} {
     if (m_filepath.empty()) {
-      throw std::runtime_error { "Empty filename provided for FileSettingsPersistence!" };
+      throw std::runtime_error {"Empty filename provided for FileSettingsPersistence!"};
     }
   }
 
-  bool
-  FileSettingsPersistence::store(const std::vector<std::uint8_t> &data) {
+  bool FileSettingsPersistence::store(const std::vector<std::uint8_t> &data) {
     try {
-      std::ofstream stream { m_filepath, std::ios::binary | std::ios::trunc };
+      std::ofstream stream {m_filepath, std::ios::binary | std::ios::trunc};
       if (!stream) {
         DD_LOG(error) << "Failed to open " << m_filepath << " for writing!";
         return false;
       }
 
-      std::copy(std::begin(data), std::end(data), std::ostreambuf_iterator<char> { stream });
+      std::copy(std::begin(data), std::end(data), std::ostreambuf_iterator<char> {stream});
       return true;
-    }
-    catch (const std::exception &error) {
+    } catch (const std::exception &error) {
       DD_LOG(error) << "Failed to write to " << m_filepath << "! Error:\n"
                     << error.what();
       return false;
     }
   }
 
-  std::optional<std::vector<std::uint8_t>>
-  FileSettingsPersistence::load() const {
+  std::optional<std::vector<std::uint8_t>> FileSettingsPersistence::load() const {
     if (std::error_code error_code; !std::filesystem::exists(m_filepath, error_code)) {
       if (error_code) {
         DD_LOG(error) << "Failed to load " << m_filepath << "! Error:\n"
@@ -53,24 +50,21 @@ namespace display_device {
     }
 
     try {
-      std::ifstream stream { m_filepath, std::ios::binary };
+      std::ifstream stream {m_filepath, std::ios::binary};
       if (!stream) {
         DD_LOG(error) << "Failed to open " << m_filepath << " for reading!";
         return std::nullopt;
       }
 
-      return std::vector<std::uint8_t> { std::istreambuf_iterator<char> { stream },
-        std::istreambuf_iterator<char> {} };
-    }
-    catch (const std::exception &error) {
+      return std::vector<std::uint8_t> {std::istreambuf_iterator<char> {stream}, std::istreambuf_iterator<char> {}};
+    } catch (const std::exception &error) {
       DD_LOG(error) << "Failed to read " << m_filepath << "! Error:\n"
                     << error.what();
       return std::nullopt;
     }
   }
 
-  bool
-  FileSettingsPersistence::clear() {
+  bool FileSettingsPersistence::clear() {
     // Return valud does not matter since we check the error code in case the file could NOT be removed.
     std::error_code error_code;
     std::filesystem::remove(m_filepath, error_code);

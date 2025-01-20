@@ -8,8 +8,7 @@
 #include <iostream>
 #include <regex>
 
-bool
-testRegex(const std::string &input, const std::string &pattern) {
+bool testRegex(const std::string &input, const std::string &pattern) {
   std::regex regex(pattern);
   std::smatch match;
   if (!std::regex_match(input, match, regex)) {
@@ -21,8 +20,7 @@ testRegex(const std::string &input, const std::string &pattern) {
   return true;
 }
 
-int
-setEnv(const std::string &name, const std::string &value) {
+int setEnv(const std::string &name, const std::string &value) {
 #ifdef _WIN32
   return _putenv_s(name.c_str(), value.c_str());
 #else
@@ -30,10 +28,9 @@ setEnv(const std::string &name, const std::string &value) {
 #endif
 }
 
-std::optional<std::string>
-getEnv(const std::string &name) {
-  if (const auto value { std::getenv(name.c_str()) }; value) {
-    return std::string { value };
+std::optional<std::string> getEnv(const std::string &name) {
+  if (const auto value {std::getenv(name.c_str())}; value) {
+    return std::string {value};
   }
   return std::nullopt;
 }

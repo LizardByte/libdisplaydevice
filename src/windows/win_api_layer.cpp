@@ -24,8 +24,7 @@
 namespace display_device {
   namespace {
     /** @brief Dumps the result of @see queryDisplayConfig into a string */
-    std::string
-    dumpPath(const DISPLAYCONFIG_PATH_INFO &info) {
+    std::string dumpPath(const DISPLAYCONFIG_PATH_INFO &info) {
       std::ostringstream output;
       std::ios state(nullptr);
       state.copyfmt(output);
@@ -60,8 +59,7 @@ namespace display_device {
     }
 
     /** @brief Dumps the result of @see queryDisplayConfig into a string */
-    std::string
-    dumpMode(const DISPLAYCONFIG_MODE_INFO &info) {
+    std::string dumpMode(const DISPLAYCONFIG_MODE_INFO &info) {
       std::stringstream output;
       std::ios state(nullptr);
       state.copyfmt(output);
@@ -73,8 +71,7 @@ namespace display_device {
         output << "pixelFormat: " << info.sourceMode.pixelFormat << std::endl;
         output << "position: [" << info.sourceMode.position.x << ", " << info.sourceMode.position.y << "]";
         // clang-format on
-      }
-      else if (info.infoType == DISPLAYCONFIG_MODE_INFO_TYPE_TARGET) {
+      } else if (info.infoType == DISPLAYCONFIG_MODE_INFO_TYPE_TARGET) {
         // clang-format off
         output << "pixelRate: " << info.targetMode.targetVideoSignalInfo.pixelRate << std::endl;
         output << "hSyncFreq: " << info.targetMode.targetVideoSignalInfo.hSyncFreq.Numerator << "/" << info.targetMode.targetVideoSignalInfo.hSyncFreq.Denominator << std::endl;
@@ -84,8 +81,7 @@ namespace display_device {
         output << "videoStandard: " << info.targetMode.targetVideoSignalInfo.videoStandard << std::endl;
         output << "scanLineOrdering: " << info.targetMode.targetVideoSignalInfo.scanLineOrdering;
         // clang-format on
-      }
-      else if (info.infoType == DISPLAYCONFIG_MODE_INFO_TYPE_DESKTOP_IMAGE) {
+      } else if (info.infoType == DISPLAYCONFIG_MODE_INFO_TYPE_DESKTOP_IMAGE) {
         // TODO: One day MinGW will add updated struct definition and the following code can be enabled
         // clang-format off
         // output << "PathSourceSize: [" << info.desktopImageInfo.PathSourceSize.x << ", " << info.desktopImageInfo.PathSourceSize.y << "]" << std::endl;
@@ -93,8 +89,7 @@ namespace display_device {
         // output << "DesktopImageClip: [" << info.desktopImageInfo.DesktopImageClip.bottom << ", " << info.desktopImageInfo.DesktopImageClip.left << ", " << info.desktopImageInfo.DesktopImageClip.right << ", " << info.desktopImageInfo.DesktopImageClip.top << "]";
         // clang-format on
         output << "NOT SUPPORTED BY COMPILER YET...";
-      }
-      else {
+      } else {
         output << "NOT IMPLEMENTED YET...";
       }
 
@@ -102,15 +97,13 @@ namespace display_device {
     }
 
     /** @brief Dumps the result of @see queryDisplayConfig into a string */
-    std::string
-    dumpPathsAndModes(const std::vector<DISPLAYCONFIG_PATH_INFO> &paths,
-      const std::vector<DISPLAYCONFIG_MODE_INFO> &modes) {
+    std::string dumpPathsAndModes(const std::vector<DISPLAYCONFIG_PATH_INFO> &paths, const std::vector<DISPLAYCONFIG_MODE_INFO> &modes) {
       std::ostringstream output;
 
       output << std::endl
              << "Got " << paths.size() << " path(s):";
-      bool path_dumped { false };
-      for (auto i { 0u }; i < paths.size(); ++i) {
+      bool path_dumped {false};
+      for (auto i {0u}; i < paths.size(); ++i) {
         output << std::endl
                << "----------------------------------------[index: " << i << "]" << std::endl;
 
@@ -124,7 +117,7 @@ namespace display_device {
       }
 
       output << "Got " << modes.size() << " mode(s):";
-      for (auto i { 0u }; i < modes.size(); ++i) {
+      for (auto i {0u}; i < modes.size(); ++i) {
         output << std::endl
                << "----------------------------------------[index: " << i << "]" << std::endl;
 
@@ -139,21 +132,20 @@ namespace display_device {
      *      function is identical except that it returns wide-string instead
      *      of a normal one.
      */
-    std::wstring
-    getMonitorDevicePathWstr(const WinApiLayerInterface &w_api, const DISPLAYCONFIG_PATH_INFO &path) {
+    std::wstring getMonitorDevicePathWstr(const WinApiLayerInterface &w_api, const DISPLAYCONFIG_PATH_INFO &path) {
       DISPLAYCONFIG_TARGET_DEVICE_NAME target_name = {};
       target_name.header.adapterId = path.targetInfo.adapterId;
       target_name.header.id = path.targetInfo.id;
       target_name.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
       target_name.header.size = sizeof(target_name);
 
-      LONG result { DisplayConfigGetDeviceInfo(&target_name.header) };
+      LONG result {DisplayConfigGetDeviceInfo(&target_name.header)};
       if (result != ERROR_SUCCESS) {
         DD_LOG(error) << w_api.getErrorString(result) << " failed to get target device name!";
         return {};
       }
 
-      return std::wstring { target_name.monitorDevicePath };
+      return std::wstring {target_name.monitorDevicePath};
     }
 
     /**
@@ -161,14 +153,12 @@ namespace display_device {
      * @returns True if device interface path was retrieved and is non-empty, false otherwise.
      * @see getDeviceId implementation for more context regarding this madness.
      */
-    bool
-    getDeviceInterfaceDetail(const WinApiLayerInterface &w_api, HDEVINFO dev_info_handle, SP_DEVICE_INTERFACE_DATA &dev_interface_data, std::wstring &dev_interface_path, SP_DEVINFO_DATA &dev_info_data) {
-      DWORD required_size_in_bytes { 0 };
+    bool getDeviceInterfaceDetail(const WinApiLayerInterface &w_api, HDEVINFO dev_info_handle, SP_DEVICE_INTERFACE_DATA &dev_interface_data, std::wstring &dev_interface_path, SP_DEVINFO_DATA &dev_info_data) {
+      DWORD required_size_in_bytes {0};
       if (SetupDiGetDeviceInterfaceDetailW(dev_info_handle, &dev_interface_data, nullptr, 0, &required_size_in_bytes, nullptr)) {
         DD_LOG(error) << "\"SetupDiGetDeviceInterfaceDetailW\" did not fail, what?!";
         return false;
-      }
-      else if (required_size_in_bytes <= 0) {
+      } else if (required_size_in_bytes <= 0) {
         DD_LOG(error) << w_api.getErrorString(static_cast<LONG>(GetLastError())) << " \"SetupDiGetDeviceInterfaceDetailW\" failed while getting size.";
         return false;
       }
@@ -177,7 +167,7 @@ namespace display_device {
       buffer.resize(required_size_in_bytes);
 
       // This part is just EVIL!
-      auto detail_data { reinterpret_cast<SP_DEVICE_INTERFACE_DETAIL_DATA_W *>(buffer.data()) };
+      auto detail_data {reinterpret_cast<SP_DEVICE_INTERFACE_DETAIL_DATA_W *>(buffer.data())};
       detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_W);
 
       if (!SetupDiGetDeviceInterfaceDetailW(dev_info_handle, &dev_interface_data, detail_data, required_size_in_bytes, nullptr, &dev_info_data)) {
@@ -185,7 +175,7 @@ namespace display_device {
         return false;
       }
 
-      dev_interface_path = std::wstring { detail_data->DevicePath };
+      dev_interface_path = std::wstring {detail_data->DevicePath};
       return !dev_interface_path.empty();
     }
 
@@ -194,14 +184,12 @@ namespace display_device {
      * @returns True if instance id was retrieved and is non-empty, false otherwise.
      * @see getDeviceId implementation for more context regarding this madness.
      */
-    bool
-    getDeviceInstanceId(const WinApiLayerInterface &w_api, HDEVINFO dev_info_handle, SP_DEVINFO_DATA &dev_info_data, std::wstring &instance_id) {
-      DWORD required_size_in_characters { 0 };
+    bool getDeviceInstanceId(const WinApiLayerInterface &w_api, HDEVINFO dev_info_handle, SP_DEVINFO_DATA &dev_info_data, std::wstring &instance_id) {
+      DWORD required_size_in_characters {0};
       if (SetupDiGetDeviceInstanceIdW(dev_info_handle, &dev_info_data, nullptr, 0, &required_size_in_characters)) {
         DD_LOG(error) << "\"SetupDiGetDeviceInstanceIdW\" did not fail, what?!";
         return false;
-      }
-      else if (required_size_in_characters <= 0) {
+      } else if (required_size_in_characters <= 0) {
         DD_LOG(error) << w_api.getErrorString(static_cast<LONG>(GetLastError())) << " \"SetupDiGetDeviceInstanceIdW\" failed while getting size.";
         return false;
       }
@@ -220,10 +208,9 @@ namespace display_device {
      * @returns True if EDID was retrieved and is non-empty, false otherwise.
      * @see getDeviceId implementation for more context regarding this madness.
      */
-    bool
-    getDeviceEdid(const WinApiLayerInterface &w_api, HDEVINFO dev_info_handle, SP_DEVINFO_DATA &dev_info_data, std::vector<BYTE> &edid) {
+    bool getDeviceEdid(const WinApiLayerInterface &w_api, HDEVINFO dev_info_handle, SP_DEVINFO_DATA &dev_info_data, std::vector<BYTE> &edid) {
       // We could just directly open the registry key as the path is known, but we can also use the this
-      HKEY reg_key { SetupDiOpenDevRegKey(dev_info_handle, &dev_info_data, DICS_FLAG_GLOBAL, 0, DIREG_DEV, KEY_READ) };
+      HKEY reg_key {SetupDiOpenDevRegKey(dev_info_handle, &dev_info_data, DICS_FLAG_GLOBAL, 0, DIREG_DEV, KEY_READ)};
       if (reg_key == INVALID_HANDLE_VALUE) {
         DD_LOG(error) << w_api.getErrorString(static_cast<LONG>(GetLastError())) << " \"SetupDiOpenDevRegKey\" failed.";
         return false;
@@ -231,15 +218,15 @@ namespace display_device {
 
       const auto reg_key_cleanup {
         boost::scope::scope_exit([&w_api, &reg_key]() {
-          const auto status { RegCloseKey(reg_key) };
+          const auto status {RegCloseKey(reg_key)};
           if (status != ERROR_SUCCESS) {
             DD_LOG(error) << w_api.getErrorString(status) << " \"RegCloseKey\" failed.";
           }
         })
       };
 
-      DWORD required_size_in_bytes { 0 };
-      auto status { RegQueryValueExW(reg_key, L"EDID", nullptr, nullptr, nullptr, &required_size_in_bytes) };
+      DWORD required_size_in_bytes {0};
+      auto status {RegQueryValueExW(reg_key, L"EDID", nullptr, nullptr, nullptr, &required_size_in_bytes)};
       if (status != ERROR_SUCCESS) {
         DD_LOG(error) << w_api.getErrorString(status) << " \"RegQueryValueExW\" failed when getting size.";
         return false;
@@ -262,8 +249,7 @@ namespace display_device {
      * @param value The UTF-16 wide string.
      * @return The converted UTF-8 string.
      */
-    std::string
-    toUtf8(const WinApiLayerInterface &w_api, const std::wstring &value) {
+    std::string toUtf8(const WinApiLayerInterface &w_api, const std::wstring &value) {
       // No conversion needed if the string is empty
       if (value.empty()) {
         return {};
@@ -288,8 +274,7 @@ namespace display_device {
     }
   }  // namespace
 
-  std::string
-  WinApiLayer::getErrorString(LONG error_code) const {
+  std::string WinApiLayer::getErrorString(LONG error_code) const {
     std::ostringstream error;
     error << "[code: ";
     switch (error_code) {
@@ -319,8 +304,7 @@ namespace display_device {
     return error.str();
   }
 
-  std::optional<PathAndModeData>
-  WinApiLayer::queryDisplayConfig(QueryType type) const {
+  std::optional<PathAndModeData> WinApiLayer::queryDisplayConfig(QueryType type) const {
     std::vector<DISPLAYCONFIG_PATH_INFO> paths;
     std::vector<DISPLAYCONFIG_MODE_INFO> modes;
     LONG result = ERROR_SUCCESS;
@@ -331,8 +315,8 @@ namespace display_device {
     flags |= QDC_VIRTUAL_MODE_AWARE;  // supported from W10 onwards
 
     do {
-      UINT32 path_count { 0 };
-      UINT32 mode_count { 0 };
+      UINT32 path_count {0};
+      UINT32 mode_count {0};
 
       result = GetDisplayConfigBufferSizes(flags, &path_count, &mode_count);
       if (result != ERROR_SUCCESS) {
@@ -359,21 +343,20 @@ namespace display_device {
 
     DD_LOG(verbose) << "Result of " << (type == QueryType::Active ? "ACTIVE" : "ALL") << " display config query:\n"
                     << dumpPathsAndModes(paths, modes) << "\n";
-    return PathAndModeData { paths, modes };
+    return PathAndModeData {paths, modes};
   }
 
-  std::string
-  WinApiLayer::getDeviceId(const DISPLAYCONFIG_PATH_INFO &path) const {
-    const auto device_path { getMonitorDevicePathWstr(*this, path) };
+  std::string WinApiLayer::getDeviceId(const DISPLAYCONFIG_PATH_INFO &path) const {
+    const auto device_path {getMonitorDevicePathWstr(*this, path)};
     if (device_path.empty()) {
       // Error already logged
       return {};
     }
 
-    static const GUID monitor_guid { 0xe6f07b5f, 0xee97, 0x4a90, { 0xb0, 0x76, 0x33, 0xf5, 0x7b, 0xf4, 0xea, 0xa7 } };
+    static const GUID monitor_guid {0xe6f07b5f, 0xee97, 0x4a90, {0xb0, 0x76, 0x33, 0xf5, 0x7b, 0xf4, 0xea, 0xa7}};
     std::vector<BYTE> device_id_data;
 
-    HDEVINFO dev_info_handle { SetupDiGetClassDevsW(&monitor_guid, nullptr, nullptr, DIGCF_DEVICEINTERFACE) };
+    HDEVINFO dev_info_handle {SetupDiGetClassDevsW(&monitor_guid, nullptr, nullptr, DIGCF_DEVICEINTERFACE)};
     if (dev_info_handle) {
       const auto dev_info_handle_cleanup {
         boost::scope::scope_exit([this, &dev_info_handle]() {
@@ -387,7 +370,7 @@ namespace display_device {
       dev_interface_data.cbSize = sizeof(dev_interface_data);
       for (DWORD monitor_index = 0;; ++monitor_index) {
         if (!SetupDiEnumDeviceInterfaces(dev_info_handle, nullptr, &monitor_guid, monitor_index, &dev_interface_data)) {
-          const DWORD error_code { GetLastError() };
+          const DWORD error_code {GetLastError()};
           if (error_code == ERROR_NO_MORE_ITEMS) {
             break;
           }
@@ -450,14 +433,10 @@ namespace display_device {
           break;
         }
 
-        device_id_data.insert(std::end(device_id_data),
-          reinterpret_cast<const BYTE *>(instance_id.data()),
-          reinterpret_cast<const BYTE *>(instance_id.data() + unstable_part_index));
-        device_id_data.insert(std::end(device_id_data),
-          reinterpret_cast<const BYTE *>(instance_id.data() + semi_stable_part_index),
-          reinterpret_cast<const BYTE *>(instance_id.data() + instance_id.size()));
+        device_id_data.insert(std::end(device_id_data), reinterpret_cast<const BYTE *>(instance_id.data()), reinterpret_cast<const BYTE *>(instance_id.data() + unstable_part_index));
+        device_id_data.insert(std::end(device_id_data), reinterpret_cast<const BYTE *>(instance_id.data() + semi_stable_part_index), reinterpret_cast<const BYTE *>(instance_id.data() + instance_id.size()));
 
-        static const auto dump_device_id_data { [](const auto &data) -> std::string {
+        static const auto dump_device_id_data {[](const auto &data) -> std::string {
           if (data.empty()) {
             return {};
           }
@@ -473,7 +452,7 @@ namespace display_device {
           output << "]";
 
           return output.str();
-        } };
+        }};
         DD_LOG(verbose) << "Creating device id from EDID + instance ID: " << dump_device_id_data(device_id_data);
         break;
       }
@@ -482,33 +461,29 @@ namespace display_device {
     if (device_id_data.empty()) {
       // Using the device path as a fallback, which is always unique, but not as stable as the preferred one
       DD_LOG(verbose) << "Creating device id from path " << toUtf8(*this, device_path);
-      device_id_data.insert(std::end(device_id_data),
-        reinterpret_cast<const BYTE *>(device_path.data()),
-        reinterpret_cast<const BYTE *>(device_path.data() + device_path.size()));
+      device_id_data.insert(std::end(device_id_data), reinterpret_cast<const BYTE *>(device_path.data()), reinterpret_cast<const BYTE *>(device_path.data() + device_path.size()));
     }
 
     static constexpr boost::uuids::uuid ns_id {};  // null namespace = no salt
-    const auto boost_uuid { boost::uuids::name_generator_sha1 { ns_id }(device_id_data.data(), device_id_data.size()) };
-    const std::string device_id { "{" + boost::uuids::to_string(boost_uuid) + "}" };
+    const auto boost_uuid {boost::uuids::name_generator_sha1 {ns_id}(device_id_data.data(), device_id_data.size())};
+    const std::string device_id {"{" + boost::uuids::to_string(boost_uuid) + "}"};
 
     DD_LOG(verbose) << "Created device id: " << toUtf8(*this, device_path) << " -> " << device_id;
     return device_id;
   }
 
-  std::string
-  WinApiLayer::getMonitorDevicePath(const DISPLAYCONFIG_PATH_INFO &path) const {
+  std::string WinApiLayer::getMonitorDevicePath(const DISPLAYCONFIG_PATH_INFO &path) const {
     return toUtf8(*this, getMonitorDevicePathWstr(*this, path));
   }
 
-  std::string
-  WinApiLayer::getFriendlyName(const DISPLAYCONFIG_PATH_INFO &path) const {
+  std::string WinApiLayer::getFriendlyName(const DISPLAYCONFIG_PATH_INFO &path) const {
     DISPLAYCONFIG_TARGET_DEVICE_NAME target_name = {};
     target_name.header.adapterId = path.targetInfo.adapterId;
     target_name.header.id = path.targetInfo.id;
     target_name.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
     target_name.header.size = sizeof(target_name);
 
-    LONG result { DisplayConfigGetDeviceInfo(&target_name.header) };
+    LONG result {DisplayConfigGetDeviceInfo(&target_name.header)};
     if (result != ERROR_SUCCESS) {
       DD_LOG(error) << getErrorString(result) << " failed to get target device name!";
       return {};
@@ -517,15 +492,14 @@ namespace display_device {
     return target_name.flags.friendlyNameFromEdid ? toUtf8(*this, target_name.monitorFriendlyDeviceName) : std::string {};
   }
 
-  std::string
-  WinApiLayer::getDisplayName(const DISPLAYCONFIG_PATH_INFO &path) const {
+  std::string WinApiLayer::getDisplayName(const DISPLAYCONFIG_PATH_INFO &path) const {
     DISPLAYCONFIG_SOURCE_DEVICE_NAME source_name = {};
     source_name.header.id = path.sourceInfo.id;
     source_name.header.adapterId = path.sourceInfo.adapterId;
     source_name.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME;
     source_name.header.size = sizeof(source_name);
 
-    LONG result { DisplayConfigGetDeviceInfo(&source_name.header) };
+    LONG result {DisplayConfigGetDeviceInfo(&source_name.header)};
     if (result != ERROR_SUCCESS) {
       DD_LOG(error) << getErrorString(result) << " failed to get display name!";
       return {};
@@ -534,26 +508,25 @@ namespace display_device {
     return toUtf8(*this, source_name.viewGdiDeviceName);
   }
 
-  LONG
-  WinApiLayer::setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> paths, std::vector<DISPLAYCONFIG_MODE_INFO> modes, UINT32 flags) {
+  LONG WinApiLayer::setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> paths, std::vector<DISPLAYCONFIG_MODE_INFO> modes, UINT32 flags) {
     // std::vector::data() "may or may not return a null pointer, if size() is 0", therefore we want to enforce nullptr...
     return ::SetDisplayConfig(
       paths.size(),
       paths.empty() ? nullptr : paths.data(),
       modes.size(),
       modes.empty() ? nullptr : modes.data(),
-      flags);
+      flags
+    );
   }
 
-  std::optional<HdrState>
-  WinApiLayer::getHdrState(const DISPLAYCONFIG_PATH_INFO &path) const {
+  std::optional<HdrState> WinApiLayer::getHdrState(const DISPLAYCONFIG_PATH_INFO &path) const {
     DISPLAYCONFIG_GET_ADVANCED_COLOR_INFO color_info = {};
     color_info.header.adapterId = path.targetInfo.adapterId;
     color_info.header.id = path.targetInfo.id;
     color_info.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_ADVANCED_COLOR_INFO;
     color_info.header.size = sizeof(color_info);
 
-    LONG result { DisplayConfigGetDeviceInfo(&color_info.header) };
+    LONG result {DisplayConfigGetDeviceInfo(&color_info.header)};
     if (result != ERROR_SUCCESS) {
       DD_LOG(error) << getErrorString(result) << " failed to get advanced color info!";
       return std::nullopt;
@@ -562,8 +535,7 @@ namespace display_device {
     return color_info.advancedColorSupported ? std::make_optional(color_info.advancedColorEnabled ? HdrState::Enabled : HdrState::Disabled) : std::nullopt;
   }
 
-  bool
-  WinApiLayer::setHdrState(const DISPLAYCONFIG_PATH_INFO &path, HdrState state) {
+  bool WinApiLayer::setHdrState(const DISPLAYCONFIG_PATH_INFO &path, HdrState state) {
     DISPLAYCONFIG_SET_ADVANCED_COLOR_STATE color_state = {};
     color_state.header.adapterId = path.targetInfo.adapterId;
     color_state.header.id = path.targetInfo.id;
@@ -571,7 +543,7 @@ namespace display_device {
     color_state.header.size = sizeof(color_state);
     color_state.enableAdvancedColor = state == HdrState::Enabled ? 1 : 0;
 
-    LONG result { DisplayConfigSetDeviceInfo(&color_state.header) };
+    LONG result {DisplayConfigSetDeviceInfo(&color_state.header)};
     if (result != ERROR_SUCCESS) {
       DD_LOG(error) << getErrorString(result) << " failed to set advanced color info!";
       return false;
@@ -580,36 +552,37 @@ namespace display_device {
     return true;
   }
 
-  std::optional<Rational>
-  WinApiLayer::getDisplayScale(const std::string &display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const {
+  std::optional<Rational> WinApiLayer::getDisplayScale(const std::string &display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const {
     // Note: implementation based on https://stackoverflow.com/a/74046173
     struct EnumData {
       std::string m_display_name;
       std::optional<int> m_width;
     };
 
-    EnumData enum_data { display_name, std::nullopt };
+    EnumData enum_data {display_name, std::nullopt};
     EnumDisplayMonitors(
-      nullptr, nullptr, [](HMONITOR monitor, HDC, LPRECT, LPARAM user_data) -> BOOL {
-      auto *data = reinterpret_cast<EnumData*>(user_data);
-      if (data == nullptr)
-      {
-        // Sanity check
-        DD_LOG(error) << "EnumData is a nullptr!";
-        return FALSE;
-      }
-
-      MONITORINFOEXA  monitor_info{ sizeof(MONITORINFOEXA ) };
-      if (GetMonitorInfoA(monitor, &monitor_info))
-      {
-        if (data->m_display_name == monitor_info.szDevice)
-        {
-          data->m_width = monitor_info.rcMonitor.right - monitor_info.rcMonitor.left;
+      nullptr,
+      nullptr,
+      [](HMONITOR monitor, HDC, LPRECT, LPARAM user_data) -> BOOL {
+        auto *data = reinterpret_cast<EnumData *>(user_data);
+        if (data == nullptr) {
+          // Sanity check
+          DD_LOG(error) << "EnumData is a nullptr!";
           return FALSE;
         }
-      }
 
-      return TRUE; }, reinterpret_cast<LPARAM>(&enum_data));
+        MONITORINFOEXA monitor_info {sizeof(MONITORINFOEXA)};
+        if (GetMonitorInfoA(monitor, &monitor_info)) {
+          if (data->m_display_name == monitor_info.szDevice) {
+            data->m_width = monitor_info.rcMonitor.right - monitor_info.rcMonitor.left;
+            return FALSE;
+          }
+        }
+
+        return TRUE;
+      },
+      reinterpret_cast<LPARAM>(&enum_data)
+    );
 
     if (!enum_data.m_width) {
       DD_LOG(debug) << "Failed to get monitor info for " << display_name << "!";
@@ -621,7 +594,7 @@ namespace display_device {
       return std::nullopt;
     }
 
-    const auto width { static_cast<double>(*enum_data.m_width) / static_cast<double>(source_mode.width) };
-    return Rational { static_cast<unsigned int>(std::round((static_cast<double>(GetDpiForSystem()) / 96. / width) * 100)), 100 };
+    const auto width {static_cast<double>(*enum_data.m_width) / static_cast<double>(source_mode.width)};
+    return Rational {static_cast<unsigned int>(std::round((static_cast<double>(GetDpiForSystem()) / 96. / width) * 100)), 100};
   }
 }  // namespace display_device

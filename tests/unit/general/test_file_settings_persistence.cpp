@@ -17,8 +17,7 @@ namespace {
       std::filesystem::remove(m_filepath);
     }
 
-    display_device::FileSettingsPersistence &
-    getImpl(const std::filesystem::path &filepath = "testfile.ext") {
+    display_device::FileSettingsPersistence &getImpl(const std::filesystem::path &filepath = "testfile.ext") {
       if (!m_impl) {
         m_filepath = filepath;
         m_impl = std::make_unique<display_device::FileSettingsPersistence>(m_filepath);
@@ -37,45 +36,47 @@ namespace {
 }  // namespace
 
 TEST_F_S(EmptyFilenameProvided) {
-  EXPECT_THAT([]() { const display_device::FileSettingsPersistence persistence { {} }; },
-    ThrowsMessage<std::runtime_error>(HasSubstr("Empty filename provided for FileSettingsPersistence!")));
+  EXPECT_THAT([]() {
+    const display_device::FileSettingsPersistence persistence {{}};
+  },
+              ThrowsMessage<std::runtime_error>(HasSubstr("Empty filename provided for FileSettingsPersistence!")));
 }
 
 TEST_F_S(Store, NewFileCreated) {
-  const std::filesystem::path filepath { "myfile.ext" };
-  const std::vector<std::uint8_t> data { 0x00, 0x01, 0x02, 0x04, 'S', 'O', 'M', 'E', ' ', 'D', 'A', 'T', 'A' };
+  const std::filesystem::path filepath {"myfile.ext"};
+  const std::vector<std::uint8_t> data {0x00, 0x01, 0x02, 0x04, 'S', 'O', 'M', 'E', ' ', 'D', 'A', 'T', 'A'};
 
   EXPECT_FALSE(std::filesystem::exists(filepath));
   EXPECT_TRUE(getImpl(filepath).store(data));
   EXPECT_TRUE(std::filesystem::exists(filepath));
 
-  std::ifstream stream { filepath, std::ios::binary };
-  std::vector<std::uint8_t> file_data { std::istreambuf_iterator<char> { stream }, std::istreambuf_iterator<char> {} };
+  std::ifstream stream {filepath, std::ios::binary};
+  std::vector<std::uint8_t> file_data {std::istreambuf_iterator<char> {stream}, std::istreambuf_iterator<char> {}};
   EXPECT_EQ(file_data, data);
 }
 
 TEST_F_S(Store, FileOverwritten) {
-  const std::filesystem::path filepath { "myfile.ext" };
-  const std::vector<std::uint8_t> data1 { 0x00, 0x01, 0x02, 0x04, 'S', 'O', 'M', 'E', ' ', 'D', 'A', 'T', 'A', ' ', '1' };
-  const std::vector<std::uint8_t> data2 { 0x00, 0x01, 0x02, 0x04, 'S', 'O', 'M', 'E', ' ', 'D', 'A', 'T', 'A', ' ', '2' };
+  const std::filesystem::path filepath {"myfile.ext"};
+  const std::vector<std::uint8_t> data1 {0x00, 0x01, 0x02, 0x04, 'S', 'O', 'M', 'E', ' ', 'D', 'A', 'T', 'A', ' ', '1'};
+  const std::vector<std::uint8_t> data2 {0x00, 0x01, 0x02, 0x04, 'S', 'O', 'M', 'E', ' ', 'D', 'A', 'T', 'A', ' ', '2'};
 
   {
-    std::ofstream file { filepath, std::ios_base::binary };
-    std::copy(std::begin(data1), std::end(data1), std::ostreambuf_iterator<char> { file });
+    std::ofstream file {filepath, std::ios_base::binary};
+    std::copy(std::begin(data1), std::end(data1), std::ostreambuf_iterator<char> {file});
   }
 
   EXPECT_TRUE(std::filesystem::exists(filepath));
   EXPECT_TRUE(getImpl(filepath).store(data2));
   EXPECT_TRUE(std::filesystem::exists(filepath));
 
-  std::ifstream stream { filepath, std::ios::binary };
-  std::vector<std::uint8_t> file_data { std::istreambuf_iterator<char> { stream }, std::istreambuf_iterator<char> {} };
+  std::ifstream stream {filepath, std::ios::binary};
+  std::vector<std::uint8_t> file_data {std::istreambuf_iterator<char> {stream}, std::istreambuf_iterator<char> {}};
   EXPECT_EQ(file_data, data2);
 }
 
 TEST_F_S(Store, FilepathWithDirectory) {
-  const std::filesystem::path filepath { "somedir/myfile.ext" };
-  const std::vector<std::uint8_t> data { 0x00, 0x01, 0x02, 0x04, 'S', 'O', 'M', 'E', ' ', 'D', 'A', 'T', 'A' };
+  const std::filesystem::path filepath {"somedir/myfile.ext"};
+  const std::vector<std::uint8_t> data {0x00, 0x01, 0x02, 0x04, 'S', 'O', 'M', 'E', ' ', 'D', 'A', 'T', 'A'};
 
   EXPECT_FALSE(std::filesystem::exists(filepath));
   EXPECT_FALSE(getImpl(filepath).store(data));
@@ -87,12 +88,12 @@ TEST_F_S(Load, NoFileAvailable) {
 }
 
 TEST_F_S(Load, FileRead) {
-  const std::filesystem::path filepath { "myfile.ext" };
-  const std::vector<std::uint8_t> data { 0x00, 0x01, 0x02, 0x04, 'S', 'O', 'M', 'E', ' ', 'D', 'A', 'T', 'A' };
+  const std::filesystem::path filepath {"myfile.ext"};
+  const std::vector<std::uint8_t> data {0x00, 0x01, 0x02, 0x04, 'S', 'O', 'M', 'E', ' ', 'D', 'A', 'T', 'A'};
 
   {
-    std::ofstream file { filepath, std::ios_base::binary };
-    std::copy(std::begin(data), std::end(data), std::ostreambuf_iterator<char> { file });
+    std::ofstream file {filepath, std::ios_base::binary};
+    std::copy(std::begin(data), std::end(data), std::ostreambuf_iterator<char> {file});
   }
 
   EXPECT_EQ(getImpl(filepath).load(), data);
@@ -103,9 +104,9 @@ TEST_F_S(Clear, NoFileAvailable) {
 }
 
 TEST_F_S(Clear, FileRemoved) {
-  const std::filesystem::path filepath { "myfile.ext" };
+  const std::filesystem::path filepath {"myfile.ext"};
   {
-    std::ofstream file { filepath };
+    std::ofstream file {filepath};
     file << "some data";
   }
 
