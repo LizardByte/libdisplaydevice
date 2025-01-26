@@ -106,9 +106,6 @@ TEST_F_S_MOCKED(ResetPersistence, FailedToReset) {
   EXPECT_CALL(*m_settings_persistence_api, load())
     .Times(1)
     .WillOnce(Return(serializeState(ut_consts::SDCS_FULL)));
-  EXPECT_CALL(*m_dd_api, isApiAccessAvailable())
-    .Times(1)
-    .WillOnce(Return(false));
   EXPECT_CALL(*m_settings_persistence_api, clear())
     .Times(1)
     .WillOnce(Return(false));
@@ -120,9 +117,6 @@ TEST_F_S_MOCKED(ResetPersistence, PersistenceReset, NoCapturedDevice) {
   EXPECT_CALL(*m_settings_persistence_api, load())
     .Times(1)
     .WillOnce(Return(serializeState(ut_consts::SDCS_FULL)));
-  EXPECT_CALL(*m_dd_api, isApiAccessAvailable())
-    .Times(1)
-    .WillOnce(Return(false));
   EXPECT_CALL(*m_settings_persistence_api, clear())
     .Times(1)
     .WillOnce(Return(true));
@@ -138,9 +132,6 @@ TEST_F_S_MOCKED(ResetPersistence, PersistenceReset, WithCapturedDevice) {
   EXPECT_CALL(*m_settings_persistence_api, load())
     .Times(1)
     .WillOnce(Return(serializeState(ut_consts::SDCS_FULL)));
-  EXPECT_CALL(*m_dd_api, isApiAccessAvailable())
-    .Times(1)
-    .WillOnce(Return(false));
   EXPECT_CALL(*m_settings_persistence_api, clear())
     .Times(1)
     .WillOnce(Return(true));

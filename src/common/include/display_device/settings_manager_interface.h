@@ -98,7 +98,7 @@ namespace display_device {
      *
      * In case the settings cannot be reverted, because the display is turned or some other reason,
      * this allows to "accept" the current state and start from scratch, but only if the persistence was
-     * cleared successfuly.
+     * cleared successfully.
      * @examples
      * SettingsManagerInterface* iface = getIface(...);
      * auto result = iface->applySettings(config);

@@ -127,7 +127,7 @@ namespace display_device {
      * @brief Set new display modes for the devices.
      * @param modes A map of modes to set.
      * @returns True if modes were set, false otherwise.
-     * @warning if any of the specified devices are duplicated, modes modes be provided
+     * @warning if any of the specified devices are duplicated, modes be provided
      *          for duplicates too!
      * @examples
      * WinDisplayDeviceInterface* iface = getIface(...);
