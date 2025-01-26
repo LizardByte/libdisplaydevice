@@ -18,17 +18,10 @@ namespace display_device {
   }
 
   bool WinDisplayDevice::isApiAccessAvailable() const {
-    const auto display_data {m_w_api->queryDisplayConfig(QueryType::All)};
-    if (!display_data) {
-      DD_LOG(debug) << "WinDisplayDevice::isApiAccessAvailable failed while querying display data.";
-      return false;
-    }
-
-    // Here we are supplying the retrieved display data back to SetDisplayConfig (with VALIDATE flag only, so that we make no actual changes).
     // Unless something is really broken on Windows, this call should never fail under normal circumstances - the configuration is 100% correct, since it was
     // provided by Windows.
-    const UINT32 flags {SDC_VALIDATE | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_VIRTUAL_MODE_AWARE};
-    const LONG result {m_w_api->setDisplayConfig(display_data->m_paths, display_data->m_modes, flags)};
+    const UINT32 flags {SDC_VALIDATE | SDC_USE_DATABASE_CURRENT};
+    const LONG result {m_w_api->setDisplayConfig({}, {}, flags)};
 
     DD_LOG(debug) << "WinDisplayDevice::isApiAccessAvailable result: " << m_w_api->getErrorString(result);
     return result == ERROR_SUCCESS;

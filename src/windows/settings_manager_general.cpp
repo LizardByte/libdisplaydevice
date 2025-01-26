@@ -46,12 +46,13 @@ namespace display_device {
   }
 
   bool SettingsManager::resetPersistence() {
-    // Trying to revert one more time in case we succeed.
-    if (revertSettings() == RevertResult::Ok) {
+    DD_LOG(info) << "Trying to reset persistent display device settings.";
+
+    const auto &cached_state {m_persistence_state->getState()};
+    if (!cached_state) {
       return true;
     }
 
-    DD_LOG(info) << "Trying to reset persistent display device settings.";
     if (!m_persistence_state->persistState(std::nullopt)) {
       DD_LOG(error) << "Failed to clear persistence!";
       return false;

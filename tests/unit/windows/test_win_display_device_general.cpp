@@ -34,7 +34,7 @@ namespace {
 #define TEST_F_S_MOCKED(...) DD_MAKE_TEST(TEST_F, WinDisplayDeviceGeneralMocked, __VA_ARGS__)
 
   // Additional convenience global const(s)
-  const UINT32 FLAGS {SDC_VALIDATE | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_VIRTUAL_MODE_AWARE};
+  const UINT32 FLAGS {SDC_VALIDATE | SDC_USE_DATABASE_CURRENT};
 }  // namespace
 
 TEST_F_S(NullptrLayerProvided) {
@@ -50,10 +50,7 @@ TEST_F_S(IsApiAccessAvailable) {
 }
 
 TEST_F_S_MOCKED(IsApiAccessAvailable) {
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
-    .Times(1)
-    .WillOnce(Return(ut_consts::PAM_3_ACTIVE));
-  EXPECT_CALL(*m_layer, setDisplayConfig(ut_consts::PAM_3_ACTIVE->m_paths, ut_consts::PAM_3_ACTIVE->m_modes, FLAGS))
+  EXPECT_CALL(*m_layer, setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO>{}, std::vector<DISPLAYCONFIG_MODE_INFO>{}, FLAGS))
     .Times(1)
     .WillOnce(Return(ERROR_SUCCESS));
   EXPECT_CALL(*m_layer, getErrorString(ERROR_SUCCESS))
@@ -63,19 +60,8 @@ TEST_F_S_MOCKED(IsApiAccessAvailable) {
   EXPECT_TRUE(m_win_dd.isApiAccessAvailable());
 }
 
-TEST_F_S_MOCKED(IsApiAccessAvailable, FailedToGetDisplayData) {
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
-    .Times(1)
-    .WillOnce(Return(ut_consts::PAM_NULL));
-
-  EXPECT_FALSE(m_win_dd.isApiAccessAvailable());
-}
-
 TEST_F_S_MOCKED(IsApiAccessAvailable, FailedToSetDisplayConfig) {
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
-    .Times(1)
-    .WillOnce(Return(ut_consts::PAM_3_ACTIVE));
-  EXPECT_CALL(*m_layer, setDisplayConfig(ut_consts::PAM_3_ACTIVE->m_paths, ut_consts::PAM_3_ACTIVE->m_modes, FLAGS))
+  EXPECT_CALL(*m_layer, setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO>{}, std::vector<DISPLAYCONFIG_MODE_INFO>{}, FLAGS))
     .Times(1)
     .WillOnce(Return(ERROR_ACCESS_DENIED));
   EXPECT_CALL(*m_layer, getErrorString(ERROR_ACCESS_DENIED))
