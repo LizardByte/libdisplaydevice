@@ -50,7 +50,7 @@ TEST_F_S(IsApiAccessAvailable) {
 }
 
 TEST_F_S_MOCKED(IsApiAccessAvailable) {
-  EXPECT_CALL(*m_layer, setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO>{}, std::vector<DISPLAYCONFIG_MODE_INFO>{}, FLAGS))
+  EXPECT_CALL(*m_layer, setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> {}, std::vector<DISPLAYCONFIG_MODE_INFO> {}, FLAGS))
     .Times(1)
     .WillOnce(Return(ERROR_SUCCESS));
   EXPECT_CALL(*m_layer, getErrorString(ERROR_SUCCESS))
@@ -61,7 +61,7 @@ TEST_F_S_MOCKED(IsApiAccessAvailable) {
 }
 
 TEST_F_S_MOCKED(IsApiAccessAvailable, FailedToSetDisplayConfig) {
-  EXPECT_CALL(*m_layer, setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO>{}, std::vector<DISPLAYCONFIG_MODE_INFO>{}, FLAGS))
+  EXPECT_CALL(*m_layer, setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> {}, std::vector<DISPLAYCONFIG_MODE_INFO> {}, FLAGS))
     .Times(1)
     .WillOnce(Return(ERROR_ACCESS_DENIED));
   EXPECT_CALL(*m_layer, getErrorString(ERROR_ACCESS_DENIED))
