@@ -47,9 +47,7 @@ namespace display_device {
 
   bool SettingsManager::resetPersistence() {
     DD_LOG(info) << "Trying to reset persistent display device settings.";
-
-    const auto &cached_state {m_persistence_state->getState()};
-    if (!cached_state) {
+    if (const auto &cached_state {m_persistence_state->getState()}; !cached_state) {
       return true;
     }
 
