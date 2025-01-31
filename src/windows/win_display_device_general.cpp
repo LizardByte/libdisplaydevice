@@ -68,6 +68,7 @@ namespace display_device {
           {device_id,
            display_name,
            friendly_name,
+           EdidData::parse(m_w_api->getEdid(best_path)),
            info}
         );
       } else {

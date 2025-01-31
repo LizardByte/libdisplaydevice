@@ -34,6 +34,14 @@ namespace display_device {
     return lhs.m_height == rhs.m_height && lhs.m_width == rhs.m_width;
   }
 
+  std::optional<EdidData> EdidData::parse(const std::vector<std::byte> &) {
+    return std::nullopt;
+  }
+
+  bool operator==(const EdidData &lhs, const EdidData &rhs) {
+    return lhs.m_manufacturer_id == rhs.m_manufacturer_id && lhs.m_product_code == rhs.m_product_code && lhs.m_serial_number == rhs.m_serial_number && lhs.m_manufacture_date == rhs.m_manufacture_date;
+  }
+
   bool operator==(const EnumeratedDevice::Info &lhs, const EnumeratedDevice::Info &rhs) {
     return lhs.m_resolution == rhs.m_resolution && fuzzyCompare(lhs.m_resolution_scale, rhs.m_resolution_scale) &&
            fuzzyCompare(lhs.m_refresh_rate, rhs.m_refresh_rate) && lhs.m_primary == rhs.m_primary &&
@@ -41,7 +49,7 @@ namespace display_device {
   }
 
   bool operator==(const EnumeratedDevice &lhs, const EnumeratedDevice &rhs) {
-    return lhs.m_device_id == rhs.m_device_id && lhs.m_display_name == rhs.m_display_name && lhs.m_friendly_name == rhs.m_friendly_name && lhs.m_info == rhs.m_info;
+    return lhs.m_device_id == rhs.m_device_id && lhs.m_display_name == rhs.m_display_name && lhs.m_friendly_name == rhs.m_friendly_name && lhs.m_edid == rhs.m_edid && lhs.m_info == rhs.m_info;
   }
 
   bool operator==(const SingleDisplayConfiguration &lhs, const SingleDisplayConfiguration &rhs) {

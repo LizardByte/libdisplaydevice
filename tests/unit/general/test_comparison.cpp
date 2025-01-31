@@ -25,6 +25,14 @@ TEST_S(Resolution) {
   EXPECT_NE(display_device::Resolution({1, 1}), display_device::Resolution({1, 0}));
 }
 
+TEST_S(EdidData) {
+  EXPECT_EQ(display_device::EdidData({"LOL", "1337", 1234, 777}), display_device::EdidData({"LOL", "1337", 1234, 777}));
+  EXPECT_NE(display_device::EdidData({"LOL", "1337", 1234, 777}), display_device::EdidData({"MEH", "1337", 1234, 777}));
+  EXPECT_NE(display_device::EdidData({"LOL", "1337", 1234, 777}), display_device::EdidData({"LOL", "1338", 1234, 777}));
+  EXPECT_NE(display_device::EdidData({"LOL", "1337", 1234, 777}), display_device::EdidData({"LOL", "1337", 1235, 777}));
+  EXPECT_NE(display_device::EdidData({"LOL", "1337", 1234, 777}), display_device::EdidData({"LOL", "1337", 1234, 778}));
+}
+
 TEST_S(EnumeratedDevice, Info) {
   using Rat = display_device::Rational;
   EXPECT_EQ(display_device::EnumeratedDevice::Info({{1, 1}, 1., 1., true, {1, 1}, std::nullopt}), display_device::EnumeratedDevice::Info({{1, 1}, 1., 1., true, {1, 1}, std::nullopt}));
@@ -42,11 +50,12 @@ TEST_S(EnumeratedDevice, Info) {
 }
 
 TEST_S(EnumeratedDevice) {
-  EXPECT_EQ(display_device::EnumeratedDevice({"1", "1", "1", display_device::EnumeratedDevice::Info {}}), display_device::EnumeratedDevice({"1", "1", "1", display_device::EnumeratedDevice::Info {}}));
-  EXPECT_NE(display_device::EnumeratedDevice({"1", "1", "1", display_device::EnumeratedDevice::Info {}}), display_device::EnumeratedDevice({"0", "1", "1", display_device::EnumeratedDevice::Info {}}));
-  EXPECT_NE(display_device::EnumeratedDevice({"1", "1", "1", display_device::EnumeratedDevice::Info {}}), display_device::EnumeratedDevice({"1", "0", "1", display_device::EnumeratedDevice::Info {}}));
-  EXPECT_NE(display_device::EnumeratedDevice({"1", "1", "1", display_device::EnumeratedDevice::Info {}}), display_device::EnumeratedDevice({"1", "1", "0", display_device::EnumeratedDevice::Info {}}));
-  EXPECT_NE(display_device::EnumeratedDevice({"1", "1", "1", display_device::EnumeratedDevice::Info {}}), display_device::EnumeratedDevice({"1", "1", "1", std::nullopt}));
+  EXPECT_EQ(display_device::EnumeratedDevice({"1", "1", "1", display_device::EdidData {}, display_device::EnumeratedDevice::Info {}}), display_device::EnumeratedDevice({"1", "1", "1", display_device::EdidData {}, display_device::EnumeratedDevice::Info {}}));
+  EXPECT_NE(display_device::EnumeratedDevice({"1", "1", "1", display_device::EdidData {}, display_device::EnumeratedDevice::Info {}}), display_device::EnumeratedDevice({"0", "1", "1", display_device::EdidData {}, display_device::EnumeratedDevice::Info {}}));
+  EXPECT_NE(display_device::EnumeratedDevice({"1", "1", "1", display_device::EdidData {}, display_device::EnumeratedDevice::Info {}}), display_device::EnumeratedDevice({"1", "0", "1", display_device::EdidData {}, display_device::EnumeratedDevice::Info {}}));
+  EXPECT_NE(display_device::EnumeratedDevice({"1", "1", "1", display_device::EdidData {}, display_device::EnumeratedDevice::Info {}}), display_device::EnumeratedDevice({"1", "1", "0", display_device::EdidData {}, display_device::EnumeratedDevice::Info {}}));
+  EXPECT_NE(display_device::EnumeratedDevice({"1", "1", "1", display_device::EdidData {}, display_device::EnumeratedDevice::Info {}}), display_device::EnumeratedDevice({"1", "1", "1", std::nullopt, display_device::EnumeratedDevice::Info {}}));
+  EXPECT_NE(display_device::EnumeratedDevice({"1", "1", "1", display_device::EdidData {}, display_device::EnumeratedDevice::Info {}}), display_device::EnumeratedDevice({"1", "1", "1", display_device::EdidData {}, std::nullopt}));
 }
 
 TEST_S(SingleDisplayConfiguration) {

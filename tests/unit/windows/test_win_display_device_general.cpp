@@ -164,6 +164,7 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
     {"DeviceId1",
      "DisplayName1",
      "FriendlyName1",
+     std::nullopt,
      display_device::EnumeratedDevice::Info {
        {1920, 1080},
        display_device::Rational {0, 1},
@@ -175,6 +176,7 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
     {"DeviceId2",
      "DisplayName2",
      "FriendlyName2",
+     std::nullopt,
      display_device::EnumeratedDevice::Info {
        {1920, 2160},
        display_device::Rational {175, 100},
@@ -247,6 +249,7 @@ TEST_F_S_MOCKED(EnumAvailableDevices, MissingSourceModes) {
     {"DeviceId1",
      "DisplayName1",
      "FriendlyName1",
+     std::nullopt,
      display_device::EnumeratedDevice::Info {
        {1920, 1080},
        display_device::Rational {0, 1},
@@ -258,6 +261,7 @@ TEST_F_S_MOCKED(EnumAvailableDevices, MissingSourceModes) {
     {"DeviceId2",
      "DisplayName2",
      "FriendlyName2",
+     std::nullopt,
      std::nullopt}
   };
   EXPECT_EQ(m_win_dd.enumAvailableDevices(), expected_list);
