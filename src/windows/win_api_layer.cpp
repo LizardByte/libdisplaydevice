@@ -208,7 +208,7 @@ namespace display_device {
      * @returns True if EDID was retrieved and is non-empty, false otherwise.
      * @see getDeviceId implementation for more context regarding this madness.
      */
-    bool getDeviceEdid(const WinApiLayerInterface &w_api, HDEVINFO dev_info_handle, SP_DEVINFO_DATA &dev_info_data, std::vector<BYTE> &edid) {
+    bool getDeviceEdid(const WinApiLayerInterface &w_api, HDEVINFO dev_info_handle, SP_DEVINFO_DATA &dev_info_data, std::vector<std::byte> &edid) {
       // We could just directly open the registry key as the path is known, but we can also use the this
       HKEY reg_key {SetupDiOpenDevRegKey(dev_info_handle, &dev_info_data, DICS_FLAG_GLOBAL, 0, DIREG_DEV, KEY_READ)};
       if (reg_key == INVALID_HANDLE_VALUE) {
@@ -234,13 +234,76 @@ namespace display_device {
 
       edid.resize(required_size_in_bytes);
 
-      status = RegQueryValueExW(reg_key, L"EDID", nullptr, nullptr, edid.data(), &required_size_in_bytes);
+      status = RegQueryValueExW(reg_key, L"EDID", nullptr, nullptr, reinterpret_cast<LPBYTE>(edid.data()), &required_size_in_bytes);
       if (status != ERROR_SUCCESS) {
         DD_LOG(error) << w_api.getErrorString(status) << " \"RegQueryValueExW\" failed when getting data.";
         return false;
       }
 
       return !edid.empty();
+    }
+
+    /**
+     * @brief Get instance ID and EDID via SetupAPI.
+     * @param w_api Reference to the WinApiLayer.
+     * @param device_path Device path to find device for.
+     * @return A tuple of instance ID and EDID, or empty optional if not device was found or error has occurred.
+     */
+    std::optional<std::tuple<std::wstring, std::vector<std::byte>>> getInstanceIdAndEdid(const WinApiLayerInterface &w_api, const std::wstring &device_path) {
+      static const GUID monitor_guid {0xe6f07b5f, 0xee97, 0x4a90, {0xb0, 0x76, 0x33, 0xf5, 0x7b, 0xf4, 0xea, 0xa7}};
+
+      HDEVINFO dev_info_handle {SetupDiGetClassDevsW(&monitor_guid, nullptr, nullptr, DIGCF_DEVICEINTERFACE)};
+      if (dev_info_handle) {
+        const auto dev_info_handle_cleanup {
+          boost::scope::scope_exit([&dev_info_handle, &w_api]() {
+            if (!SetupDiDestroyDeviceInfoList(dev_info_handle)) {
+              DD_LOG(error) << w_api.getErrorString(static_cast<LONG>(GetLastError())) << " \"SetupDiDestroyDeviceInfoList\" failed.";
+            }
+          })
+        };
+
+        SP_DEVICE_INTERFACE_DATA dev_interface_data {};
+        dev_interface_data.cbSize = sizeof(dev_interface_data);
+        for (DWORD monitor_index = 0;; ++monitor_index) {
+          if (!SetupDiEnumDeviceInterfaces(dev_info_handle, nullptr, &monitor_guid, monitor_index, &dev_interface_data)) {
+            const DWORD error_code {GetLastError()};
+            if (error_code == ERROR_NO_MORE_ITEMS) {
+              break;
+            }
+
+            DD_LOG(warning) << w_api.getErrorString(static_cast<LONG>(error_code)) << " \"SetupDiEnumDeviceInterfaces\" failed.";
+            continue;
+          }
+
+          std::wstring dev_interface_path;
+          SP_DEVINFO_DATA dev_info_data {};
+          dev_info_data.cbSize = sizeof(dev_info_data);
+          if (!getDeviceInterfaceDetail(w_api, dev_info_handle, dev_interface_data, dev_interface_path, dev_info_data)) {
+            // Error already logged
+            continue;
+          }
+
+          if (!boost::iequals(dev_interface_path, device_path)) {
+            continue;
+          }
+
+          std::wstring instance_id;
+          if (!getDeviceInstanceId(w_api, dev_info_handle, dev_info_data, instance_id)) {
+            // Error already logged
+            break;
+          }
+
+          std::vector<std::byte> edid;
+          if (!getDeviceEdid(w_api, dev_info_handle, dev_info_data, edid)) {
+            // Error already logged
+            break;
+          }
+
+          return std::make_tuple(std::move(instance_id), std::move(edid));
+        }
+      }
+
+      return std::nullopt;
     }
 
     /**
@@ -380,68 +443,24 @@ namespace display_device {
       return {};
     }
 
-    static const GUID monitor_guid {0xe6f07b5f, 0xee97, 0x4a90, {0xb0, 0x76, 0x33, 0xf5, 0x7b, 0xf4, 0xea, 0xa7}};
-    std::vector<BYTE> device_id_data;
-
-    HDEVINFO dev_info_handle {SetupDiGetClassDevsW(&monitor_guid, nullptr, nullptr, DIGCF_DEVICEINTERFACE)};
-    if (dev_info_handle) {
-      const auto dev_info_handle_cleanup {
-        boost::scope::scope_exit([this, &dev_info_handle]() {
-          if (!SetupDiDestroyDeviceInfoList(dev_info_handle)) {
-            DD_LOG(error) << getErrorString(static_cast<LONG>(GetLastError())) << " \"SetupDiDestroyDeviceInfoList\" failed.";
-          }
-        })
-      };
-
-      SP_DEVICE_INTERFACE_DATA dev_interface_data {};
-      dev_interface_data.cbSize = sizeof(dev_interface_data);
-      for (DWORD monitor_index = 0;; ++monitor_index) {
-        if (!SetupDiEnumDeviceInterfaces(dev_info_handle, nullptr, &monitor_guid, monitor_index, &dev_interface_data)) {
-          const DWORD error_code {GetLastError()};
-          if (error_code == ERROR_NO_MORE_ITEMS) {
-            break;
-          }
-
-          DD_LOG(warning) << getErrorString(static_cast<LONG>(error_code)) << " \"SetupDiEnumDeviceInterfaces\" failed.";
-          continue;
-        }
-
-        std::wstring dev_interface_path;
-        SP_DEVINFO_DATA dev_info_data {};
-        dev_info_data.cbSize = sizeof(dev_info_data);
-        if (!getDeviceInterfaceDetail(*this, dev_info_handle, dev_interface_data, dev_interface_path, dev_info_data)) {
-          // Error already logged
-          continue;
-        }
-
-        if (!boost::iequals(dev_interface_path, device_path)) {
-          continue;
-        }
-
-        // Instance ID is unique in the system and persists restarts, but not driver re-installs.
-        // It looks like this:
-        //     DISPLAY\ACI27EC\5&4FD2DE4&5&UID4352 (also used in the device path it seems)
-        //                a    b    c    d    e
-        //
-        //  a) Hardware ID - stable
-        //  b) Either a bus number or has something to do with device capabilities - stable
-        //  c) Another ID, somehow tied to adapter (not an adapter ID from path object) - stable
-        //  d) Some sort of rotating counter thing, changes after driver reinstall - unstable
-        //  e) Seems to be the same as a target ID from path, it changes based on GPU port - semi-stable
-        //
-        // The instance ID also seems to be a part of the registry key (in case some other info is needed in the future):
-        //     HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\DISPLAY\ACI27EC\5&4fd2de4&5&UID4352
-
-        std::wstring instance_id;
-        if (!getDeviceInstanceId(*this, dev_info_handle, dev_info_data, instance_id)) {
-          // Error already logged
-          break;
-        }
-
-        if (!getDeviceEdid(*this, dev_info_handle, dev_info_data, device_id_data)) {
-          // Error already logged
-          break;
-        }
+    std::vector<std::byte> device_id_data;
+    auto instance_id_and_edid {getInstanceIdAndEdid(*this, device_path)};
+    if (instance_id_and_edid) {
+      // Instance ID is unique in the system and persists restarts, but not driver re-installs.
+      // It looks like this:
+      //     DISPLAY\ACI27EC\5&4FD2DE4&5&UID4352 (also used in the device path it seems)
+      //                a    b    c    d    e
+      //
+      //  a) Hardware ID - stable
+      //  b) Either a bus number or has something to do with device capabilities - stable
+      //  c) Another ID, somehow tied to adapter (not an adapter ID from path object) - stable
+      //  d) Some sort of rotating counter thing, changes after driver reinstall - unstable
+      //  e) Seems to be the same as a target ID from path, it changes based on GPU port - semi-stable
+      //
+      // The instance ID also seems to be a part of the registry key (in case some other info is needed in the future):
+      //     HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\DISPLAY\ACI27EC\5&4fd2de4&5&UID4352
+      [this, &device_id_data, &instance_id_and_edid]() {
+        auto [instance_id, edid] = *instance_id_and_edid;
 
         // We are going to discard the unstable parts of the instance ID and merge the stable parts with the edid buffer (if available)
         auto unstable_part_index = instance_id.find_first_of(L'&', 0);
@@ -451,17 +470,18 @@ namespace display_device {
 
         if (unstable_part_index == std::wstring::npos) {
           DD_LOG(error) << "Failed to split off the stable part from instance id string " << toUtf8(*this, instance_id);
-          break;
+          return;
         }
 
         auto semi_stable_part_index = instance_id.find_first_of(L'&', unstable_part_index + 1);
         if (semi_stable_part_index == std::wstring::npos) {
           DD_LOG(error) << "Failed to split off the semi-stable part from instance id string " << toUtf8(*this, instance_id);
-          break;
+          return;
         }
 
-        device_id_data.insert(std::end(device_id_data), reinterpret_cast<const BYTE *>(instance_id.data()), reinterpret_cast<const BYTE *>(instance_id.data() + unstable_part_index));
-        device_id_data.insert(std::end(device_id_data), reinterpret_cast<const BYTE *>(instance_id.data() + semi_stable_part_index), reinterpret_cast<const BYTE *>(instance_id.data() + instance_id.size()));
+        device_id_data.swap(edid);
+        device_id_data.insert(std::end(device_id_data), reinterpret_cast<const std::byte *>(instance_id.data()), reinterpret_cast<const std::byte *>(instance_id.data() + unstable_part_index));
+        device_id_data.insert(std::end(device_id_data), reinterpret_cast<const std::byte *>(instance_id.data() + semi_stable_part_index), reinterpret_cast<const std::byte *>(instance_id.data() + instance_id.size()));
 
         static const auto dump_device_id_data {[](const auto &data) -> std::string {
           if (data.empty()) {
@@ -471,7 +491,7 @@ namespace display_device {
           std::ostringstream output;
           output << "[";
           for (std::size_t i = 0; i < data.size(); ++i) {
-            output << "0x" << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << static_cast<int>(data[i]);
+            output << "0x" << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << std::to_integer<int>(data[i]);
             if (i + 1 < data.size()) {
               output << " ";
             }
@@ -481,14 +501,13 @@ namespace display_device {
           return output.str();
         }};
         DD_LOG(verbose) << "Creating device id from EDID + instance ID: " << dump_device_id_data(device_id_data);
-        break;
-      }
+      }();
     }
 
     if (device_id_data.empty()) {
       // Using the device path as a fallback, which is always unique, but not as stable as the preferred one
       DD_LOG(verbose) << "Creating device id from path " << toUtf8(*this, device_path);
-      device_id_data.insert(std::end(device_id_data), reinterpret_cast<const BYTE *>(device_path.data()), reinterpret_cast<const BYTE *>(device_path.data() + device_path.size()));
+      device_id_data.insert(std::end(device_id_data), reinterpret_cast<const std::byte *>(device_path.data()), reinterpret_cast<const std::byte *>(device_path.data() + device_path.size()));
     }
 
     static constexpr boost::uuids::uuid ns_id {};  // null namespace = no salt
@@ -497,6 +516,17 @@ namespace display_device {
 
     DD_LOG(verbose) << "Created device id: " << toUtf8(*this, device_path) << " -> " << device_id;
     return device_id;
+  }
+
+  std::vector<std::byte> WinApiLayer::getEdid(const DISPLAYCONFIG_PATH_INFO &path) const {
+    const auto device_path {getMonitorDevicePathWstr(*this, path)};
+    if (device_path.empty()) {
+      // Error already logged
+      return {};
+    }
+
+    auto instance_id_and_edid {getInstanceIdAndEdid(*this, device_path)};
+    return instance_id_and_edid ? std::get<1>(*instance_id_and_edid) : std::vector<std::byte> {};
   }
 
   std::string WinApiLayer::getMonitorDevicePath(const DISPLAYCONFIG_PATH_INFO &path) const {

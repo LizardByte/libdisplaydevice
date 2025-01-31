@@ -57,10 +57,10 @@ namespace display_device {
      *
      * The accepted solution was to use the "InstanceID" and EDID (just to be
      * on the safe side). "InstanceID" is semi-stable, it has some parts that
-     * change between driver re-installs and it has a part that changes based
+     * change between driver re-installs, and it has a part that changes based
      * on the GPU port that the display is connected to. It is most likely to
      * be unique, but since the MS documentation is lacking we are also hashing
-     * EDID information (contains serial ids, timestamps and etc. that should
+     * EDID information (contains serial ids, timestamps, etc. that should
      * guarantee that identical displays are differentiated like with the
      * "ContainerID"). Most importantly this information is stable for the virtual
      * displays.
@@ -85,6 +85,13 @@ namespace display_device {
     [[nodiscard]] virtual std::string getDeviceId(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
 
     /**
+     * @brief Get EDID byte array for the path.
+     * @param path Path to get the EDID for.
+     * @return EDID byte array, or an empty array if error has occurred.
+     */
+    [[nodiscard]] virtual std::vector<std::byte> getEdid(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
+
+    /**
      * @brief Get a string that represents a path from the adapter to the display target.
      * @param path Path to get the string for.
      * @returns String representation, or an empty string if it's not available.
@@ -101,9 +108,9 @@ namespace display_device {
     [[nodiscard]] virtual std::string getMonitorDevicePath(const DISPLAYCONFIG_PATH_INFO &path) const = 0;
 
     /**
-     * @brief Get the user friendly name for the path.
-     * @param path Path to get user friendly name for.
-     * @returns User friendly name for the path if available, empty string otherwise.
+     * @brief Get the user-friendly name for the path.
+     * @param path Path to get user-friendly name for.
+     * @returns User-friendly name for the path if available, empty string otherwise.
      * @see queryDisplayConfig on how to get paths from the system.
      * @note This is usually a monitor name (like "ROG PG279Q") and is most likely taken from EDID.
      * @examples

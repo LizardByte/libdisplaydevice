@@ -51,7 +51,7 @@ namespace display_device {
    */
   struct ValidatedDeviceInfo {
     std::string m_device_path {}; /**< Unique device path string. */
-    std::string m_device_id {}; /**< A device id (made up by us) that is identifies the device. */
+    std::string m_device_id {}; /**< A device id (made up by us) that identifies the device. */
   };
 
   /**
