@@ -87,7 +87,7 @@ namespace display_device {
 
       man_id[0] = static_cast<char>(ascii_offset + ((byte_a & std::byte {0x7C}) >> 2));
       man_id[1] = static_cast<char>(ascii_offset + ((byte_a & std::byte {0x03}) << 3) + ((byte_b & std::byte {0xE0}) >> 5));
-      man_id[2] = static_cast<char>(ascii_offset + ((byte_b & std::byte {0x1F})));
+      man_id[2] = static_cast<char>(ascii_offset + (byte_b & std::byte {0x1F}));
 
       for (const char ch : man_id) {
         if (ch < 'A' || ch > 'Z') {
@@ -102,8 +102,8 @@ namespace display_device {
     // ---- Product code (HEX representation)
     {
       std::uint16_t prod_num {0};
-      prod_num |= static_cast<int>(data[10]) << 0;
-      prod_num |= static_cast<int>(data[11]) << 8;
+      prod_num |= std::to_integer<int>(data[10]) << 0;
+      prod_num |= std::to_integer<int>(data[11]) << 8;
 
       std::stringstream stream;
       stream << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << prod_num;
@@ -113,10 +113,10 @@ namespace display_device {
     // ---- Serial number
     {
       std::uint32_t serial_num {0};
-      serial_num |= static_cast<int>(data[12]) << 0;
-      serial_num |= static_cast<int>(data[13]) << 8;
-      serial_num |= static_cast<int>(data[14]) << 16;
-      serial_num |= static_cast<int>(data[15]) << 24;
+      serial_num |= std::to_integer<int>(data[12]) << 0;
+      serial_num |= std::to_integer<int>(data[13]) << 8;
+      serial_num |= std::to_integer<int>(data[14]) << 16;
+      serial_num |= std::to_integer<int>(data[15]) << 24;
 
       edid.m_serial_number = serial_num;
     }
