@@ -11,6 +11,10 @@ TEST_S(NoData) {
   EXPECT_EQ(display_device::EdidData::parse({}), std::nullopt);
 }
 
+TEST_S(TooLittleData) {
+  EXPECT_EQ(display_device::EdidData::parse({std::byte {0x11}}), std::nullopt);
+}
+
 TEST_S(BadFixedHeader) {
   auto EDID_DATA {ut_consts::DEFAULT_EDID};
   EDID_DATA[1] = std::byte {0xAA};
