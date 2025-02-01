@@ -6,11 +6,23 @@ namespace {
 #define TEST_F_S(...) DD_MAKE_TEST(TEST_F, JsonConverterTest, __VA_ARGS__)
 }  // namespace
 
+TEST_F_S(EdidData) {
+  display_device::EdidData item {
+    .m_manufacturer_id = "LOL",
+    .m_product_code = "ABCD",
+    .m_serial_number = 777777
+  };
+
+  executeTestCase(display_device::EdidData {}, R"({"manufacturer_id":"","product_code":"","serial_number":0})");
+  executeTestCase(item, R"({"manufacturer_id":"LOL","product_code":"ABCD","serial_number":777777})");
+}
+
 TEST_F_S(EnumeratedDevice) {
   display_device::EnumeratedDevice item_1 {
     "ID_1",
     "NAME_2",
     "FU_NAME_3",
+    std::nullopt,
     display_device::EnumeratedDevice::Info {
       {1920, 1080},
       display_device::Rational {175, 100},
@@ -24,6 +36,7 @@ TEST_F_S(EnumeratedDevice) {
     "ID_2",
     "NAME_2",
     "FU_NAME_2",
+    display_device::EdidData {},
     display_device::EnumeratedDevice::Info {
       {1920, 1080},
       1.75,
@@ -34,9 +47,9 @@ TEST_F_S(EnumeratedDevice) {
     }
   };
 
-  executeTestCase(display_device::EnumeratedDevice {}, R"({"device_id":"","display_name":"","friendly_name":"","info":null})");
-  executeTestCase(item_1, R"({"device_id":"ID_1","display_name":"NAME_2","friendly_name":"FU_NAME_3","info":{"hdr_state":"Enabled","origin_point":{"x":1,"y":2},"primary":false,"refresh_rate":{"type":"double","value":119.9554},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"rational","value":{"denominator":100,"numerator":175}}}})");
-  executeTestCase(item_2, R"({"device_id":"ID_2","display_name":"NAME_2","friendly_name":"FU_NAME_2","info":{"hdr_state":"Disabled","origin_point":{"x":0,"y":0},"primary":true,"refresh_rate":{"type":"rational","value":{"denominator":10000,"numerator":1199554}},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"double","value":1.75}}})");
+  executeTestCase(display_device::EnumeratedDevice {}, R"({"device_id":"","display_name":"","edid":null,"friendly_name":"","info":null})");
+  executeTestCase(item_1, R"({"device_id":"ID_1","display_name":"NAME_2","edid":null,"friendly_name":"FU_NAME_3","info":{"hdr_state":"Enabled","origin_point":{"x":1,"y":2},"primary":false,"refresh_rate":{"type":"double","value":119.9554},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"rational","value":{"denominator":100,"numerator":175}}}})");
+  executeTestCase(item_2, R"({"device_id":"ID_2","display_name":"NAME_2","edid":{"manufacturer_id":"","product_code":"","serial_number":0},"friendly_name":"FU_NAME_2","info":{"hdr_state":"Disabled","origin_point":{"x":0,"y":0},"primary":true,"refresh_rate":{"type":"rational","value":{"denominator":10000,"numerator":1199554}},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"double","value":1.75}}})");
 }
 
 TEST_F_S(EnumeratedDeviceList) {
@@ -44,6 +57,7 @@ TEST_F_S(EnumeratedDeviceList) {
     "ID_1",
     "NAME_2",
     "FU_NAME_3",
+    std::nullopt,
     display_device::EnumeratedDevice::Info {
       {1920, 1080},
       display_device::Rational {175, 100},
@@ -57,6 +71,7 @@ TEST_F_S(EnumeratedDeviceList) {
     "ID_2",
     "NAME_2",
     "FU_NAME_2",
+    display_device::EdidData {},
     display_device::EnumeratedDevice::Info {
       {1920, 1080},
       1.75,
@@ -69,9 +84,9 @@ TEST_F_S(EnumeratedDeviceList) {
   display_device::EnumeratedDevice item_3 {};
 
   executeTestCase(display_device::EnumeratedDeviceList {}, R"([])");
-  executeTestCase(display_device::EnumeratedDeviceList {item_1, item_2, item_3}, R"([{"device_id":"ID_1","display_name":"NAME_2","friendly_name":"FU_NAME_3","info":{"hdr_state":"Enabled","origin_point":{"x":1,"y":2},"primary":false,"refresh_rate":{"type":"double","value":119.9554},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"rational","value":{"denominator":100,"numerator":175}}}},)"
-                                                                                 R"({"device_id":"ID_2","display_name":"NAME_2","friendly_name":"FU_NAME_2","info":{"hdr_state":"Disabled","origin_point":{"x":0,"y":0},"primary":true,"refresh_rate":{"type":"rational","value":{"denominator":10000,"numerator":1199554}},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"double","value":1.75}}},)"
-                                                                                 R"({"device_id":"","display_name":"","friendly_name":"","info":null}])");
+  executeTestCase(display_device::EnumeratedDeviceList {item_1, item_2, item_3}, R"([{"device_id":"ID_1","display_name":"NAME_2","edid":null,"friendly_name":"FU_NAME_3","info":{"hdr_state":"Enabled","origin_point":{"x":1,"y":2},"primary":false,"refresh_rate":{"type":"double","value":119.9554},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"rational","value":{"denominator":100,"numerator":175}}}},)"
+                                                                                 R"({"device_id":"ID_2","display_name":"NAME_2","edid":{"manufacturer_id":"","product_code":"","serial_number":0},"friendly_name":"FU_NAME_2","info":{"hdr_state":"Disabled","origin_point":{"x":0,"y":0},"primary":true,"refresh_rate":{"type":"rational","value":{"denominator":10000,"numerator":1199554}},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"double","value":1.75}}},)"
+                                                                                 R"({"device_id":"","display_name":"","edid":null,"friendly_name":"","info":null}])");
 }
 
 TEST_F_S(SingleDisplayConfiguration) {

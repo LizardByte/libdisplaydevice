@@ -129,6 +129,10 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
     .Times(1)
     .WillOnce(Return("DisplayName1"))
     .RetiresOnSaturation();
+  EXPECT_CALL(*m_layer, getEdid(_))
+    .Times(1)
+    .WillOnce(Return(std::vector<std::byte> {}))
+    .RetiresOnSaturation();
   EXPECT_CALL(*m_layer, getDisplayScale(_, _))
     .Times(1)
     .WillOnce(Return(std::nullopt))
@@ -146,6 +150,10 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
     .Times(1)
     .WillOnce(Return("DisplayName2"))
     .RetiresOnSaturation();
+  EXPECT_CALL(*m_layer, getEdid(_))
+    .Times(1)
+    .WillOnce(Return(ut_consts::DEFAULT_EDID))
+    .RetiresOnSaturation();
   EXPECT_CALL(*m_layer, getDisplayScale(_, _))
     .Times(1)
     .WillOnce(Return(display_device::Rational {175, 100}))
@@ -159,11 +167,16 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
     .Times(1)
     .WillOnce(Return("FriendlyName3"))
     .RetiresOnSaturation();
+  EXPECT_CALL(*m_layer, getEdid(_))
+    .Times(1)
+    .WillOnce(Return(std::vector<std::byte> {}))
+    .RetiresOnSaturation();
 
   const display_device::EnumeratedDeviceList expected_list {
     {"DeviceId1",
      "DisplayName1",
      "FriendlyName1",
+     std::nullopt,
      display_device::EnumeratedDevice::Info {
        {1920, 1080},
        display_device::Rational {0, 1},
@@ -175,6 +188,7 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
     {"DeviceId2",
      "DisplayName2",
      "FriendlyName2",
+     ut_consts::DEFAULT_EDID_DATA,
      display_device::EnumeratedDevice::Info {
        {1920, 2160},
        display_device::Rational {175, 100},
@@ -186,6 +200,7 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
     {"DeviceId3",
      "",
      "FriendlyName3",
+     std::nullopt,
      std::nullopt}
   };
   EXPECT_EQ(m_win_dd.enumAvailableDevices(), expected_list);
@@ -225,6 +240,10 @@ TEST_F_S_MOCKED(EnumAvailableDevices, MissingSourceModes) {
     .Times(1)
     .WillOnce(Return("DisplayName1"))
     .RetiresOnSaturation();
+  EXPECT_CALL(*m_layer, getEdid(_))
+    .Times(1)
+    .WillOnce(Return(std::vector<std::byte> {}))
+    .RetiresOnSaturation();
   EXPECT_CALL(*m_layer, getDisplayScale(_, _))
     .Times(1)
     .WillOnce(Return(std::nullopt))
@@ -242,11 +261,16 @@ TEST_F_S_MOCKED(EnumAvailableDevices, MissingSourceModes) {
     .Times(1)
     .WillOnce(Return("DisplayName2"))
     .RetiresOnSaturation();
+  EXPECT_CALL(*m_layer, getEdid(_))
+    .Times(1)
+    .WillOnce(Return(ut_consts::DEFAULT_EDID))
+    .RetiresOnSaturation();
 
   const display_device::EnumeratedDeviceList expected_list {
     {"DeviceId1",
      "DisplayName1",
      "FriendlyName1",
+     std::nullopt,
      display_device::EnumeratedDevice::Info {
        {1920, 1080},
        display_device::Rational {0, 1},
@@ -258,6 +282,7 @@ TEST_F_S_MOCKED(EnumAvailableDevices, MissingSourceModes) {
     {"DeviceId2",
      "DisplayName2",
      "FriendlyName2",
+     ut_consts::DEFAULT_EDID_DATA,
      std::nullopt}
   };
   EXPECT_EQ(m_win_dd.enumAvailableDevices(), expected_list);

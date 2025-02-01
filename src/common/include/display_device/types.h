@@ -5,6 +5,7 @@
 #pragma once
 
 // system includes
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <variant>
@@ -64,6 +65,27 @@ namespace display_device {
   using FloatingPoint = std::variant<double, Rational>;
 
   /**
+   * @brief Parsed EDID data.
+   */
+  struct EdidData {
+    std::string m_manufacturer_id {};
+    std::string m_product_code {};
+    std::uint32_t m_serial_number {};
+
+    /**
+     * @brief Parse EDID data.
+     * @param data Data to parse.
+     * @return Parsed data or empty optional if failed to parse it.
+     */
+    static std::optional<EdidData> parse(const std::vector<std::byte> &data);
+
+    /**
+     * @brief Comparator for strict equality.
+     */
+    friend bool operator==(const EdidData &lhs, const EdidData &rhs);
+  };
+
+  /**
    * @brief Enumerated display device information.
    */
   struct EnumeratedDevice {
@@ -87,6 +109,7 @@ namespace display_device {
     std::string m_device_id {}; /**< A unique device ID used by this API to identify the device. */
     std::string m_display_name {}; /**< A logical name representing given by the OS for a display. */
     std::string m_friendly_name {}; /**< A human-readable name for the device. */
+    std::optional<EdidData> m_edid {}; /**< Some basic parsed EDID data. */
     std::optional<Info> m_info {}; /**< Additional information about an active display device. */
 
     /**

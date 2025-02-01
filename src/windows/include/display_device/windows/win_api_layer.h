@@ -22,6 +22,9 @@ namespace display_device {
     /** For details @see WinApiLayerInterface::getDeviceId */
     [[nodiscard]] std::string getDeviceId(const DISPLAYCONFIG_PATH_INFO &path) const override;
 
+    /** For details @see WinApiLayerInterface::getEdid */
+    [[nodiscard]] std::vector<std::byte> getEdid(const DISPLAYCONFIG_PATH_INFO &path) const override;
+
     /** For details @see WinApiLayerInterface::getMonitorDevicePath */
     [[nodiscard]] std::string getMonitorDevicePath(const DISPLAYCONFIG_PATH_INFO &path) const override;
 
