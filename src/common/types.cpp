@@ -28,7 +28,7 @@ namespace {
   }
 
   std::byte operator+(const std::byte &lhs, const std::byte &rhs) {
-    return std::byte {static_cast<std::uint8_t>(static_cast<int>(lhs) + static_cast<int>(rhs))};
+    return std::byte {static_cast<std::uint8_t>(std::to_integer<int>(lhs) + std::to_integer<int>(rhs))};
   }
 }  // namespace
 

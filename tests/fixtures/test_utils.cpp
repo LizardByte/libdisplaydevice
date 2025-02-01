@@ -12,12 +12,12 @@
 namespace ut_consts {
   namespace {
     template<typename... Ts>
-    std::vector<std::byte> make_bytes(Ts &&...args) {
+    std::vector<std::byte> makeBytes(Ts &&...args) {
       return {std::byte {static_cast<std::uint8_t>(args)}...};
     }
   }  // namespace
 
-  const std::vector<std::byte> DEFAULT_EDID {make_bytes(
+  const std::vector<std::byte> DEFAULT_EDID {makeBytes(
     // clang-format off
     0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x04, 0x69,
     0xEC, 0x27, 0xAA, 0x55, 0x00, 0x00, 0x13, 0x1D, 0x01, 0x04,
