@@ -71,7 +71,6 @@ namespace display_device {
     std::string m_manufacturer_id {};
     std::string m_product_code {};
     std::uint32_t m_serial_number {};
-    std::uint16_t m_manufacture_date {};
 
     /**
      * @brief Parse EDID data.

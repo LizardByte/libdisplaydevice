@@ -26,11 +26,10 @@ TEST_S(Resolution) {
 }
 
 TEST_S(EdidData) {
-  EXPECT_EQ(display_device::EdidData({"LOL", "1337", 1234, 777}), display_device::EdidData({"LOL", "1337", 1234, 777}));
-  EXPECT_NE(display_device::EdidData({"LOL", "1337", 1234, 777}), display_device::EdidData({"MEH", "1337", 1234, 777}));
-  EXPECT_NE(display_device::EdidData({"LOL", "1337", 1234, 777}), display_device::EdidData({"LOL", "1338", 1234, 777}));
-  EXPECT_NE(display_device::EdidData({"LOL", "1337", 1234, 777}), display_device::EdidData({"LOL", "1337", 1235, 777}));
-  EXPECT_NE(display_device::EdidData({"LOL", "1337", 1234, 777}), display_device::EdidData({"LOL", "1337", 1234, 778}));
+  EXPECT_EQ(display_device::EdidData({"LOL", "1337", 1234}), display_device::EdidData({"LOL", "1337", 1234}));
+  EXPECT_NE(display_device::EdidData({"LOL", "1337", 1234}), display_device::EdidData({"MEH", "1337", 1234}));
+  EXPECT_NE(display_device::EdidData({"LOL", "1337", 1234}), display_device::EdidData({"LOL", "1338", 1234}));
+  EXPECT_NE(display_device::EdidData({"LOL", "1337", 1234}), display_device::EdidData({"LOL", "1337", 1235}));
 }
 
 TEST_S(EnumeratedDevice, Info) {
