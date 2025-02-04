@@ -28,7 +28,7 @@ namespace {
   }
 
   std::byte operator+(const std::byte &lhs, const std::byte &rhs) {
-    return std::byte {static_cast<std::uint8_t>(std::to_integer<int>(lhs) + std::to_integer<int>(rhs))};
+    return std::byte {static_cast<std::uint8_t>(static_cast<int>(lhs) + static_cast<int>(rhs))};
   }
 }  // namespace
 
@@ -81,8 +81,8 @@ namespace display_device {
     {
       constexpr std::byte ascii_offset {'@'};
 
-      const auto byte_a {data[8]};
-      const auto byte_b {data[9]};
+      auto byte_a {data[8]};
+      auto byte_b {data[9]};
       std::array<char, 3> man_id {};
 
       man_id[0] = static_cast<char>(ascii_offset + ((byte_a & std::byte {0x7C}) >> 2));
@@ -102,8 +102,8 @@ namespace display_device {
     // ---- Product code (HEX representation)
     {
       std::uint16_t prod_num {0};
-      prod_num |= std::to_integer<int>(data[10]) << 0;
-      prod_num |= std::to_integer<int>(data[11]) << 8;
+      prod_num |= static_cast<int>(data[10]) << 0;
+      prod_num |= static_cast<int>(data[11]) << 8;
 
       std::stringstream stream;
       stream << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << prod_num;
@@ -113,10 +113,10 @@ namespace display_device {
     // ---- Serial number
     {
       std::uint32_t serial_num {0};
-      serial_num |= std::to_integer<int>(data[12]) << 0;
-      serial_num |= std::to_integer<int>(data[13]) << 8;
-      serial_num |= std::to_integer<int>(data[14]) << 16;
-      serial_num |= std::to_integer<int>(data[15]) << 24;
+      serial_num |= static_cast<int>(data[12]) << 0;
+      serial_num |= static_cast<int>(data[13]) << 8;
+      serial_num |= static_cast<int>(data[14]) << 16;
+      serial_num |= static_cast<int>(data[15]) << 24;
 
       edid.m_serial_number = serial_num;
     }

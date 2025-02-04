@@ -491,7 +491,7 @@ namespace display_device {
           std::ostringstream output;
           output << "[";
           for (std::size_t i = 0; i < data.size(); ++i) {
-            output << "0x" << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << std::to_integer<int>(data[i]);
+            output << "0x" << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << static_cast<int>(data[i]);
             if (i + 1 < data.size()) {
               output << " ";
             }
