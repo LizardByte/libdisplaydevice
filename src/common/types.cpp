@@ -27,13 +27,23 @@ namespace {
     return false;
   }
 
-  std::byte operator+(const std::byte &lhs, const std::byte &rhs) {
+  std::byte operator+(const std::byte lhs, const std::byte &rhs) {
     return std::byte {static_cast<std::uint8_t>(static_cast<int>(lhs) + static_cast<int>(rhs))};
   }
 
   // This madness should be removed once the minimum compiler version increases...
   std::byte logicalAnd(const std::byte &lhs, const std::byte &rhs) {
     return std::byte {static_cast<std::uint8_t>(static_cast<int>(lhs) & static_cast<int>(rhs))};
+  }
+
+  // This madness should be removed once the minimum compiler version increases...
+  std::byte shiftLeft(const std::byte &lhs, const int rhs) {
+    return std::byte {static_cast<std::uint8_t>(static_cast<int>(lhs) << rhs)};
+  }
+
+  // This madness should be removed once the minimum compiler version increases...
+  std::byte shiftRight(const std::byte &lhs, const int rhs) {
+    return std::byte {static_cast<std::uint8_t>(static_cast<int>(lhs) >> rhs)};
   }
 }  // namespace
 
@@ -86,12 +96,12 @@ namespace display_device {
     {
       constexpr std::byte ascii_offset {'@'};
 
-      auto byte_a {data[8]};
-      auto byte_b {data[9]};
+      const auto byte_a {data[8]};
+      const auto byte_b {data[9]};
       std::array<char, 3> man_id {};
 
-      man_id[0] = static_cast<char>(ascii_offset + (logicalAnd(byte_a, std::byte {0x7C}) >> 2));
-      man_id[1] = static_cast<char>(ascii_offset + (logicalAnd(byte_a, std::byte {0x03}) << 3) + (logicalAnd(byte_b, std::byte {0xE0}) >> 5));
+      man_id[0] = static_cast<char>(ascii_offset + shiftRight(logicalAnd(byte_a, std::byte {0x7C}), 2));
+      man_id[1] = static_cast<char>(ascii_offset + shiftLeft(logicalAnd(byte_a, std::byte {0x03}), 3) + shiftRight(logicalAnd(byte_b, std::byte {0xE0}), 5));
       man_id[2] = static_cast<char>(ascii_offset + logicalAnd(byte_b, std::byte {0x1F}));
 
       for (const char ch : man_id) {
