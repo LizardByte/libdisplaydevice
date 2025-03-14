@@ -6,6 +6,7 @@
 #include "display_device/types.h"
 
 // system includes
+#include <array>
 #include <iomanip>
 #include <sstream>
 
