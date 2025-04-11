@@ -11,7 +11,7 @@ namespace {
       data.m_paths.back().flags = DISPLAYCONFIG_PATH_ACTIVE;
       data.m_paths.back().sourceInfo.sourceModeInfoIdx = data.m_modes.size();
       data.m_paths.back().sourceInfo.adapterId = {1, 1};
-      data.m_paths.back().sourceInfo.id = 0;
+      data.m_paths.back().sourceInfo.id = 1;
       data.m_paths.back().targetInfo.targetAvailable = TRUE;
       data.m_paths.back().targetInfo.refreshRate = {120, 1};
 
@@ -29,7 +29,7 @@ namespace {
       data.m_paths.back().flags = DISPLAYCONFIG_PATH_ACTIVE;
       data.m_paths.back().sourceInfo.sourceModeInfoIdx = data.m_modes.size();
       data.m_paths.back().sourceInfo.adapterId = {2, 2};
-      data.m_paths.back().sourceInfo.id = 0;
+      data.m_paths.back().sourceInfo.id = 2;
       data.m_paths.back().targetInfo.targetAvailable = TRUE;
       data.m_paths.back().targetInfo.refreshRate = {119995, 1000};
 
@@ -45,7 +45,7 @@ namespace {
         data.m_paths.back().flags = DISPLAYCONFIG_PATH_ACTIVE;
         data.m_paths.back().sourceInfo.sourceModeInfoIdx = data.m_modes.size();
         data.m_paths.back().sourceInfo.adapterId = {3, 3};
-        data.m_paths.back().sourceInfo.id = 0;
+        data.m_paths.back().sourceInfo.id = 3;
         data.m_paths.back().targetInfo.targetAvailable = TRUE;
         data.m_paths.back().targetInfo.refreshRate = {60, 1};
 
@@ -64,7 +64,7 @@ namespace {
       data.m_paths.back().flags = DISPLAYCONFIG_PATH_ACTIVE;
       data.m_paths.back().sourceInfo.sourceModeInfoIdx = data.m_modes.size();
       data.m_paths.back().sourceInfo.adapterId = {4, 4};
-      data.m_paths.back().sourceInfo.id = 0;
+      data.m_paths.back().sourceInfo.id = 4;
       data.m_paths.back().targetInfo.targetAvailable = TRUE;
       data.m_paths.back().targetInfo.refreshRate = {90, 1};
 

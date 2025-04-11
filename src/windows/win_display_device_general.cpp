@@ -42,7 +42,8 @@ namespace display_device {
     }
 
     for (const auto &[device_id, data] : source_data) {
-      const auto source_id_index {data.m_active_source.value_or(0)};
+      // In case we have no active source, we will take the first available source id
+      const auto source_id_index {data.m_active_source.value_or(data.m_source_id_to_path_index.begin()->first)};
       const auto &best_path {display_data->m_paths.at(data.m_source_id_to_path_index.at(source_id_index))};
       const auto friendly_name {m_w_api->getFriendlyName(best_path)};
       const bool is_active {win_utils::isActive(best_path)};
