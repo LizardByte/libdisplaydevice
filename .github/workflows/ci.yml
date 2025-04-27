@@ -230,6 +230,7 @@ jobs:
         with:
           name: coverage-${{ matrix.os }}
           path: build/coverage.xml
+          if-no-files-found: error
 
       - name: Move Artifacts
         run: |
@@ -245,6 +246,7 @@ jobs:
         with:
           name: build-${{ runner.os }}
           path: artifacts/
+          if-no-files-found: error
 
   coverage:
     name: Coverage-${{ matrix.flag }}
