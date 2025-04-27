@@ -284,10 +284,7 @@ TEST_F_S_MOCKED(SetCurrentTopology) {
   // Report only 1 active device
   EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
     .Times(1)
-    .WillOnce(Return(display_device::PathAndModeData {
-      {ut_consts::PAM_3_ACTIVE->m_paths.at(0)},
-      {ut_consts::PAM_3_ACTIVE->m_modes.at(0)}
-    }))
+    .WillOnce(Return(display_device::PathAndModeData {{ut_consts::PAM_3_ACTIVE->m_paths.at(0)}, {ut_consts::PAM_3_ACTIVE->m_modes.at(0)}}))
     .RetiresOnSaturation();
   EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
     .Times(1)
