@@ -203,7 +203,7 @@ jobs:
       - name: Run tests
         id: test
         working-directory: build/tests
-        run: ./test_libdisplaydevice --gtest_color=yes
+        run: ./test_libdisplaydevice --gtest_color=yes --gtest_output=xml:test_results.xml
 
       - name: Generate gcov report
         id: test_report
@@ -229,7 +229,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.os }}
-          path: build/coverage.xml
+          path: |
+            build/coverage.xml
+            build/tests/test_results.xml
           if-no-files-found: error
 
       - name: Move Artifacts
@@ -278,6 +280,16 @@ jobs:
 
       - name: Debug coverage file
         run: cat _coverage/coverage.xml
+
+      - name: Upload test results to Codecov
+        uses: codecov/test-results-action@v1
+        with:
+          disable_search: true
+          fail_ci_if_error: true
+          files: ./_coverage/tests/test_results.xml
+          flags: ${{ matrix.flag }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
 
       - name: Upload coverage
         uses: codecov/codecov-action@v5
