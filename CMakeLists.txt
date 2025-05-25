@@ -24,6 +24,11 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     option(BUILD_DOCS "Build documentation" ON)
     option(BUILD_TESTS "Build tests" ON)
+
+    # CLANGARM64 does not have libatomic which used by googletest, disable it
+    if(MINGW AND CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64")
+        set(BUILD_TESTS OFF CACHE BOOL "Build tests" FORCE)
+    endif()
 endif()
 
 #
