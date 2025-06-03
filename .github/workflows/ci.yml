@@ -76,6 +76,7 @@ jobs:
       - name: Setup Dependencies macOS
         if: runner.os == 'macOS'
         run: |
+          brew update
           brew install \
             boost \
             cmake \
@@ -189,7 +190,7 @@ jobs:
             # Doxygen from Ubuntu is too old, need Doxygen >= 1.10
             DOCS=OFF
           else
-            DOCS=OFF
+            DOCS=ON
           fi
 
           cmake \
