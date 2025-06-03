@@ -76,6 +76,7 @@ jobs:
       - name: Setup Dependencies macOS
         if: runner.os == 'macOS'
         run: |
+          brew update
           brew install \
             boost \
             cmake \
