@@ -38,7 +38,7 @@ jobs:
 
       - name: Setup Release
         id: setup_release
-        uses: LizardByte/setup-release-action@v2025.612.120948
+        uses: LizardByte/actions/actions/release_setup@v2025.715.25226
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -341,12 +341,13 @@ jobs:
 
       - name: Create/Update GitHub Release
         if: needs.setup_release.outputs.publish_release == 'true'
-        uses: LizardByte/create-release-action@v2025.612.13419
+        uses: LizardByte/actions/actions/release_create@v2025.715.25226
         with:
-          allowUpdates: true
+          allowUpdates: false
           body: ${{ needs.setup_release.outputs.release_body }}
           generateReleaseNotes: ${{ needs.setup_release.outputs.release_generate_release_notes }}
           name: ${{ needs.setup_release.outputs.release_tag }}
           prerelease: true
           tag: ${{ needs.setup_release.outputs.release_tag }}
           token: ${{ secrets.GH_BOT_TOKEN }}
+          virustotal_api_key: ${{ secrets.VIRUSTOTAL_API_KEY }}
