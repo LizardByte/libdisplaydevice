@@ -227,7 +227,7 @@ jobs:
         if: >-
           always() &&
           (steps.test_report.outcome == 'success')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage-${{ matrix.os }}
           path: |
@@ -245,7 +245,7 @@ jobs:
           fi
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build-${{ runner.os }}
           path: artifacts/
@@ -274,7 +274,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Download coverage artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: coverage-${{ matrix.build_os }}
           path: _coverage
@@ -315,19 +315,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download build artifact (Windows)
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: build-Windows
           path: build-Windows
 
       - name: Download build artifact (Linux)
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: build-Linux
           path: build-Linux
 
       - name: Download build artifact (macOS)
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: build-macOS
           path: build-macOS
