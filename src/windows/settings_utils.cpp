@@ -42,7 +42,7 @@ namespace display_device::win_utils {
      * const auto primary_only_ids { getDeviceIds(devices, primaryOnlyDevices) };
      * @examples_end
      */
-    std::set<std::string> getDeviceIds(const EnumeratedDeviceList &devices, const std::add_lvalue_reference_t<bool(const EnumeratedDevice &)> &predicate) {
+    std::set<std::string> getDeviceIds(const EnumeratedDeviceList &devices, std::add_lvalue_reference_t<bool(const EnumeratedDevice &)> &predicate) {
       std::set<std::string> device_ids;
       for (const auto &device : devices) {
         if (predicate(device)) {
