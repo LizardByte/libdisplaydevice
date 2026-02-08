@@ -282,22 +282,24 @@ jobs:
       - name: Debug coverage file
         run: cat _coverage/coverage.xml
 
-      - name: Upload test results to Codecov
-        uses: codecov/test-results-action@v1
-        with:
-          disable_search: true
-          fail_ci_if_error: true
-          files: ./_coverage/tests/test_results.xml
-          flags: ${{ matrix.flag }}
-          token: ${{ secrets.CODECOV_TOKEN }}
-          verbose: true
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v5
+      - name: Upload test coverage
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de  # v5.5.2
         with:
           disable_search: true
           fail_ci_if_error: true
           files: ./_coverage/coverage.xml
+          report_type: coverage
+          flags: ${{ matrix.flag }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+
+      - name: Upload test results
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de  # v5.5.2
+        with:
+          disable_search: true
+          fail_ci_if_error: true
+          files: ./_coverage/tests/test_results.xml
+          report_type: test_results
           flags: ${{ matrix.flag }}
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
