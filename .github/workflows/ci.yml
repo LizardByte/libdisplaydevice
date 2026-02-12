@@ -34,11 +34,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Setup Release
         id: setup_release
-        uses: LizardByte/actions/actions/release_setup@v2026.212.22356
+        uses: LizardByte/actions/actions/release_setup@9bf3ef783775e17fe6b8dde3585d94ec570b93c2  # v2026.212.22356
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -59,7 +59,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           submodules: recursive
 
@@ -88,7 +88,7 @@ jobs:
 
       - name: Setup Dependencies Windows
         if: runner.os == 'Windows'
-        uses: msys2/setup-msys2@v2
+        uses: msys2/setup-msys2@4f806de0a5a7294ffabaff804b38a9b435a73bda  # v2.30.0
         with:
           msystem: ucrt64
           update: true
@@ -160,7 +160,7 @@ jobs:
 
       - name: Setup python
         id: setup-python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: '3.11'
 
@@ -227,7 +227,7 @@ jobs:
         if: >-
           always() &&
           (steps.test_report.outcome == 'success')
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0
         with:
           name: coverage-${{ matrix.os }}
           path: |
@@ -245,7 +245,7 @@ jobs:
           fi
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0
         with:
           name: build-${{ runner.os }}
           path: artifacts/
@@ -271,10 +271,10 @@ jobs:
             flag: Windows
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Download coverage artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
         with:
           name: coverage-${{ matrix.build_os }}
           path: _coverage
@@ -317,19 +317,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download build artifact (Windows)
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
         with:
           name: build-Windows
           path: build-Windows
 
       - name: Download build artifact (Linux)
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
         with:
           name: build-Linux
           path: build-Linux
 
       - name: Download build artifact (macOS)
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
         with:
           name: build-macOS
           path: build-macOS
@@ -343,7 +343,7 @@ jobs:
 
       - name: Create/Update GitHub Release
         if: needs.setup_release.outputs.publish_release == 'true'
-        uses: LizardByte/actions/actions/release_create@v2026.212.22356
+        uses: LizardByte/actions/actions/release_create@9bf3ef783775e17fe6b8dde3585d94ec570b93c2  # v2026.212.22356
         with:
           allowUpdates: false
           body: ${{ needs.setup_release.outputs.release_body }}
