@@ -1,7 +1,6 @@
 ---
 name: CI
-permissions:
-  contents: read
+permissions: {}
 
 on:
   pull_request:
@@ -45,6 +44,8 @@ jobs:
   build:
     name: Build
     needs: setup_release
+    permissions:
+      contents: read
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -166,17 +167,19 @@ jobs:
 
       - name: Python Path
         id: python-path
+        env:
+          TMP_PYTHON_PATH: ${{ steps.setup-python.outputs.python-path }}
         run: |
-          if [ "${{ runner.os }}" == "Windows" ]; then
+          if [ "${RUNNER_OS}" == "Windows" ]; then
             # replace backslashes with double backslashes
-            python_path=$(echo "${{ steps.setup-python.outputs.python-path }}" | sed 's/\\/\\\\/g')
+            python_path=$(echo "${TMP_PYTHON_PATH}" | sed 's/\\/\\\\/g')
           else
-            python_path="${{ steps.setup-python.outputs.python-path }}"
+            python_path="${TMP_PYTHON_PATH}"
           fi
 
           # step output
           echo "python-path=${python_path}"
-          echo "python-path=${python_path}" >> $GITHUB_OUTPUT
+          echo "python-path=${python_path}" >> "${GITHUB_OUTPUT}"
 
       - name: Build
         env:
@@ -186,7 +189,7 @@ jobs:
         run: |
           mkdir -p build
 
-          if [ "${{ runner.os }}" = "Linux" ]; then
+          if [ "${RUNNER_OS}" = "Linux" ]; then
             # Doxygen from Ubuntu is too old, need Doxygen >= 1.10
             DOCS=OFF
           else
@@ -212,10 +215,12 @@ jobs:
         if: >-
           always() &&
           (steps.test.outcome == 'success' || steps.test.outcome == 'failure')
+        env:
+          PYTHON_PATH: ${{ steps.python-path.outputs.python-path }}
         working-directory: build
         run: |
-          ${{ steps.python-path.outputs.python-path }} -m pip install gcovr
-          ${{ steps.python-path.outputs.python-path }} -m gcovr . -r ../src \
+          "${PYTHON_PATH}" -m pip install gcovr
+          "${PYTHON_PATH}" -m gcovr . -r ../src \
             --exclude-noncode-lines \
             --exclude-throw-branches \
             --exclude-unreachable-branches \
@@ -238,7 +243,7 @@ jobs:
       - name: Move Artifacts
         run: |
           mkdir -p artifacts
-          if ["${{ runner.os }}" == "Windows"]; then
+          if ["${RUNNER_OS}" == "Windows"]; then
             mv -f ./build/tests/test_libdisplaydevice.exe artifacts/
           else
             mv -f ./build/tests/test_libdisplaydevice artifacts/
@@ -258,6 +263,8 @@ jobs:
       (needs.build.result == 'success' || needs.build.result == 'failure') &&
       startsWith(github.repository, 'LizardByte/')
     needs: build
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -314,6 +321,8 @@ jobs:
     needs:
       - build
       - setup_release
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Download build artifact (Windows)
