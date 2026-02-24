@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "libdisplaydevice"
+dynamic = ["version"]
+description = "Helper scripts for libdisplaydevice"
+requires-python = ">=3.14"
+license = {text = "AGPL-3.0-only"}
+authors = [
+    {name = "LizardByte", email = "lizardbyte@users.noreply.github.com"}
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+lint = [
+    "clang-format==21.*",
+    "flake8==7.3.0",
+]
+
+test = [
+    "gcovr==8.6",
+]
+
+[project.urls]
+Homepage = "https://github.com/LizardByte/libdisplaydevice#readme"
+Repository = "https://github.com/LizardByte/libdisplaydevice"
+Issues = "https://github.com/LizardByte/libdisplaydevice/issues"
