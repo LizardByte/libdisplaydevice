@@ -146,11 +146,13 @@ jobs:
           Set-Location -Path usbmmidd_v2/usbmmidd_v2
           ./deviceinstaller64 install usbmmidd.inf usbmmidd
 
-          # create 1 virtual display
-          # using 2+ identical virtual displays causes topology clone/duplicate tests to fail
-          # due to a Windows API bug with nearly identical virtual display drivers;
-          # using 3+ can crash the runner, see: https://github.com/LizardByte/libdisplaydevice/pull/36
-          ./deviceinstaller64 enableidd 1
+          # create 2 virtual displays, using 3+ can crash the runner
+          # see: https://github.com/LizardByte/libdisplaydevice/pull/36
+          # note: duplicate/clone topology tests only run with non-virtual (non-OTHER output technology)
+          # devices, so having 2 identical virtual displays does not cause those tests to fail
+          for ($i = 1; $i -le 2; $i++) {
+            ./deviceinstaller64 enableidd 1
+          }
 
       - name: Setup python
         id: setup-python

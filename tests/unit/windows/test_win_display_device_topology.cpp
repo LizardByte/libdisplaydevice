@@ -114,7 +114,7 @@ TEST_F_S(SetCurrentTopology, ExtendedTopology) {
 }
 
 TEST_F_S(SetCurrentTopology, DuplicatedTopology) {
-  const auto available_devices {getAvailableDevices(*m_layer, false)};
+  const auto available_devices {getAvailableDevices(*m_layer)};
   ASSERT_TRUE(available_devices);
 
   if (available_devices->size() < 2) {
@@ -132,7 +132,7 @@ TEST_F_S(SetCurrentTopology, DuplicatedTopology) {
 }
 
 TEST_F_S(SetCurrentTopology, MixedTopology) {
-  const auto available_devices {getAvailableDevices(*m_layer, false)};
+  const auto available_devices {getAvailableDevices(*m_layer)};
   ASSERT_TRUE(available_devices);
 
   if (available_devices->size() < 3) {
