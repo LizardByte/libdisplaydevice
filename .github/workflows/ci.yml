@@ -137,21 +137,63 @@ jobs:
             Expand-Archive -Path $OutFile -DestinationPath $baseName
           }
 
-          # virtual display driver
+          # NefCon - utility used for installing the virtual display driver
           DownloadAndExtract `
-            -Uri "https://www.amyuni.com/downloads/usbmmidd_v2.zip" `
-            -OutFile "usbmmidd_v2.zip"
+            -Uri "https://github.com/nefarius/nefcon/releases/download/v1.17.40/nefcon_v1.17.40.zip" `
+            -OutFile "nefcon_v1.17.40.zip"
+          $nefConExe = (Resolve-Path "nefcon_v1.17.40\x64\nefconw.exe").Path
 
-          # install
-          Set-Location -Path usbmmidd_v2/usbmmidd_v2
-          ./deviceinstaller64 install usbmmidd.inf usbmmidd
+          # Virtual Display Driver (VDD)
+          # VDD creates proper IDD-based virtual displays, unlike usbmmidd_v2 which
+          # reported DISPLAYCONFIG_OUTPUT_TECHNOLOGY_OTHER and failed clone topology operations
+          # on modern Windows runners. VDD is officially signed and supports all topology modes.
+          DownloadAndExtract `
+            -Uri "https://github.com/VirtualDrivers/Virtual-Display-Driver/releases/download/25.7.23/VirtualDisplayDriver-x86.Driver.Only.zip" `
+            -OutFile "VirtualDisplayDriver-x86.Driver.Only.zip"
 
-          # create 2 virtual displays, using 3+ can crash the runner
-          # see: https://github.com/LizardByte/libdisplaydevice/pull/36
-          # note: duplicate/clone topology tests only run with non-virtual (non-OTHER output technology)
-          # devices, so having 2 identical virtual displays does not cause those tests to fail
-          for ($i = 1; $i -le 2; $i++) {
-            ./deviceinstaller64 enableidd 1
+          # install VDD signing certificate so Windows trusts the driver
+          $catFile = (Resolve-Path "VirtualDisplayDriver-x86.Driver.Only\VirtualDisplayDriver\mttvdd.cat").Path
+          $catBytes = [System.IO.File]::ReadAllBytes($catFile)
+          $certificates = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection
+          $certificates.Import($catBytes)
+          foreach ($cert in $certificates) {
+            $certFilePath = Join-Path $env:TEMP "$($cert.Thumbprint).cer"
+            $certBytes = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert)
+            [System.IO.File]::WriteAllBytes($certFilePath, $certBytes)
+            Import-Certificate -FilePath $certFilePath -CertStoreLocation "Cert:\LocalMachine\TrustedPublisher"
+          }
+
+          # pre-create the VDD settings directory and XML configuration file
+          # the driver reads this file on startup to determine how many virtual monitors to create
+          New-Item -ItemType Directory -Path "C:\VirtualDisplayDriver" -Force | Out-Null
+          $vddXml = @"
+          <?xml version='1.0' encoding='utf-8'?>
+          <vdd_settings>
+            <monitors>
+              <count>2</count>
+            </monitors>
+          </vdd_settings>
+          "@
+          [System.IO.File]::WriteAllText("C:\VirtualDisplayDriver\vdd_settings.xml", $vddXml, [System.Text.Encoding]::UTF8)
+
+          # install the virtual display driver and wait for displays to appear
+          Push-Location "VirtualDisplayDriver-x86.Driver.Only"
+          & $nefConExe install .\VirtualDisplayDriver\MttVDD.inf "Root\MttVDD"
+          Pop-Location
+
+          # wait for the VDD device to be ready (up to 60 seconds)
+          $vddReady = $false
+          for ($elapsed = 0; $elapsed -lt 60; $elapsed += 5) {
+            $device = Get-PnpDevice -HardwareID "Root\MttVDD" -ErrorAction SilentlyContinue
+            if ($device -and $device.Status -eq "OK") {
+              Write-Host "VDD device ready after ${elapsed}s"
+              $vddReady = $true
+              break
+            }
+            Start-Sleep -Seconds 5
+          }
+          if (-not $vddReady) {
+            Write-Warning "VDD device did not reach OK status within 60s"
           }
 
       - name: Setup python
