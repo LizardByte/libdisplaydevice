@@ -131,23 +131,33 @@ jobs:
             }
           }
 
-          # install Parsec VDD driver silently
-          DownloadFile `
-            -Uri "https://builds.parsec.app/vdd/parsec-vdd-0.45.0.0.exe" `
-            -OutFile "parsec-vdd-0.45.0.0.exe"
-          Start-Process -FilePath ".\parsec-vdd-0.45.0.0.exe" -ArgumentList "/S" -Wait
+          # install virtual-display-rs driver
+          $vdaRepo = "https://github.com/MolotovCherry/virtual-display-rs"
+          $vdaZipUrl = "$vdaRepo/releases/download/v0.3.1/virtual-desktop-driver-installer-x64.zip"
+          DownloadFile -Uri $vdaZipUrl -OutFile "virtual-display-rs.zip"
 
-          # add virtual displays and keep them alive via a background process.
-          # the script mirrors parsec-vdd.h via Win32 P/Invoke and runs a
-          # keepalive loop, which is required to prevent the driver from
-          # unplugging the displays after ~1 second.
-          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "scripts\parsec-vdd.ps1"
+          Write-Information "Download complete, extracting archive..." -InformationAction Continue
+          Expand-Archive -Path "virtual-display-rs.zip" -DestinationPath "virtual-display-rs"
+          $msi = Get-ChildItem -Path "virtual-display-rs" -Filter "*.msi" -Recurse | Select-Object -First 1
+          Write-Information "Found installer: $($msi.FullName)" -InformationAction Continue
+          Write-Information "Running msiexec..." -InformationAction Continue
+          Start-Process -FilePath "msiexec.exe" `
+            -ArgumentList "/i", $msi.FullName, "/qn", "/norestart", "REBOOT=ReallySuppress" `
+            -Wait
+          Write-Information "Driver installed" -InformationAction Continue
+
+          # add virtual displays with distinct resolutions so Windows can tell them apart.
+          # the driver is a persistent Windows service with a named pipe API - no keepalive needed.
+          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "scripts\virtual-display-rs.ps1"
           $pwsh = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
-          Start-Process -FilePath $pwsh `
-            -ArgumentList "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", $scriptPath, "-DisplayCount", "2" `
-            -WindowStyle Hidden
-          # allow time for displays to be added, resolutions set, and registered by Windows
-          Start-Sleep -Seconds 10
+          Write-Information "Configuring virtual displays..." -InformationAction Continue
+          & $pwsh -NonInteractive -ExecutionPolicy Bypass -File $scriptPath -DisplayCount 2
+          Write-Information "Virtual displays configured" -InformationAction Continue
+
+          # allow time for displays to be registered by Windows
+          Write-Information "Waiting for displays to register..." -InformationAction Continue
+          Start-Sleep -Seconds 5
+          Write-Information "Prepare tests complete" -InformationAction Continue
 
       - name: Setup python
         id: setup-python
