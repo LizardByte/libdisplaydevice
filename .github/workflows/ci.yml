@@ -134,25 +134,24 @@ jobs:
           # install virtual-display-rs driver using the portable zip + nefconw
           $vdaRepo = "https://github.com/MolotovCherry/virtual-display-rs"
           $vdaPortableUrl = "$vdaRepo/releases/download/v0.3.1/virtual-desktop-driver-portable-x64.zip"
+          $vdaInstallerUrl = "$vdaRepo/releases/download/v0.3.1/virtual-desktop-driver-installer-x64.zip"
           $nefconUrl = "$vdaRepo/raw/master/installer/files/nefconw.exe"
-          DownloadFile -Uri $vdaPortableUrl -OutFile "virtual-display-rs.zip"
+          DownloadFile -Uri $vdaPortableUrl -OutFile "virtual-display-rs-portable.zip"
+          DownloadFile -Uri $vdaInstallerUrl -OutFile "virtual-display-rs-installer.zip"
           DownloadFile -Uri $nefconUrl -OutFile "nefconw.exe"
 
-          Write-Information "Download complete, extracting archive..." -InformationAction Continue
-          Expand-Archive -Path "virtual-display-rs.zip" -DestinationPath "virtual-display-rs"
+          Write-Information "Extracting archives..." -InformationAction Continue
+          Expand-Archive -Path "virtual-display-rs-portable.zip" -DestinationPath "virtual-display-rs"
+          Expand-Archive -Path "virtual-display-rs-installer.zip" -DestinationPath "virtual-display-rs-installer"
 
           Write-Information "Trusting driver certificate..." -InformationAction Continue
-          $cat = (Resolve-Path "virtual-display-rs\virtualdisplaydriver.cat").Path
-          certutil -addstore -f "TrustedPublisher" $cat
-          certutil -addstore -f "Root" $cat
+          $cer = (Resolve-Path "virtual-display-rs-installer\DriverCertificate.cer").Path
+          certutil -addstore -f "Root" $cer
+          certutil -addstore -f "TrustedPublisher" $cer
 
-          Write-Information "Copying driver to System32..." -InformationAction Continue
-          $umdfDir = "$env:SystemRoot\System32\drivers\UMDF"
-          New-Item -ItemType Directory -Force -Path $umdfDir | Out-Null
-          Copy-Item "virtual-display-rs\VirtualDisplayDriver.dll" -Destination $umdfDir -Force
-
-          Write-Information "Importing registry entries..." -InformationAction Continue
-          reg import "virtual-display-rs\install.reg"
+          Write-Information "Installing driver via pnputil..." -InformationAction Continue
+          $inf = (Resolve-Path "virtual-display-rs\VirtualDisplayDriver.inf").Path
+          pnputil /add-driver $inf /install
 
           Write-Information "Creating device node..." -InformationAction Continue
           $nefcon = (Resolve-Path "nefconw.exe").Path
@@ -162,8 +161,12 @@ jobs:
             --class-guid "4d36e968-e325-11ce-bfc1-08002be10318"
           Write-Information "Driver installed" -InformationAction Continue
 
-          # add virtual displays with distinct resolutions so Windows can tell them apart.
-          # the driver is a persistent Windows service with a named pipe API - no keepalive needed.
+          # the named pipe server is hosted by virtual-display-driver-control.exe, not the driver itself
+          $controlExe = (Resolve-Path "virtual-display-rs\virtual-display-driver-control.exe").Path
+          Write-Information "Starting virtual display control app..." -InformationAction Continue
+          Start-Process -FilePath $controlExe -WindowStyle Hidden
+
+          # add virtual displays with distinct resolutions so Windows can tell them apart
           $scriptPath = Join-Path $env:GITHUB_WORKSPACE "scripts\virtual-display-rs.ps1"
           $pwsh = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
           Write-Information "Configuring virtual displays..." -InformationAction Continue

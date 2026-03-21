@@ -27,9 +27,6 @@ for ($i = 0; $i -lt $DisplayCount; $i++) {
     }
 }
 
-# ConvertTo-Json is available in Windows PowerShell 5.1 unlike System.Text.Json
-$json = @{ DriverNotify = $monitors } | ConvertTo-Json -Depth 10 -Compress
-
 Write-Information "Payload: $json" -InformationAction Continue
 
 # retry connecting to the named pipe until the UMDF driver is fully loaded
