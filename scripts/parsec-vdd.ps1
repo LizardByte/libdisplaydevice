@@ -150,6 +150,97 @@ public class ParsecVdd {
     public static void Keepalive(IntPtr vdd) {
         while (true) { Update(vdd); Thread.Sleep(100); }
     }
+
+    const string VDD_DISPLAY_NAME = "ParsecVDA";
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    struct DISPLAY_DEVICE {
+        public int cb;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string DeviceName;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string DeviceString;
+        public uint StateFlags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string DeviceID;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string DeviceKey;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    struct DEVMODE {
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string dmDeviceName;
+        public ushort dmSpecVersion;
+        public ushort dmDriverVersion;
+        public ushort dmSize;
+        public ushort dmDriverExtra;
+        public uint dmFields;
+        public int dmPositionX;
+        public int dmPositionY;
+        public uint dmDisplayOrientation;
+        public uint dmDisplayFixedOutput;
+        public short dmColor;
+        public short dmDuplex;
+        public short dmYResolution;
+        public short dmTTOption;
+        public short dmCollate;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string dmFormName;
+        public ushort dmLogPixels;
+        public uint dmBitsPerPel;
+        public uint dmPelsWidth;
+        public uint dmPelsHeight;
+        public uint dmDisplayFlags;
+        public uint dmDisplayFrequency;
+        public uint dmICMMethod;
+        public uint dmICMIntent;
+        public uint dmMediaType;
+        public uint dmDitherType;
+        public uint dmReserved1;
+        public uint dmReserved2;
+        public uint dmPanningWidth;
+        public uint dmPanningHeight;
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Ansi)]
+    static extern bool EnumDisplayDevicesA(string lpDevice, uint iDevNum, ref DISPLAY_DEVICE lpDisplayDevice, uint dwFlags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Ansi)]
+    static extern int ChangeDisplaySettingsExA(string lpszDeviceName, ref DEVMODE lpDevMode, IntPtr hwnd, uint dwflags, IntPtr lParam);
+
+    const uint CDS_UPDATEREGISTRY = 0x00000001;
+    const uint CDS_NORESET = 0x10000000;
+    const uint DM_PELSWIDTH = 0x00080000;
+    const uint DM_PELSHEIGHT = 0x00100000;
+    const uint DM_DISPLAYFREQUENCY = 0x00400000;
+
+    public static string[] GetParsecDisplayNames() {
+        var names = new System.Collections.Generic.List<string>();
+        var adapter = new DISPLAY_DEVICE();
+        adapter.cb = Marshal.SizeOf(adapter);
+        for (uint i = 0; EnumDisplayDevicesA(null, i, ref adapter, 0); i++) {
+            var monitor = new DISPLAY_DEVICE();
+            monitor.cb = Marshal.SizeOf(monitor);
+            if (EnumDisplayDevicesA(adapter.DeviceName, 0, ref monitor, 0)) {
+                if (monitor.DeviceString.IndexOf(VDD_DISPLAY_NAME, StringComparison.OrdinalIgnoreCase) >= 0) {
+                    names.Add(adapter.DeviceName);
+                }
+            }
+        }
+        return names.ToArray();
+    }
+
+    public static bool SetResolution(string deviceName, uint width, uint height, uint hz) {
+        var dm = new DEVMODE();
+        dm.dmSize = (ushort)Marshal.SizeOf(dm);
+        dm.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
+        dm.dmPelsWidth = width;
+        dm.dmPelsHeight = height;
+        dm.dmDisplayFrequency = hz;
+        int result = ChangeDisplaySettingsExA(deviceName, ref dm, IntPtr.Zero, CDS_UPDATEREGISTRY | CDS_NORESET, IntPtr.Zero);
+        return result == 0;
+    }
 }
 "@
 
@@ -162,6 +253,24 @@ if ($vdd -eq [IntPtr]::new(-1)) {
 for ($i = 1; $i -le $DisplayCount; $i++) {
     $idx = [ParsecVdd]::AddDisplay($vdd)
     Write-Information "Added virtual display at index $idx"
+}
+
+# wait for Windows to register the new displays
+Start-Sleep -Seconds 2
+
+# assign distinct resolutions so Windows can distinguish the otherwise-identical
+# virtual displays, which is required for topology operations to work correctly
+$resolutions = @(
+    @(1920, 1080, 60),
+    @(1280, 720, 60),
+    @(1600, 900, 60)
+)
+$parsecDisplays = [ParsecVdd]::GetParsecDisplayNames()
+Write-Information "Found $($parsecDisplays.Count) Parsec virtual display(s)"
+for ($i = 0; $i -lt $parsecDisplays.Count; $i++) {
+    $res = $resolutions[$i % $resolutions.Count]
+    $ok = [ParsecVdd]::SetResolution($parsecDisplays[$i], $res[0], $res[1], $res[2])
+    Write-Information "Set $($parsecDisplays[$i]) to $($res[0])x$($res[1])@$($res[2])Hz: $ok"
 }
 
 Write-Information "Keeping $DisplayCount virtual display(s) alive..."

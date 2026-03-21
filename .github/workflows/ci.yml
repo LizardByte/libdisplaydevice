@@ -146,8 +146,8 @@ jobs:
           Start-Process -FilePath $pwsh `
             -ArgumentList "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", $scriptPath, "-DisplayCount", "2" `
             -WindowStyle Hidden
-          # allow time for displays to be added and registered by Windows
-          Start-Sleep -Seconds 5
+          # allow time for displays to be added, resolutions set, and registered by Windows
+          Start-Sleep -Seconds 10
 
       - name: Setup python
         id: setup-python
