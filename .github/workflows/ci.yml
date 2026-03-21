@@ -102,8 +102,8 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          # function to download and extract a zip file
-          function DownloadAndExtract {
+          # function to download a file with retries
+          function DownloadFile {
             param (
               [string]$Uri,
               [string]$OutFile
@@ -129,27 +129,28 @@ jobs:
               Write-Host "Failed to download the file after $maxRetries attempts."
               exit 1
             }
-
-            # use .NET to get the base name of the file
-            $baseName = (Get-Item $OutFile).BaseName
-
-            # Extract the zip file
-            Expand-Archive -Path $OutFile -DestinationPath $baseName
           }
 
-          # virtual display driver
-          DownloadAndExtract `
-            -Uri "https://www.amyuni.com/downloads/usbmmidd_v2.zip" `
-            -OutFile "usbmmidd_v2.zip"
+          # install Parsec VDD driver silently
+          DownloadFile `
+            -Uri "https://builds.parsec.app/vdd/parsec-vdd-0.45.0.0.exe" `
+            -OutFile "parsec-vdd-0.45.0.0.exe"
+          Start-Process -FilePath ".\parsec-vdd-0.45.0.0.exe" -ArgumentList "/S" -Wait
 
-          # install
-          Set-Location -Path usbmmidd_v2/usbmmidd_v2
-          ./deviceinstaller64 install usbmmidd.inf usbmmidd
+          # download the ParsecVDisplay app (portable) to control the driver
+          DownloadFile `
+            -Uri "https://github.com/nomi-san/parsec-vdd/releases/download/v0.45.1/ParsecVDisplay-v0.45-portable.zip" `
+            -OutFile "ParsecVDisplay.zip"
+          Expand-Archive -Path "ParsecVDisplay.zip" -DestinationPath "ParsecVDisplay"
 
-          # create 2 virtual displays, using 3+ can crash the runner
-          # see: https://github.com/LizardByte/libdisplaydevice/pull/36
+          # start the app in the background so it keeps virtual displays alive
+          $appPath = (Resolve-Path "ParsecVDisplay\ParsecVDisplay.exe").Path
+          Start-Process -FilePath $appPath
+          Start-Sleep -Seconds 3
+
+          # add 2 virtual displays
           for ($i = 1; $i -le 2; $i++) {
-            ./deviceinstaller64 enableidd 1
+            & $appPath add
           }
 
       - name: Setup python
