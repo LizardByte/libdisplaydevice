@@ -63,8 +63,12 @@ namespace {
 }  // namespace
 
 TEST_F_S(GetSetHdrStates) {
-  const auto available_devices {getAvailableDevices(*m_layer)};
+  const auto available_devices {getAvailableDevices(*m_layer, false)};
   ASSERT_TRUE(available_devices);
+
+  if (available_devices->empty()) {
+    GTEST_SKIP_("No displays are available in the system.");
+  }
 
   const auto topology_guard {makeTopologyGuard(m_win_dd)};
   ASSERT_TRUE(m_win_dd.setTopology(makeExtendedTopology(*available_devices)));
