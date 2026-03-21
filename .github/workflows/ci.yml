@@ -131,19 +131,35 @@ jobs:
             }
           }
 
-          # install virtual-display-rs driver
+          # install virtual-display-rs driver using the portable zip + nefconw
           $vdaRepo = "https://github.com/MolotovCherry/virtual-display-rs"
-          $vdaZipUrl = "$vdaRepo/releases/download/v0.3.1/virtual-desktop-driver-installer-x64.zip"
-          DownloadFile -Uri $vdaZipUrl -OutFile "virtual-display-rs.zip"
+          $vdaPortableUrl = "$vdaRepo/releases/download/v0.3.1/virtual-desktop-driver-portable-x64.zip"
+          $nefconUrl = "$vdaRepo/raw/master/installer/files/nefconw.exe"
+          DownloadFile -Uri $vdaPortableUrl -OutFile "virtual-display-rs.zip"
+          DownloadFile -Uri $nefconUrl -OutFile "nefconw.exe"
 
           Write-Information "Download complete, extracting archive..." -InformationAction Continue
           Expand-Archive -Path "virtual-display-rs.zip" -DestinationPath "virtual-display-rs"
-          $msi = Get-ChildItem -Path "virtual-display-rs" -Filter "*.msi" -Recurse | Select-Object -First 1
-          Write-Information "Found installer: $($msi.FullName)" -InformationAction Continue
-          Write-Information "Running msiexec..." -InformationAction Continue
-          Start-Process -FilePath "msiexec.exe" `
-            -ArgumentList "/i", $msi.FullName, "/qn", "/norestart", "REBOOT=ReallySuppress" `
-            -Wait
+
+          Write-Information "Trusting driver certificate..." -InformationAction Continue
+          $cat = (Resolve-Path "virtual-display-rs\virtualdisplaydriver.cat").Path
+          certutil -addstore -f "TrustedPublisher" $cat
+          certutil -addstore -f "Root" $cat
+
+          Write-Information "Copying driver to System32..." -InformationAction Continue
+          $umdfDir = "$env:SystemRoot\System32\drivers\UMDF"
+          New-Item -ItemType Directory -Force -Path $umdfDir | Out-Null
+          Copy-Item "virtual-display-rs\VirtualDisplayDriver.dll" -Destination $umdfDir -Force
+
+          Write-Information "Importing registry entries..." -InformationAction Continue
+          reg import "virtual-display-rs\install.reg"
+
+          Write-Information "Creating device node..." -InformationAction Continue
+          $nefcon = (Resolve-Path "nefconw.exe").Path
+          & $nefcon --create-device-node `
+            --hardware-id "Root\VirtualDisplayDriver" `
+            --class-name "Display" `
+            --class-guid "4d36e968-e325-11ce-bfc1-08002be10318"
           Write-Information "Driver installed" -InformationAction Continue
 
           # add virtual displays with distinct resolutions so Windows can tell them apart.
