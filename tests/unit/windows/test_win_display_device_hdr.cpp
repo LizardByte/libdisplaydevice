@@ -71,9 +71,7 @@ TEST_F_S(GetSetHdrStates) {
   }
 
   const auto topology_guard {makeTopologyGuard(m_win_dd)};
-  if (!m_win_dd.setTopology(makeExtendedTopology(*available_devices))) {
-    GTEST_SKIP_("Could not set extended topology (displays may not support it).");
-  }
+  ASSERT_TRUE(m_win_dd.setTopology(makeExtendedTopology(*available_devices)));
 
   const auto hdr_states {m_win_dd.getCurrentHdrStates(display_device::win_utils::flattenTopology(m_win_dd.getCurrentTopology()))};
   if (!std::ranges::any_of(hdr_states, [](auto entry) -> bool {

@@ -137,21 +137,17 @@ jobs:
             -OutFile "parsec-vdd-0.45.0.0.exe"
           Start-Process -FilePath ".\parsec-vdd-0.45.0.0.exe" -ArgumentList "/S" -Wait
 
-          # download the ParsecVDisplay app (portable) to control the driver
-          DownloadFile `
-            -Uri "https://github.com/nomi-san/parsec-vdd/releases/download/v0.45.1/ParsecVDisplay-v0.45-portable.zip" `
-            -OutFile "ParsecVDisplay.zip"
-          Expand-Archive -Path "ParsecVDisplay.zip" -DestinationPath "ParsecVDisplay"
-
-          # start the app in the background so it keeps virtual displays alive
-          $appPath = (Resolve-Path "ParsecVDisplay\ParsecVDisplay.exe").Path
-          Start-Process -FilePath $appPath
-          Start-Sleep -Seconds 3
-
-          # add 2 virtual displays
-          for ($i = 1; $i -le 2; $i++) {
-            & $appPath add
-          }
+          # add virtual displays and keep them alive via a background process.
+          # the script mirrors parsec-vdd.h via Win32 P/Invoke and runs a
+          # keepalive loop, which is required to prevent the driver from
+          # unplugging the displays after ~1 second.
+          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "scripts\parsec-vdd.ps1"
+          $pwsh = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
+          Start-Process -FilePath $pwsh `
+            -ArgumentList "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", $scriptPath, "-DisplayCount", "2" `
+            -WindowStyle Hidden
+          # allow time for displays to be added and registered by Windows
+          Start-Sleep -Seconds 5
 
       - name: Setup python
         id: setup-python
