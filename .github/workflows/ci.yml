@@ -105,9 +105,9 @@ jobs:
             mingw-w64-${{ matrix.toolchain }}-cmake
             mingw-w64-${{ matrix.toolchain }}-graphviz
             mingw-w64-${{ matrix.toolchain }}-ninja
+            mingw-w64-${{ matrix.toolchain }}-nlohmann-json
             mingw-w64-${{ matrix.toolchain }}-nodejs
             mingw-w64-${{ matrix.toolchain }}-toolchain
-            mingw-w64-${{ matrix.toolchain }}-nlohmann-json
 
       - name: Setup python
         id: setup-python

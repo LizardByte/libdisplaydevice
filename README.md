@@ -28,27 +28,39 @@ mkdir -p build
 
 ### Windows
 
-#### Requirements
+First, you need to install [MSYS2](https://www.msys2.org).
 
-First you need to install [MSYS2](https://www.msys2.org), then startup "MSYS2 UCRT64" and execute the following
-commands.
+For AMD64 startup "MSYS2 UCRT64" (or for ARM64 startup "MSYS2 CLANGARM64") then execute the following commands.
 
-Update all packages:
+#### Update all packages
 ```bash
 pacman -Syu
 ```
 
-Install dependencies:
+#### Set toolchain variable
+For UCRT64:
 ```bash
-pacman -S \
-  doxygen \
-  mingw-w64-ucrt-x86_64-binutils \
-  mingw-w64-ucrt-x86_64-cmake \
-  mingw-w64-ucrt-x86_64-graphviz \
-  mingw-w64-ucrt-x86_64-ninja \
-  mingw-w64-ucrt-x86_64-toolchain \
-  mingw-w64-ucrt-x86_64-boost \
-  mingw-w64-ucrt-x86_64-nlohmann-json
+export TOOLCHAIN="ucrt-x86_64"
+```
+
+For CLANGARM64:
+```bash
+export TOOLCHAIN="clang-aarch64"
+```
+
+#### Install dependencies
+```bash
+dependencies=(
+  "doxygen"
+  "mingw-w64-${TOOLCHAIN}-boost"
+  "mingw-w64-${TOOLCHAIN}-cmake"
+  "mingw-w64-${TOOLCHAIN}-graphviz"
+  "mingw-w64-${TOOLCHAIN}-ninja"
+  "mingw-w64-${TOOLCHAIN}-nlohmann-json"
+  "mingw-w64-${TOOLCHAIN}-nodejs"
+  "mingw-w64-${TOOLCHAIN}-toolchain"
+)
+pacman -S "${dependencies[@]}"
 ```
 
 ### Build
