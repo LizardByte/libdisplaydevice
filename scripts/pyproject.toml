@@ -16,7 +16,7 @@ dependencies = []
 
 [project.optional-dependencies]
 lint = [
-    "clang-format==21.*",
+    "clang-format>=21,<23",
     "flake8==7.3.0",
 ]
 
