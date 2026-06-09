@@ -46,8 +46,8 @@ namespace display_device {
     }
 
     // ---- Verify fixed header
-    static const std::vector fixed_header {std::byte {0x00}, std::byte {0xFF}, std::byte {0xFF}, std::byte {0xFF}, std::byte {0xFF}, std::byte {0xFF}, std::byte {0xFF}, std::byte {0x00}};
-    if (!std::equal(std::begin(fixed_header), std::end(fixed_header), std::begin(data))) {
+    if (static const std::array fixed_header {std::byte {0x00}, std::byte {0xFF}, std::byte {0xFF}, std::byte {0xFF}, std::byte {0xFF}, std::byte {0xFF}, std::byte {0xFF}, std::byte {0x00}};
+        !std::equal(std::begin(fixed_header), std::end(fixed_header), std::begin(data))) {
       DD_LOG(warning) << "EDID data does not contain fixed header.";
       return std::nullopt;
     }

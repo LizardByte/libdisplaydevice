@@ -199,8 +199,7 @@ namespace display_device::win_utils {
       return std::nullopt;
     }
 
-    const auto display_name {w_api.getDisplayName(path)};
-    if (display_name.empty()) {
+    if (const auto display_name {w_api.getDisplayName(path)}; display_name.empty()) {
       return std::nullopt;
     }
 
@@ -239,8 +238,7 @@ namespace display_device::win_utils {
         continue;
       }
 
-      const auto prev_device_id_for_path_it {paths_to_ids.find(device_info->m_device_path)};
-      if (prev_device_id_for_path_it != std::end(paths_to_ids)) {
+      if (const auto prev_device_id_for_path_it {paths_to_ids.find(device_info->m_device_path)}; prev_device_id_for_path_it != std::end(paths_to_ids)) {
         if (prev_device_id_for_path_it->second != device_info->m_device_id) {
           DD_LOG(error) << "Duplicate display device id found: " << device_info->m_device_id << " (device path: " << device_info->m_device_path << ")";
           return {};
@@ -256,8 +254,7 @@ namespace display_device::win_utils {
         paths_to_ids[device_info->m_device_path] = device_info->m_device_id;
       }
 
-      auto path_data_it {path_data.find(device_info->m_device_id)};
-      if (path_data_it != std::end(path_data)) {
+      if (auto path_data_it {path_data.find(device_info->m_device_id)}; path_data_it != std::end(path_data)) {
         if (path_data_it->second.m_adapter_id != path.sourceInfo.adapterId) {
           // Sanity check, should not be possible since adapter in embedded in the device path
           DD_LOG(error) << "Device path " << device_info->m_device_path << " has different adapters!";
@@ -297,8 +294,7 @@ namespace display_device::win_utils {
     UINT32 group_id {0};
     StringUnorderedMap<std::unordered_set<UINT32>> used_source_ids_per_adapter;
     const auto is_source_id_already_used = [&used_source_ids_per_adapter](const LUID &adapter_id, UINT32 source_id) {
-      auto entry_it {used_source_ids_per_adapter.find(toString(adapter_id))};
-      if (entry_it != std::end(used_source_ids_per_adapter)) {
+      if (auto entry_it {used_source_ids_per_adapter.find(toString(adapter_id))}; entry_it != std::end(used_source_ids_per_adapter)) {
         return entry_it->second.contains(source_id);
       }
 
@@ -308,8 +304,7 @@ namespace display_device::win_utils {
     for (const auto &group : new_topology) {
       StringUnorderedMap<UINT32> used_source_ids_per_adapter_per_group;
       const auto get_already_used_source_id_in_group = [&used_source_ids_per_adapter_per_group](const LUID &adapter_id) -> std::optional<UINT32> {
-        auto entry_it {used_source_ids_per_adapter_per_group.find(toString(adapter_id))};
-        if (entry_it != std::end(used_source_ids_per_adapter_per_group)) {
+        if (auto entry_it {used_source_ids_per_adapter_per_group.find(toString(adapter_id))}; entry_it != std::end(used_source_ids_per_adapter_per_group)) {
           return entry_it->second;
         }
 

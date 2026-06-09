@@ -20,12 +20,11 @@ namespace display_device {
   namespace {
     std::tm threadSafeLocaltime(const std::time_t &time) {
 #if defined(_MSC_VER)  // MSVCRT (2005+): std::localtime is threadsafe
-      const auto tm_ptr {std::localtime(&time)};
+      if (const auto tm_ptr {std::localtime(&time)}; tm_ptr) {
 #else  // POSIX
       std::tm buffer;
-      const auto tm_ptr {localtime_r(&time, &buffer)};
+      if (const auto tm_ptr {localtime_r(&time, &buffer)}; tm_ptr) {
 #endif  // _MSC_VER
-      if (tm_ptr) {
         return *tm_ptr;
       }
       return {};

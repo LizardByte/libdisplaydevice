@@ -92,8 +92,7 @@ namespace display_device {
         flags |= SDC_ALLOW_CHANGES;
       }
 
-      const LONG result {w_api.setDisplayConfig(display_data->m_paths, display_data->m_modes, flags)};
-      if (result != ERROR_SUCCESS) {
+      if (const LONG result {w_api.setDisplayConfig(display_data->m_paths, display_data->m_modes, flags)}; result != ERROR_SUCCESS) {
         DD_LOG(error) << w_api.getErrorString(result) << " failed to set display mode!";
         return false;
       }
@@ -203,8 +202,7 @@ namespace display_device {
       return true;
     };
 
-    auto current_modes {getCurrentDisplayModes(device_ids)};
-    if (!current_modes.empty()) {
+    if (auto current_modes {getCurrentDisplayModes(device_ids)}; !current_modes.empty()) {
       if (all_modes_match(current_modes)) {
         return true;
       }

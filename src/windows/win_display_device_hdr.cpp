@@ -118,8 +118,7 @@ namespace display_device {
       return {};
     }
 
-    HdrStateMapNoOpt changed_states;
-    if (!doSetHdrStates(*m_w_api, *display_data, states_without_opt, &changed_states)) {
+    if (HdrStateMapNoOpt changed_states; !doSetHdrStates(*m_w_api, *display_data, states_without_opt, &changed_states)) {
       if (!changed_states.empty()) {
         doSetHdrStates(*m_w_api, *display_data, changed_states, nullptr);  // return value does not matter
       }

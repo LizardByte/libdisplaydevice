@@ -139,8 +139,7 @@ namespace display_device {
       target_name.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
       target_name.header.size = sizeof(target_name);
 
-      LONG result {DisplayConfigGetDeviceInfo(&target_name.header)};
-      if (result != ERROR_SUCCESS) {
+      if (LONG result {DisplayConfigGetDeviceInfo(&target_name.header)}; result != ERROR_SUCCESS) {
         DD_LOG(error) << w_api.getErrorString(result) << " failed to get target device name!";
         return {};
       }
@@ -252,8 +251,7 @@ namespace display_device {
     std::optional<std::tuple<std::wstring, std::vector<std::byte>>> getInstanceIdAndEdid(const WinApiLayerInterface &w_api, const std::wstring &device_path) {
       static const GUID monitor_guid {0xe6f07b5f, 0xee97, 0x4a90, {0xb0, 0x76, 0x33, 0xf5, 0x7b, 0xf4, 0xea, 0xa7}};
 
-      HDEVINFO dev_info_handle {SetupDiGetClassDevsW(&monitor_guid, nullptr, nullptr, DIGCF_DEVICEINTERFACE)};
-      if (dev_info_handle) {
+      if (HDEVINFO dev_info_handle {SetupDiGetClassDevsW(&monitor_guid, nullptr, nullptr, DIGCF_DEVICEINTERFACE)}; dev_info_handle) {
         const auto dev_info_handle_cleanup {
           boost::scope::scope_exit([&dev_info_handle, &w_api]() {
             if (!SetupDiDestroyDeviceInfoList(dev_info_handle)) {
@@ -353,8 +351,7 @@ namespace display_device {
       condition_mask = VerSetConditionMask(condition_mask, VER_MINORVERSION, VER_GREATER_EQUAL);  // Minor version condition
       condition_mask = VerSetConditionMask(condition_mask, VER_BUILDNUMBER, VER_GREATER_EQUAL);  // Build number condition
 
-      BOOL result {VerifyVersionInfoA(&os_version_info, VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER, condition_mask)};
-      if (result == FALSE) {
+      if (BOOL result {VerifyVersionInfoA(&os_version_info, VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER, condition_mask)}; result == FALSE) {
         DD_LOG(verbose) << w_api.getErrorString(static_cast<LONG>(GetLastError())) << " \"is_W11_24H2_OrAbove\" returned false.";
         return false;
       }
@@ -444,8 +441,7 @@ namespace display_device {
     }
 
     std::vector<std::byte> device_id_data;
-    auto instance_id_and_edid {getInstanceIdAndEdid(*this, device_path)};
-    if (instance_id_and_edid) {
+    if (auto instance_id_and_edid {getInstanceIdAndEdid(*this, device_path)}; instance_id_and_edid) {
       // Instance ID is unique in the system and persists restarts, but not driver re-installs.
       // It looks like this:
       //     DISPLAY\ACI27EC\5&4FD2DE4&5&UID4352 (also used in the device path it seems)
@@ -556,8 +552,7 @@ namespace display_device {
     source_name.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME;
     source_name.header.size = sizeof(source_name);
 
-    LONG result {DisplayConfigGetDeviceInfo(&source_name.header)};
-    if (result != ERROR_SUCCESS) {
+    if (LONG result {DisplayConfigGetDeviceInfo(&source_name.header)}; result != ERROR_SUCCESS) {
       DD_LOG(error) << getErrorString(result) << " failed to get display name!";
       return {};
     }
@@ -661,8 +656,7 @@ namespace display_device {
           return FALSE;
         }
 
-        MONITORINFOEXA monitor_info {sizeof(MONITORINFOEXA)};
-        if (GetMonitorInfoA(monitor, &monitor_info)) {
+        if (MONITORINFOEXA monitor_info {sizeof(MONITORINFOEXA)}; GetMonitorInfoA(monitor, &monitor_info)) {
           if (data->m_display_name == monitor_info.szDevice) {
             data->m_width = monitor_info.rcMonitor.right - monitor_info.rcMonitor.left;
             return FALSE;

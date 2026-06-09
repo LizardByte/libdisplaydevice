@@ -315,8 +315,7 @@ namespace display_device::win_utils {
 
     if (hdr_state) {
       const auto try_update_new_state = [&new_states, &hdr_state](const std::string &device_id) {
-        const auto current_state {new_states[device_id]};
-        if (!current_state) {
+        if (const auto current_state {new_states[device_id]}; !current_state) {
           return;
         }
 
