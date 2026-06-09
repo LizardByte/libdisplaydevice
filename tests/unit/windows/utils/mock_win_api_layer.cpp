@@ -7,7 +7,7 @@ namespace {
 
     // 1st group (1 device)
     {
-      data.m_paths.push_back({});
+      data.m_paths.emplace_back();
       data.m_paths.back().flags = DISPLAYCONFIG_PATH_ACTIVE;
       data.m_paths.back().sourceInfo.sourceModeInfoIdx = data.m_modes.size();
       data.m_paths.back().sourceInfo.adapterId = {1, 1};
@@ -15,7 +15,7 @@ namespace {
       data.m_paths.back().targetInfo.targetAvailable = TRUE;
       data.m_paths.back().targetInfo.refreshRate = {120, 1};
 
-      data.m_modes.push_back({});
+      data.m_modes.emplace_back();
       data.m_modes.back().infoType = DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE;
       data.m_modes.back().sourceMode = {};  // Set the union
       data.m_modes.back().sourceMode.position = {0, 0};
@@ -25,7 +25,7 @@ namespace {
 
     // 2nd group (1+ device)
     {
-      data.m_paths.push_back({});
+      data.m_paths.emplace_back();
       data.m_paths.back().flags = DISPLAYCONFIG_PATH_ACTIVE;
       data.m_paths.back().sourceInfo.sourceModeInfoIdx = data.m_modes.size();
       data.m_paths.back().sourceInfo.adapterId = {2, 2};
@@ -33,7 +33,7 @@ namespace {
       data.m_paths.back().targetInfo.targetAvailable = TRUE;
       data.m_paths.back().targetInfo.refreshRate = {119995, 1000};
 
-      data.m_modes.push_back({});
+      data.m_modes.emplace_back();
       data.m_modes.back().infoType = DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE;
       data.m_modes.back().sourceMode = {};  // Set the union
       data.m_modes.back().sourceMode.position = {1921, 0};
@@ -41,7 +41,7 @@ namespace {
       data.m_modes.back().sourceMode.height = 2160;
 
       if (include_duplicate) {
-        data.m_paths.push_back({});
+        data.m_paths.emplace_back();
         data.m_paths.back().flags = DISPLAYCONFIG_PATH_ACTIVE;
         data.m_paths.back().sourceInfo.sourceModeInfoIdx = data.m_modes.size();
         data.m_paths.back().sourceInfo.adapterId = {3, 3};
@@ -49,7 +49,7 @@ namespace {
         data.m_paths.back().targetInfo.targetAvailable = TRUE;
         data.m_paths.back().targetInfo.refreshRate = {60, 1};
 
-        data.m_modes.push_back({});
+        data.m_modes.emplace_back();
         data.m_modes.back().infoType = DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE;
         data.m_modes.back().sourceMode = {};  // Set the union
         data.m_modes.back().sourceMode.position = {1921, 0};
@@ -60,7 +60,7 @@ namespace {
 
     // 3rd group (1 device)
     {
-      data.m_paths.push_back({});
+      data.m_paths.emplace_back();
       data.m_paths.back().flags = DISPLAYCONFIG_PATH_ACTIVE;
       data.m_paths.back().sourceInfo.sourceModeInfoIdx = data.m_modes.size();
       data.m_paths.back().sourceInfo.adapterId = {4, 4};
@@ -68,7 +68,7 @@ namespace {
       data.m_paths.back().targetInfo.targetAvailable = TRUE;
       data.m_paths.back().targetInfo.refreshRate = {90, 1};
 
-      data.m_modes.push_back({});
+      data.m_modes.emplace_back();
       data.m_modes.back().infoType = DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE;
       data.m_modes.back().sourceMode = {};  // Set the union
       data.m_modes.back().sourceMode.position = {0, 1081};
