@@ -54,7 +54,7 @@ namespace {
       return *m_impl;
     }
 
-    void expectedDefaultCallsUntilTopologyPrep(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::ActiveTopology &topology = DEFAULT_CURRENT_TOPOLOGY, const std::optional<display_device::SingleDisplayConfigState> &state = ut_consts::SDCS_EMPTY) const {
+    void expectedDefaultCallsUntilTopologyPrep(InSequence & /* To ensure that sequence is created outside this scope */, const display_device::ActiveTopology &topology = DEFAULT_CURRENT_TOPOLOGY, const std::optional<display_device::SingleDisplayConfigState> &state = ut_consts::SDCS_EMPTY) const {
       EXPECT_CALL(*m_settings_persistence_api, load())
         .Times(1)
         .WillOnce(Return(serializeState(state)))
@@ -73,62 +73,62 @@ namespace {
         .RetiresOnSaturation();
     }
 
-    void expectedIsCapturedCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const bool is_captured) const {
+    void expectedIsCapturedCall(InSequence & /* To ensure that sequence is created outside this scope */, const bool is_captured) const {
       EXPECT_CALL(*m_audio_context_api, isCaptured())
         .Times(1)
         .WillOnce(Return(is_captured))
         .RetiresOnSaturation();
     }
 
-    void expectedCaptureCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const bool success = true) {
+    void expectedCaptureCall(InSequence & /* To ensure that sequence is created outside this scope */, const bool success = true) {
       EXPECT_CALL(*m_audio_context_api, capture())
         .Times(1)
         .WillOnce(Return(success))
         .RetiresOnSaturation();
     }
 
-    void expectedReleaseCall(InSequence &sequence /* To ensure that sequence is created outside this scope */) {
+    void expectedReleaseCall(InSequence & /* To ensure that sequence is created outside this scope */) {
       EXPECT_CALL(*m_audio_context_api, release())
         .Times(1)
         .RetiresOnSaturation();
     }
 
-    void expectedTopologyGuardTopologyCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::ActiveTopology &topology = DEFAULT_CURRENT_TOPOLOGY, const bool success = true) {
+    void expectedTopologyGuardTopologyCall(InSequence & /* To ensure that sequence is created outside this scope */, const display_device::ActiveTopology &topology = DEFAULT_CURRENT_TOPOLOGY, const bool success = true) {
       EXPECT_CALL(*m_dd_api, setTopology(topology))
         .Times(1)
         .WillOnce(Return(success))
         .RetiresOnSaturation();
     }
 
-    void expectedDeviceEnumCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::EnumeratedDeviceList &devices = DEFAULT_DEVICES) const {
+    void expectedDeviceEnumCall(InSequence & /* To ensure that sequence is created outside this scope */, const display_device::EnumeratedDeviceList &devices = DEFAULT_DEVICES) const {
       EXPECT_CALL(*m_dd_api, enumAvailableDevices())
         .Times(1)
         .WillOnce(Return(devices))
         .RetiresOnSaturation();
     }
 
-    void expectedIsTopologyTheSameCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::ActiveTopology &lhs, const display_device::ActiveTopology &rhs) const {
+    void expectedIsTopologyTheSameCall(InSequence & /* To ensure that sequence is created outside this scope */, const display_device::ActiveTopology &lhs, const display_device::ActiveTopology &rhs) const {
       EXPECT_CALL(*m_dd_api, isTopologyTheSame(lhs, rhs))
         .Times(1)
         .WillOnce(Return(lhs == rhs))
         .RetiresOnSaturation();
     }
 
-    void expectedSetTopologyCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::ActiveTopology &topology) {
+    void expectedSetTopologyCall(InSequence & /* To ensure that sequence is created outside this scope */, const display_device::ActiveTopology &topology) {
       EXPECT_CALL(*m_dd_api, setTopology(topology))
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
     }
 
-    void expectedPersistenceCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::SingleDisplayConfigState> &state, const bool success = true) {
+    void expectedPersistenceCall(InSequence & /* To ensure that sequence is created outside this scope */, const std::optional<display_device::SingleDisplayConfigState> &state, const bool success = true) {
       EXPECT_CALL(*m_settings_persistence_api, store(*serializeState(state)))
         .Times(1)
         .WillOnce(Return(success))
         .RetiresOnSaturation();
     }
 
-    void expectedTopologyGuardNewlyCapturedContextCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const bool is_captured) {
+    void expectedTopologyGuardNewlyCapturedContextCall(InSequence & /* To ensure that sequence is created outside this scope */, const bool is_captured) {
       EXPECT_CALL(*m_audio_context_api, isCaptured())
         .Times(1)
         .WillOnce(Return(is_captured))
@@ -141,70 +141,70 @@ namespace {
       }
     }
 
-    void expectedIsPrimaryCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::string &device_id, const bool success = true) const {
+    void expectedIsPrimaryCall(InSequence & /* To ensure that sequence is created outside this scope */, const std::string &device_id, const bool success = true) const {
       EXPECT_CALL(*m_dd_api, isPrimary(device_id))
         .Times(1)
         .WillOnce(Return(success))
         .RetiresOnSaturation();
     }
 
-    void expectedSetAsPrimaryCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::string &device_id, const bool success = true) {
+    void expectedSetAsPrimaryCall(InSequence & /* To ensure that sequence is created outside this scope */, const std::string &device_id, const bool success = true) {
       EXPECT_CALL(*m_dd_api, setAsPrimary(device_id))
         .Times(1)
         .WillOnce(Return(success))
         .RetiresOnSaturation();
     }
 
-    void expectedPrimaryGuardCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::string &device_id) {
+    void expectedPrimaryGuardCall(InSequence & /* To ensure that sequence is created outside this scope */, const std::string &device_id) {
       EXPECT_CALL(*m_dd_api, setAsPrimary(device_id))
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
     }
 
-    void expectedSetDisplayModesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::DeviceDisplayModeMap &modes, const bool success = true) {
+    void expectedSetDisplayModesCall(InSequence & /* To ensure that sequence is created outside this scope */, const display_device::DeviceDisplayModeMap &modes, const bool success = true) {
       EXPECT_CALL(*m_dd_api, setDisplayModes(modes))
         .Times(1)
         .WillOnce(Return(success))
         .RetiresOnSaturation();
     }
 
-    void expectedGetCurrentDisplayModesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::StringSet &devices, const display_device::DeviceDisplayModeMap &modes) const {
+    void expectedGetCurrentDisplayModesCall(InSequence & /* To ensure that sequence is created outside this scope */, const display_device::StringSet &devices, const display_device::DeviceDisplayModeMap &modes) const {
       EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(devices))
         .Times(1)
         .WillOnce(Return(modes))
         .RetiresOnSaturation();
     }
 
-    void expectedSetDisplayModesGuardCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::DeviceDisplayModeMap &modes) {
+    void expectedSetDisplayModesGuardCall(InSequence & /* To ensure that sequence is created outside this scope */, const display_device::DeviceDisplayModeMap &modes) {
       EXPECT_CALL(*m_dd_api, setDisplayModes(modes))
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
     }
 
-    void expectedSetHdrStatesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::HdrStateMap &states, const bool success = true) {
+    void expectedSetHdrStatesCall(InSequence & /* To ensure that sequence is created outside this scope */, const display_device::HdrStateMap &states, const bool success = true) {
       EXPECT_CALL(*m_dd_api, setHdrStates(states))
         .Times(1)
         .WillOnce(Return(success))
         .RetiresOnSaturation();
     }
 
-    void expectedGetCurrentHdrStatesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::StringSet &devices, const display_device::HdrStateMap &states) const {
+    void expectedGetCurrentHdrStatesCall(InSequence & /* To ensure that sequence is created outside this scope */, const display_device::StringSet &devices, const display_device::HdrStateMap &states) const {
       EXPECT_CALL(*m_dd_api, getCurrentHdrStates(devices))
         .Times(1)
         .WillOnce(Return(states))
         .RetiresOnSaturation();
     }
 
-    void expectedSetHdrStatesGuardCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::HdrStateMap &states) {
+    void expectedSetHdrStatesGuardCall(InSequence & /* To ensure that sequence is created outside this scope */, const display_device::HdrStateMap &states) {
       EXPECT_CALL(*m_dd_api, setHdrStates(states))
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
     }
 
-    void expectedHdrWorkaroundCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */) const {
+    void expectedHdrWorkaroundCalls(InSequence & /* To ensure that sequence is created outside this scope */) const {
       // Using the "failure" path, to keep it simple
       EXPECT_CALL(*m_dd_api, getCurrentTopology())
         .Times(1)
