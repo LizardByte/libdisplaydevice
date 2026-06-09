@@ -51,7 +51,7 @@ namespace {
       return *m_impl;
     }
 
-    void expectedDefaultCallsUntilModifiedSettings(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::SingleDisplayConfigState> &state = ut_consts::SDCS_FULL) {
+    void expectedDefaultCallsUntilModifiedSettings(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::SingleDisplayConfigState> &state = ut_consts::SDCS_FULL) const {
       EXPECT_CALL(*m_settings_persistence_api, load())
         .Times(1)
         .WillOnce(Return(serializeState(state)))

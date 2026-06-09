@@ -49,7 +49,7 @@ namespace {
       }
     }
 
-    void setupExpectedGetCurrentDisplayModesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::PathAndModeData> &pam = ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES) {
+    void setupExpectedGetCurrentDisplayModesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::PathAndModeData> &pam = ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES) const {
       EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
         .Times(1)
         .WillOnce(Return(pam))

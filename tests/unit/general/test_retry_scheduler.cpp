@@ -17,7 +17,9 @@ namespace {
   struct TestIface {
     std::vector<int> m_durations;
 
-    void nonConstMethod() const { /* noop */ }
+    void nonConstMethod() {
+      m_durations.clear();
+    }
 
     void constMethod() const { /* noop */ }
   };
