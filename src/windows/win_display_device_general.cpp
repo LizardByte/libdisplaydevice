@@ -66,21 +66,9 @@ namespace display_device {
           m_w_api->getHdrState(best_path)
         };
 
-        available_devices.push_back(
-          {device_id,
-           display_name,
-           friendly_name,
-           edid,
-           info}
-        );
+        available_devices.emplace_back(device_id, display_name, friendly_name, edid, info);
       } else {
-        available_devices.push_back(
-          {device_id,
-           display_name,
-           friendly_name,
-           edid,
-           std::nullopt}
-        );
+        available_devices.emplace_back(device_id, display_name, friendly_name, edid, std::nullopt);
       }
     }
 

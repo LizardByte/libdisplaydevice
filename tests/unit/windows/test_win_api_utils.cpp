@@ -77,11 +77,11 @@ namespace {
     []() {
       std::vector<DISPLAYCONFIG_MODE_INFO> modes;
 
-      modes.push_back({});
+      modes.emplace_back();
       modes.back().infoType = DISPLAYCONFIG_MODE_INFO_TYPE_TARGET;
       modes.back().targetMode = {};  // Set the union value
 
-      modes.push_back({});
+      modes.emplace_back();
       modes.back().infoType = DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE;
       modes.back().sourceMode = {};  // Set the union value
 
@@ -201,8 +201,8 @@ TEST_F_S_MOCKED(GetSourceIndex) {
   std::vector<DISPLAYCONFIG_MODE_INFO> modes;
 
   path.sourceInfo.sourceModeInfoIdx = 1;
-  modes.push_back({});  // Non-empty list
-  modes.push_back({});  // Non-empty list
+  modes.emplace_back();  // Non-empty list
+  modes.emplace_back();  // Non-empty list
 
   EXPECT_EQ(display_device::win_utils::getSourceIndex(path, modes), std::make_optional<UINT32>(1));
 }
@@ -212,7 +212,7 @@ TEST_F_S_MOCKED(GetSourceIndex, InvalidIndex) {
   std::vector<DISPLAYCONFIG_MODE_INFO> modes;
 
   path.sourceInfo.sourceModeInfoIdx = DISPLAYCONFIG_PATH_SOURCE_MODE_IDX_INVALID;
-  modes.push_back({});  // Non-empty list
+  modes.emplace_back();  // Non-empty list
 
   EXPECT_EQ(display_device::win_utils::getSourceIndex(path, modes), std::nullopt);
 }
@@ -222,7 +222,7 @@ TEST_F_S_MOCKED(GetSourceIndex, OutOfRangeIndex) {
   std::vector<DISPLAYCONFIG_MODE_INFO> modes;
 
   path.sourceInfo.sourceModeInfoIdx = 1;
-  modes.push_back({});  // Non-empty list
+  modes.emplace_back();  // Non-empty list
 
   EXPECT_EQ(display_device::win_utils::getSourceIndex(path, modes), std::nullopt);
 }
