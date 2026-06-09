@@ -1,5 +1,7 @@
 // system includes
+#include <exception>
 #include <gmock/gmock.h>
+#include <stdexcept>
 
 // local includes
 #include "display_device/retry_scheduler.h"
@@ -18,6 +20,13 @@ namespace {
     void nonConstMethod() { /* noop */ }
 
     void constMethod() const { /* noop */ }
+  };
+
+  class SchedulerStopTokenTestException final: public std::exception {
+  public:
+    [[nodiscard]] const char *what() const noexcept override {
+      return "Get rekt!";
+    }
   };
 
   // Some threads wake up a little earlier than expected, so we round the lower bound to
@@ -638,7 +647,7 @@ TEST_F_S(ThreadCleanupInDestructor) {
 TEST_F_S(SchedulerStopToken, DestructorNoThrow) {
   EXPECT_NO_THROW({
     display_device::SchedulerStopToken token {[]() {
-      throw std::runtime_error("Get rekt!");
+      throw SchedulerStopTokenTestException {};
     }};
     token.requestStop();
   });

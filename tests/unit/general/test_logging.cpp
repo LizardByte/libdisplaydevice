@@ -1,11 +1,18 @@
-// standard includes
-#include <stdexcept>
+// system includes
+#include <exception>
 
 // local includes
 #include "display_device/logging.h"
 #include "fixtures/fixtures.h"
 
 namespace {
+  class LogWriterDestructorTestException final: public std::exception {
+  public:
+    [[nodiscard]] const char *what() const noexcept override {
+      return "Get rekt!";
+    }
+  };
+
   // Specialized TEST macro(s) for this test file
 #define TEST_S(...) DD_MAKE_TEST(TEST, LoggingTest, __VA_ARGS__)
 }  // namespace
@@ -216,7 +223,7 @@ TEST_S(LogWriterDestructorDoesNotPropagateCallbackExceptions) {
 
   logger.setLogLevel(level::info);
   logger.setCustomCallback([](auto, auto) {
-    throw std::runtime_error("Get rekt!");
+    throw LogWriterDestructorTestException {};
   });
 
   EXPECT_NO_THROW(DD_LOG(info) << "Hello World!");

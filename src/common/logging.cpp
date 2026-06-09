@@ -11,6 +11,7 @@
 
 // system includes
 #include <chrono>
+#include <exception>
 #include <iomanip>
 #include <iostream>
 #include <mutex>
@@ -28,6 +29,11 @@ namespace display_device {
         return *tm_ptr;
       }
       return {};
+    }
+
+    void reportLogWriterException(const std::exception &error) noexcept {
+      std::cerr << "Exception thrown while writing a log message. Error:\n"
+                << error.what() << '\n';
     }
   }  // namespace
 
@@ -118,8 +124,8 @@ namespace display_device {
   LogWriter::~LogWriter() noexcept {
     try {
       Logger::get().write(m_log_level, m_buffer.str());
-    } catch (...) {
-      // Destructors must not propagate logging failures.
+    } catch (const std::exception &error) {
+      reportLogWriterException(error);
     }
   }
 }  // namespace display_device
