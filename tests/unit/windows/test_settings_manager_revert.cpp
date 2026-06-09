@@ -177,7 +177,7 @@ namespace {
         .RetiresOnSaturation();
     }
 
-    void expectedDefaultInitialTopologyCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::SingleDisplayConfigState> &state = ut_consts::SDCS_FULL) {
+    void expectedDefaultInitialTopologyCalls(InSequence & /* To ensure that sequence is created outside this scope */, const std::optional<display_device::SingleDisplayConfigState> &state = ut_consts::SDCS_FULL) {
       EXPECT_CALL(*m_dd_api, isTopologyValid(state->m_initial.m_topology))
         .Times(1)
         .WillOnce(Return(true))
@@ -192,14 +192,14 @@ namespace {
         .RetiresOnSaturation();
     }
 
-    void expectedDefaultFinalPersistenceCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */) {
+    void expectedDefaultFinalPersistenceCalls(InSequence & /* To ensure that sequence is created outside this scope */) {
       EXPECT_CALL(*m_settings_persistence_api, clear())
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
     }
 
-    void expectedDefaultAudioContextCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */, const bool audio_captured) {
+    void expectedDefaultAudioContextCalls(InSequence & /* To ensure that sequence is created outside this scope */, const bool audio_captured) {
       EXPECT_CALL(*m_audio_context_api, isCaptured())
         .Times(1)
         .WillOnce(Return(audio_captured))
@@ -231,7 +231,7 @@ namespace {
         .RetiresOnSaturation();
     }
 
-    void expectedHdrWorkaroundCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */) const {
+    void expectedHdrWorkaroundCalls(InSequence & /* To ensure that sequence is created outside this scope */) const {
       // Using the "failure" path, to keep it simple
       EXPECT_CALL(*m_dd_api, getCurrentTopology())
         .Times(1)
