@@ -301,13 +301,15 @@ TEST_F_S_MOCKED(BlankHdrStates, NothingToApply) {
 }
 
 TEST_F_S_MOCKED(BlankHdrStates, FailedToApplyInverseStates) {
+  using enum display_device::HdrState;
+
   const display_device::HdrStateMap initial_states {
-    {"DeviceId1", {display_device::HdrState::Enabled}},
-    {"DeviceId2", {display_device::HdrState::Disabled}},
+    {"DeviceId1", {Enabled}},
+    {"DeviceId2", {Disabled}},
     {"DeviceId3", std::nullopt}
   };
   const display_device::HdrStateMap inverse_states {
-    {"DeviceId1", {display_device::HdrState::Disabled}}
+    {"DeviceId1", {Disabled}}
   };
 
   Sequence sequence;
@@ -320,16 +322,18 @@ TEST_F_S_MOCKED(BlankHdrStates, FailedToApplyInverseStates) {
 }
 
 TEST_F_S_MOCKED(BlankHdrStates, FailedToApplyOriginalStates) {
+  using enum display_device::HdrState;
+
   const display_device::HdrStateMap initial_states {
-    {"DeviceId1", {display_device::HdrState::Enabled}},
-    {"DeviceId2", {display_device::HdrState::Disabled}},
+    {"DeviceId1", {Enabled}},
+    {"DeviceId2", {Disabled}},
     {"DeviceId3", std::nullopt}
   };
   const display_device::HdrStateMap inverse_states {
-    {"DeviceId1", {display_device::HdrState::Disabled}}
+    {"DeviceId1", {Disabled}}
   };
   const display_device::HdrStateMap original_states {
-    {"DeviceId1", {display_device::HdrState::Enabled}}
+    {"DeviceId1", {Enabled}}
   };
 
   Sequence sequence;
@@ -347,16 +351,18 @@ TEST_F_S_MOCKED(BlankHdrStates, NullDelay) {
 }
 
 TEST_F_S_MOCKED(BlankHdrStates, Success) {
+  using enum display_device::HdrState;
+
   const display_device::HdrStateMap initial_states {
-    {"DeviceId1", {display_device::HdrState::Enabled}},
-    {"DeviceId2", {display_device::HdrState::Disabled}},
+    {"DeviceId1", {Enabled}},
+    {"DeviceId2", {Disabled}},
     {"DeviceId3", std::nullopt}
   };
   const display_device::HdrStateMap inverse_states {
-    {"DeviceId1", {display_device::HdrState::Disabled}}
+    {"DeviceId1", {Disabled}}
   };
   const display_device::HdrStateMap original_states {
-    {"DeviceId1", {display_device::HdrState::Enabled}}
+    {"DeviceId1", {Enabled}}
   };
 
   Sequence sequence;

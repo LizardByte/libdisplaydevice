@@ -90,10 +90,12 @@ TEST_F_S(EnumeratedDeviceList) {
 }
 
 TEST_F_S(SingleDisplayConfiguration) {
-  display_device::SingleDisplayConfiguration config_1 {"ID_1", display_device::SingleDisplayConfiguration::DevicePreparation::VerifyOnly, {{156, 123}}, 85., display_device::HdrState::Enabled};
-  display_device::SingleDisplayConfiguration config_2 {"ID_2", display_device::SingleDisplayConfiguration::DevicePreparation::EnsureActive, std::nullopt, display_device::Rational {85, 1}, display_device::HdrState::Disabled};
-  display_device::SingleDisplayConfiguration config_3 {"ID_3", display_device::SingleDisplayConfiguration::DevicePreparation::EnsureOnlyDisplay, {{156, 123}}, std::nullopt, std::nullopt};
-  display_device::SingleDisplayConfiguration config_4 {"ID_4", display_device::SingleDisplayConfiguration::DevicePreparation::EnsurePrimary, std::nullopt, std::nullopt, std::nullopt};
+  using enum display_device::SingleDisplayConfiguration::DevicePreparation;
+
+  display_device::SingleDisplayConfiguration config_1 {"ID_1", VerifyOnly, {{156, 123}}, 85., display_device::HdrState::Enabled};
+  display_device::SingleDisplayConfiguration config_2 {"ID_2", EnsureActive, std::nullopt, display_device::Rational {85, 1}, display_device::HdrState::Disabled};
+  display_device::SingleDisplayConfiguration config_3 {"ID_3", EnsureOnlyDisplay, {{156, 123}}, std::nullopt, std::nullopt};
+  display_device::SingleDisplayConfiguration config_4 {"ID_4", EnsurePrimary, std::nullopt, std::nullopt, std::nullopt};
 
   executeTestCase(display_device::SingleDisplayConfiguration {}, R"({"device_id":"","device_prep":"VerifyOnly","hdr_state":null,"refresh_rate":null,"resolution":null})");
   executeTestCase(config_1, R"({"device_id":"ID_1","device_prep":"VerifyOnly","hdr_state":"Enabled","refresh_rate":{"type":"double","value":85.0},"resolution":{"height":123,"width":156}})");

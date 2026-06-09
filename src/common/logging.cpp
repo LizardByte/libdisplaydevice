@@ -84,22 +84,24 @@ namespace display_device {
 
       // Log level
       switch (log_level) {  // GCOVR_EXCL_BR_LINE for when there is no case match...
-        case LogLevel::verbose:
+        using enum LogLevel;
+
+        case verbose:
           stream << "VERBOSE: ";
           break;
-        case LogLevel::debug:
+        case debug:
           stream << "DEBUG:   ";
           break;
-        case LogLevel::info:
+        case info:
           stream << "INFO:    ";
           break;
-        case LogLevel::warning:
+        case warning:
           stream << "WARNING: ";
           break;
-        case LogLevel::error:
+        case error:
           stream << "ERROR:   ";
           break;
-        case LogLevel::fatal:
+        case fatal:
           stream << "FATAL:   ";
           break;
       }
