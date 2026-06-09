@@ -10,7 +10,7 @@ std::optional<std::vector<std::string>> getAvailableDevices(display_device::WinA
     return std::nullopt;
   }
 
-  std::set<std::string> device_ids;
+  display_device::StringSet device_ids;
   for (const auto &path : all_devices->m_paths) {
     if (only_valid_output && path.targetInfo.outputTechnology == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_OTHER) {
       continue;

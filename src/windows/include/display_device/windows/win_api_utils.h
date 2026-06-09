@@ -259,7 +259,7 @@ namespace display_device::win_utils {
    * const auto device_ids_with_duplicates = getAllDeviceIdsAndMatchingDuplicates(*iface, { "MY_ID1" });
    * @examples_end
    */
-  [[nodiscard]] std::set<std::string> getAllDeviceIdsAndMatchingDuplicates(const WinApiLayerInterface &w_api, const std::set<std::string> &device_ids);
+  [[nodiscard]] StringSet getAllDeviceIdsAndMatchingDuplicates(const WinApiLayerInterface &w_api, const StringSet &device_ids);
 
   /**
    * @brief Check if the refresh rates are almost equal.

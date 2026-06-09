@@ -113,7 +113,7 @@ namespace {
   const UINT32 UNDO_FLAGS {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE};
 
   // Helper functions
-  std::optional<display_device::PathAndModeData> applyExpectedModesOntoInput(std::optional<display_device::PathAndModeData> input, const display_device::DeviceDisplayModeMap &modes, const std::set<std::string> &excluded_ids = {}) {
+  std::optional<display_device::PathAndModeData> applyExpectedModesOntoInput(std::optional<display_device::PathAndModeData> input, const display_device::DeviceDisplayModeMap &modes, const display_device::StringSet &excluded_ids = {}) {
     if (!input) {
       return std::nullopt;
     }
@@ -150,7 +150,7 @@ TEST_F_S(GetCurrentDisplayModes) {
 
   // Can't really compare anything else without knowing system specs
   const auto mode_keys_view {std::ranges::views::keys(current_modes)};
-  const std::set<std::string> mode_keys {std::begin(mode_keys_view), std::end(mode_keys_view)};
+  const display_device::StringSet mode_keys {std::begin(mode_keys_view), std::end(mode_keys_view)};
   EXPECT_EQ(flattened_topology, mode_keys);
 }
 

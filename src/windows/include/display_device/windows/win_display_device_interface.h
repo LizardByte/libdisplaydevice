@@ -117,11 +117,11 @@ namespace display_device {
      *          Empty map can also be returned if an error has occurred.
      * @examples
      * const WinDisplayDeviceInterface* iface = getIface(...);
-     * const std::set<std::string> device_ids { "DEVICE_ID_1", "DEVICE_ID_2" };
+     * const StringSet device_ids { "DEVICE_ID_1", "DEVICE_ID_2" };
      * const auto current_modes = iface->getCurrentDisplayModes(device_ids);
      * @examples_end
      */
-    [[nodiscard]] virtual DeviceDisplayModeMap getCurrentDisplayModes(const std::set<std::string> &device_ids) const = 0;
+    [[nodiscard]] virtual DeviceDisplayModeMap getCurrentDisplayModes(const StringSet &device_ids) const = 0;
 
     /**
      * @brief Set new display modes for the devices.
@@ -171,11 +171,11 @@ namespace display_device {
      * @note On Windows the state cannot be retrieved until the device is active even if it supports it.
      * @examples
      * const WinDisplayDeviceInterface* iface = getIface(...);
-     * const std::unordered_set<std::string> device_ids { "DEVICE_ID_1", "DEVICE_ID_2" };
+     * const StringSet device_ids { "DEVICE_ID_1", "DEVICE_ID_2" };
      * const auto current_hdr_states = iface->getCurrentHdrStates(device_ids);
      * @examples_end
      */
-    [[nodiscard]] virtual HdrStateMap getCurrentHdrStates(const std::set<std::string> &device_ids) const = 0;
+    [[nodiscard]] virtual HdrStateMap getCurrentHdrStates(const StringSet &device_ids) const = 0;
 
     /**
      * @brief Set HDR states for the devices.

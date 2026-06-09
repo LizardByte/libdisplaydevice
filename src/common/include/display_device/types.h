@@ -5,13 +5,53 @@
 #pragma once
 
 // system includes
+#include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <map>
 #include <optional>
+#include <set>
 #include <string>
+#include <string_view>
+#include <unordered_map>
+#include <unordered_set>
 #include <variant>
 #include <vector>
 
 namespace display_device {
+  /**
+   * @brief Transparent hash for string-keyed unordered containers.
+   */
+  struct StringHash {
+    using is_transparent = void;
+
+    [[nodiscard]] std::size_t operator()(const std::string_view value) const noexcept {
+      return std::hash<std::string_view> {}(value);
+    }
+  };
+
+  /**
+   * @brief Ordered set keyed by strings with transparent comparisons.
+   */
+  using StringSet = std::set<std::string, std::less<>>;
+
+  /**
+   * @brief Ordered map keyed by strings with transparent comparisons.
+   */
+  template<typename T>
+  using StringMap = std::map<std::string, T, std::less<>>;
+
+  /**
+   * @brief Unordered map keyed by strings with transparent comparisons.
+   */
+  template<typename T>
+  using StringUnorderedMap = std::unordered_map<std::string, T, StringHash, std::equal_to<>>;
+
+  /**
+   * @brief Unordered set keyed by strings with transparent comparisons.
+   */
+  using StringUnorderedSet = std::unordered_set<std::string, StringHash, std::equal_to<>>;
+
   /**
    * @brief The device's HDR state in the operating system.
    */

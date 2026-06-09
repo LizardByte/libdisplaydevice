@@ -16,11 +16,11 @@ namespace display_device {
     MOCK_METHOD(bool, isTopologyValid, (const ActiveTopology &), (const, override));
     MOCK_METHOD(bool, isTopologyTheSame, (const ActiveTopology &, const ActiveTopology &), (const, override));
     MOCK_METHOD(bool, setTopology, (const ActiveTopology &), (override));
-    MOCK_METHOD(DeviceDisplayModeMap, getCurrentDisplayModes, (const std::set<std::string> &), (const, override));
+    MOCK_METHOD(DeviceDisplayModeMap, getCurrentDisplayModes, (const StringSet &), (const, override));
     MOCK_METHOD(bool, setDisplayModes, (const DeviceDisplayModeMap &), (override));
     MOCK_METHOD(bool, isPrimary, (const std::string &), (const, override));
     MOCK_METHOD(bool, setAsPrimary, (const std::string &), (override));
-    MOCK_METHOD(HdrStateMap, getCurrentHdrStates, (const std::set<std::string> &), (const, override));
+    MOCK_METHOD(HdrStateMap, getCurrentHdrStates, (const StringSet &), (const, override));
     MOCK_METHOD(bool, setHdrStates, (const HdrStateMap &), (override));
   };
 }  // namespace display_device

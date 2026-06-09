@@ -102,7 +102,7 @@ namespace display_device {
     }
   }  // namespace
 
-  DeviceDisplayModeMap WinDisplayDevice::getCurrentDisplayModes(const std::set<std::string> &device_ids) const {
+  DeviceDisplayModeMap WinDisplayDevice::getCurrentDisplayModes(const StringSet &device_ids) const {
     if (device_ids.empty()) {
       DD_LOG(error) << "Device id set is empty!";
       return {};
@@ -164,7 +164,7 @@ namespace display_device {
     // devices were provided instead of guessing modes automatically. This also resolve the problem of
     // having to choose refresh rate for duplicate display - leave it to the end-user of this function...
     const auto keys_view {std::ranges::views::keys(modes)};
-    const std::set<std::string> device_ids {std::begin(keys_view), std::end(keys_view)};
+    const StringSet device_ids {std::begin(keys_view), std::end(keys_view)};
     const auto all_device_ids {win_utils::getAllDeviceIdsAndMatchingDuplicates(*m_w_api, device_ids)};
     if (all_device_ids.empty()) {
       DD_LOG(error) << "Failed to get all duplicated devices!";

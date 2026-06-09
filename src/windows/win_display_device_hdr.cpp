@@ -15,7 +15,7 @@
 namespace display_device {
   namespace {
     /** @brief HDR state map without optional values. */
-    using HdrStateMapNoOpt = std::map<std::string, HdrState>;
+    using HdrStateMapNoOpt = StringMap<HdrState>;
 
     /**
      * @see setHdrStates for a description as this was split off to reduce cognitive complexity.
@@ -66,7 +66,7 @@ namespace display_device {
 
   }  // namespace
 
-  HdrStateMap WinDisplayDevice::getCurrentHdrStates(const std::set<std::string> &device_ids) const {
+  HdrStateMap WinDisplayDevice::getCurrentHdrStates(const StringSet &device_ids) const {
     if (device_ids.empty()) {
       DD_LOG(error) << "Device id set is empty!";
       return {};

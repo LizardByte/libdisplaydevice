@@ -229,7 +229,7 @@ namespace display_device::win_utils {
   PathSourceIndexDataMap collectSourceDataForMatchingPaths(const WinApiLayerInterface &w_api, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths) {
     PathSourceIndexDataMap path_data;
 
-    std::unordered_map<std::string, std::string> paths_to_ids;
+    StringUnorderedMap<std::string> paths_to_ids;
     for (std::size_t index = 0; index < paths.size(); ++index) {
       const auto &path {paths[index]};
 
@@ -295,7 +295,7 @@ namespace display_device::win_utils {
     std::vector<DISPLAYCONFIG_PATH_INFO> new_paths;
 
     UINT32 group_id {0};
-    std::unordered_map<std::string, std::unordered_set<UINT32>> used_source_ids_per_adapter;
+    StringUnorderedMap<std::unordered_set<UINT32>> used_source_ids_per_adapter;
     const auto is_source_id_already_used = [&used_source_ids_per_adapter](const LUID &adapter_id, UINT32 source_id) {
       auto entry_it {used_source_ids_per_adapter.find(toString(adapter_id))};
       if (entry_it != std::end(used_source_ids_per_adapter)) {
@@ -306,7 +306,7 @@ namespace display_device::win_utils {
     };
 
     for (const auto &group : new_topology) {
-      std::unordered_map<std::string, UINT32> used_source_ids_per_adapter_per_group;
+      StringUnorderedMap<UINT32> used_source_ids_per_adapter_per_group;
       const auto get_already_used_source_id_in_group = [&used_source_ids_per_adapter_per_group](const LUID &adapter_id) -> std::optional<UINT32> {
         auto entry_it {used_source_ids_per_adapter_per_group.find(toString(adapter_id))};
         if (entry_it != std::end(used_source_ids_per_adapter_per_group)) {
@@ -397,14 +397,14 @@ namespace display_device::win_utils {
     return new_paths;
   }
 
-  std::set<std::string> getAllDeviceIdsAndMatchingDuplicates(const WinApiLayerInterface &w_api, const std::set<std::string> &device_ids) {
+  StringSet getAllDeviceIdsAndMatchingDuplicates(const WinApiLayerInterface &w_api, const StringSet &device_ids) {
     const auto display_data {w_api.queryDisplayConfig(QueryType::Active)};
     if (!display_data) {
       // Error already logged
       return {};
     }
 
-    std::set<std::string> all_device_ids;
+    StringSet all_device_ids;
     for (const auto &device_id : device_ids) {
       if (device_id.empty()) {
         DD_LOG(error) << "Device it is empty!";

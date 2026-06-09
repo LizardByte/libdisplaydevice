@@ -62,7 +62,7 @@ namespace display_device {
     // Duplicate displays can be identified by having the same x/y position. Here we have a
     // "position to index" map for a simple and lazy lookup in case we have to add a device to the
     // topology group.
-    std::unordered_map<std::string, std::size_t> position_to_topology_index;
+    StringUnorderedMap<std::size_t> position_to_topology_index;
     ActiveTopology topology;
     for (const auto &path : display_data->m_paths) {
       const auto device_info {win_utils::getDeviceInfoForValidPath(*m_w_api, path, display_device::ValidatedPathType::Active)};
@@ -96,7 +96,7 @@ namespace display_device {
       return false;
     }
 
-    std::unordered_set<std::string> device_ids;
+    StringUnorderedSet device_ids;
     for (const auto &group : topology) {
       // Size 2 is a Windows' limitation.
       // You CAN set the group to be more than 2, but then
