@@ -94,21 +94,23 @@ std::string BaseTest::skipTest() const {
 std::optional<display_device::Logger::LogLevel> BaseTest::getDefaultLogLevel() const {
   const static auto default_log_level {
     []() -> std::optional<display_device::Logger::LogLevel> {
+      using enum display_device::Logger::LogLevel;
+
       const auto value {getEnv("LOG_LEVEL")};
       if (value == "verbose") {
-        return display_device::Logger::LogLevel::verbose;
+        return verbose;
       }
       if (value == "debug") {
-        return display_device::Logger::LogLevel::debug;
+        return debug;
       }
       if (value == "info") {
-        return display_device::Logger::LogLevel::info;
+        return info;
       }
       if (value == "warning") {
-        return display_device::Logger::LogLevel::warning;
+        return warning;
       }
       if (value == "error") {
-        return display_device::Logger::LogLevel::error;
+        return error;
       }
 
       return std::nullopt;

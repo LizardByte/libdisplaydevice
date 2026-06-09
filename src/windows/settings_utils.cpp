@@ -361,14 +361,15 @@ namespace display_device::win_utils {
     StringSet device_ids;
     HdrStateMap original_states;
     HdrStateMap inverse_states;
+    using enum HdrState;
     for (const auto &[device_id, state] : current_states) {
-      if (!state || *state != HdrState::Enabled) {
+      if (!state || *state != Enabled) {
         continue;
       }
 
       device_ids.insert(device_id);
-      original_states[device_id] = HdrState::Enabled;
-      inverse_states[device_id] = HdrState::Disabled;
+      original_states[device_id] = Enabled;
+      inverse_states[device_id] = Disabled;
     }
 
     if (device_ids.empty()) {

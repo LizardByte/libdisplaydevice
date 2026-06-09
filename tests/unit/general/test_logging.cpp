@@ -160,17 +160,17 @@ TEST_S(CustomCallback) {
 }
 
 TEST_S(WriteMethodRespectsLogLevel, DefaultLogger) {
-  using level = display_device::Logger::LogLevel;
+  using enum display_device::Logger::LogLevel;
   auto &logger {display_device::Logger::get()};
 
   EXPECT_TRUE(m_cout_buffer.str().empty());
 
-  logger.setLogLevel(level::error);
-  logger.write(level::info, "Hello World!");
+  logger.setLogLevel(error);
+  logger.write(info, "Hello World!");
   EXPECT_TRUE(m_cout_buffer.str().empty());
 
-  logger.setLogLevel(level::info);
-  logger.write(level::info, "Hello World!");
+  logger.setLogLevel(info);
+  logger.write(info, "Hello World!");
   EXPECT_FALSE(m_cout_buffer.str().empty());
 }
 
