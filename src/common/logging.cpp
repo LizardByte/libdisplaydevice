@@ -115,7 +115,11 @@ namespace display_device {
   LogWriter::LogWriter(const Logger::LogLevel log_level):
       m_log_level {log_level} {}
 
-  LogWriter::~LogWriter() {
-    Logger::get().write(m_log_level, m_buffer.str());
+  LogWriter::~LogWriter() noexcept {
+    try {
+      Logger::get().write(m_log_level, m_buffer.str());
+    } catch (...) {
+      // Destructors must not propagate logging failures.
+    }
   }
 }  // namespace display_device

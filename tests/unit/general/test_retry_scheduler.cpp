@@ -638,6 +638,12 @@ TEST_F_S(ThreadCleanupInDestructor) {
 TEST_F_S(SchedulerStopToken, DestructorNoThrow) {
   EXPECT_NO_THROW({
     display_device::SchedulerStopToken token {[]() {
+      throw std::runtime_error("Get rekt!");
+    }};
+    token.requestStop();
+  });
+  EXPECT_NO_THROW({
+    display_device::SchedulerStopToken token {[]() {
     }};
     token.requestStop();
   });

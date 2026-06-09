@@ -1,3 +1,6 @@
+// standard includes
+#include <stdexcept>
+
 // local includes
 #include "display_device/logging.h"
 #include "fixtures/fixtures.h"
@@ -205,4 +208,16 @@ TEST_S(LogMacroDisablesStreamChain) {
   DD_LOG(info) << some_function();
   EXPECT_EQ(output_logged, true);
   EXPECT_EQ(some_function_invoked, true);
+}
+
+TEST_S(LogWriterDestructorDoesNotPropagateCallbackExceptions) {
+  using level = display_device::Logger::LogLevel;
+  auto &logger {display_device::Logger::get()};
+
+  logger.setLogLevel(level::info);
+  logger.setCustomCallback([](auto, auto) {
+    throw std::runtime_error("Get rekt!");
+  });
+
+  EXPECT_NO_THROW(DD_LOG(info) << "Hello World!");
 }

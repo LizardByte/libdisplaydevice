@@ -10,9 +10,13 @@ namespace display_device {
       m_cleanup {std::move(cleanup)} {
   }
 
-  SchedulerStopToken::~SchedulerStopToken() {
+  SchedulerStopToken::~SchedulerStopToken() noexcept {
     if (m_stop_requested && m_cleanup) {
-      m_cleanup();
+      try {
+        m_cleanup();
+      } catch (...) {
+        // Destructors must not propagate cleanup failures.
+      }
     }
   }
 
