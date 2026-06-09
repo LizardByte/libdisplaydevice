@@ -170,7 +170,7 @@ namespace display_device {
             }
 
             try {
-              SchedulerStopToken scheduler_stop_token {[&]() {
+              SchedulerStopToken scheduler_stop_token {[this]() {
                 clearThreadLoopUnlocked();
               }};
               m_retry_function(*m_iface, scheduler_stop_token);
@@ -232,7 +232,7 @@ namespace display_device {
       }
 
       std::lock_guard lock {m_mutex};
-      SchedulerStopToken stop_token {[&]() {
+      SchedulerStopToken stop_token {[this]() {
         stopUnlocked();
       }};
 

@@ -221,7 +221,7 @@ namespace display_device {
       }
     }
 
-    const auto try_change {[&](const std::string &new_device, const auto info_preamble, const auto error_log) {
+    const auto try_change {[this, &current_primary_device, &guard_fn, &system_settings_touched](const std::string &new_device, const auto info_preamble, const auto error_log) {
       if (current_primary_device != new_device) {
         system_settings_touched = true;
 
@@ -275,7 +275,7 @@ namespace display_device {
       }
     }
 
-    const auto try_change {[&](const DeviceDisplayModeMap &new_modes, const auto info_preamble, const auto error_log) {
+    const auto try_change {[this, &current_display_modes, &guard_fn, &new_state, &system_settings_touched](const DeviceDisplayModeMap &new_modes, const auto info_preamble, const auto error_log) {
       if (current_display_modes != new_modes) {
         DD_LOG(info) << info_preamble << toJson(new_modes);
         if (!m_dd_api->setDisplayModes(new_modes)) {
@@ -336,7 +336,7 @@ namespace display_device {
       }
     }
 
-    const auto try_change {[&](const HdrStateMap &new_states, const auto info_preamble, const auto error_log) {
+    const auto try_change {[this, &current_hdr_states, &guard_fn, &system_settings_touched](const HdrStateMap &new_states, const auto info_preamble, const auto error_log) {
       if (current_hdr_states != new_states) {
         system_settings_touched = true;
 
