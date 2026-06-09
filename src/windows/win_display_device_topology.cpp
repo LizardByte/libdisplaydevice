@@ -119,10 +119,10 @@ namespace display_device {
   bool WinDisplayDevice::isTopologyTheSame(const ActiveTopology &lhs, const ActiveTopology &rhs) const {
     const auto sort_topology = [](ActiveTopology &topology) {
       for (auto &group : topology) {
-        std::sort(std::begin(group), std::end(group));
+        std::ranges::sort(group);
       }
 
-      std::sort(std::begin(topology), std::end(topology));
+      std::ranges::sort(topology);
     };
 
     auto lhs_copy {lhs};

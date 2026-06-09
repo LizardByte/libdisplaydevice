@@ -181,13 +181,11 @@ namespace display_device {
         // Non-stripped initial state MUST be checked here as the missing device could have its context captured!
         const bool switching_from_initial {m_dd_api->isTopologyTheSame(new_state.m_initial.m_topology, topology_before_changes)};
         const bool new_topology_contains_all_current_topology_devices {std::ranges::includes(win_utils::flattenTopology(new_topology), win_utils::flattenTopology(topology_before_changes))};
-        if (switching_from_initial && !new_topology_contains_all_current_topology_devices) {
-          // Only capture the context when switching from initial topology. All the other intermediate states, like non-existent
-          // capture state after system restart are to be avoided.
-          if (!m_audio_context_api->capture()) {
-            DD_LOG(error) << "Failed to capture audio context!";
-            return std::nullopt;
-          }
+        // Only capture the context when switching from initial topology. All the other intermediate states, like non-existent
+        // capture state after system restart are to be avoided.
+        if (switching_from_initial && !new_topology_contains_all_current_topology_devices && !m_audio_context_api->capture()) {
+          DD_LOG(error) << "Failed to capture audio context!";
+          return std::nullopt;
         }
       }
 
@@ -251,11 +249,9 @@ namespace display_device {
       return true;
     }
 
-    if (might_need_to_restore) {
-      if (!try_change(cached_primary_device, "Changing primary display back to:\n", "Failed to restore original primary device!")) {
-        // Error already logged
-        return false;
-      }
+    if (might_need_to_restore && !try_change(cached_primary_device, "Changing primary display back to:\n", "Failed to restore original primary device!")) {
+      // Error already logged
+      return false;
     }
 
     return true;
@@ -313,11 +309,9 @@ namespace display_device {
       return true;
     }
 
-    if (might_need_to_restore) {
-      if (!try_change(cached_display_modes, "Changing display modes back to:\n", "Failed to restore original display modes!")) {
-        // Error already logged
-        return false;
-      }
+    if (might_need_to_restore && !try_change(cached_display_modes, "Changing display modes back to:\n", "Failed to restore original display modes!")) {
+      // Error already logged
+      return false;
     }
 
     return true;
@@ -370,11 +364,9 @@ namespace display_device {
       return true;
     }
 
-    if (might_need_to_restore) {
-      if (!try_change(cached_hdr_states, "Changing HDR states back to:\n", "Failed to restore original HDR states!")) {
-        // Error already logged
-        return false;
-      }
+    if (might_need_to_restore && !try_change(cached_hdr_states, "Changing HDR states back to:\n", "Failed to restore original HDR states!")) {
+      // Error already logged
+      return false;
     }
 
     return true;

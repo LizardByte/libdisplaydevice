@@ -656,11 +656,9 @@ namespace display_device {
           return FALSE;
         }
 
-        if (MONITORINFOEXA monitor_info {sizeof(MONITORINFOEXA)}; GetMonitorInfoA(monitor, &monitor_info)) {
-          if (data->m_display_name == monitor_info.szDevice) {
-            data->m_width = monitor_info.rcMonitor.right - monitor_info.rcMonitor.left;
-            return FALSE;
-          }
+        if (MONITORINFOEXA monitor_info {sizeof(MONITORINFOEXA)}; GetMonitorInfoA(monitor, &monitor_info) && data->m_display_name == monitor_info.szDevice) {
+          data->m_width = monitor_info.rcMonitor.right - monitor_info.rcMonitor.left;
+          return FALSE;
         }
 
         return TRUE;

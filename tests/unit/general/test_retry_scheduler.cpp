@@ -24,10 +24,10 @@ namespace {
     void constMethod() const { /* noop */ }
   };
 
-  class SchedulerStopTokenTestException final: public std::exception {
+  class SchedulerStopTokenTestException final: public std::runtime_error {
   public:
-    [[nodiscard]] const char *what() const noexcept override {
-      return "Get rekt!";
+    SchedulerStopTokenTestException():
+        std::runtime_error {"Get rekt!"} {
     }
   };
 

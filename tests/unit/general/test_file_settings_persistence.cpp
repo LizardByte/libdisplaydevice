@@ -1,4 +1,5 @@
 // system includes
+#include <algorithm>
 #include <fstream>
 #include <gmock/gmock.h>
 #include <stdexcept>
@@ -63,7 +64,7 @@ TEST_F_S(Store, FileOverwritten) {
 
   {
     std::ofstream file {filepath, std::ios_base::binary};
-    std::copy(std::begin(data1), std::end(data1), std::ostreambuf_iterator<char> {file});
+    std::ranges::copy(data1, std::ostreambuf_iterator<char> {file});
   }
 
   EXPECT_TRUE(std::filesystem::exists(filepath));
@@ -94,7 +95,7 @@ TEST_F_S(Load, FileRead) {
 
   {
     std::ofstream file {filepath, std::ios_base::binary};
-    std::copy(std::begin(data), std::end(data), std::ostreambuf_iterator<char> {file});
+    std::ranges::copy(data, std::ostreambuf_iterator<char> {file});
   }
 
   EXPECT_EQ(getImpl(filepath).load(), data);

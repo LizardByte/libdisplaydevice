@@ -7,6 +7,7 @@
 // system includes
 #include <algorithm>
 #include <condition_variable>
+#include <exception>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -63,6 +64,11 @@ namespace display_device {
   };
 
   namespace detail {
+    inline void logSchedulerException(const std::exception &exception, const char *message) {
+      DD_LOG(error) << message << " Error:\n"
+                    << exception.what();
+    }
+
     /**
      * @brief Given that we know that we are dealing with a function,
      *        check if it is an optional function (like std::function<...>) or other callable.
@@ -176,9 +182,8 @@ namespace display_device {
               }};
               m_retry_function(*m_iface, scheduler_stop_token);
               continue;
-            } catch (const std::exception &error) {
-              DD_LOG(error) << "Exception thrown in the RetryScheduler thread. Stopping scheduler. Error:\n"
-                            << error.what();
+            } catch (const std::exception &error) {  // NOSONAR(cpp:S1181): Scheduler callback boundary must catch standard callback failures.
+              detail::logSchedulerException(error, "Exception thrown in the RetryScheduler thread. Stopping scheduler.");
             }
 
             clearThreadLoopUnlocked();
@@ -254,10 +259,9 @@ namespace display_device {
           m_sleep_durations = std::move(sleep_durations);
           syncThreadUnlocked();
         }
-      } catch (const std::exception &error) {
+      } catch (const std::exception &error) {  // NOSONAR(cpp:S1181): Scheduler callback boundary must catch standard callback failures.
         stop_token.requestStop();
-        DD_LOG(error) << "Exception thrown in the RetryScheduler::schedule. Stopping scheduler. Error:\n"
-                      << error.what();
+        detail::logSchedulerException(error, "Exception thrown in the RetryScheduler::schedule. Stopping scheduler.");
       }
     }
 

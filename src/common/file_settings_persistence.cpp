@@ -30,9 +30,9 @@ namespace display_device {
         return false;
       }
 
-      std::copy(std::begin(data), std::end(data), std::ostreambuf_iterator<char> {stream});
+      std::ranges::copy(data, std::ostreambuf_iterator<char> {stream});
       return true;
-    } catch (const std::exception &error) {
+    } catch (const std::ios_base::failure &error) {
       DD_LOG(error) << "Failed to write to " << m_filepath << "! Error:\n"
                     << error.what();
       return false;
@@ -58,7 +58,7 @@ namespace display_device {
       }
 
       return std::vector<std::uint8_t> {std::istreambuf_iterator<char> {stream}, std::istreambuf_iterator<char> {}};
-    } catch (const std::exception &error) {
+    } catch (const std::ios_base::failure &error) {
       DD_LOG(error) << "Failed to read " << m_filepath << "! Error:\n"
                     << error.what();
       return std::nullopt;
