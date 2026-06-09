@@ -86,7 +86,7 @@ namespace display_device {
      * Logger::get().write(Logger::LogLevel::Info, "Hello World!");
      * @examples_end
      */
-    void write(LogLevel log_level, std::string value);
+    void write(LogLevel log_level, std::string value) const;
 
     /**
      * @brief A deleted copy constructor for singleton pattern.

@@ -56,7 +56,7 @@ namespace display_device {
     m_custom_callback = std::move(callback);
   }
 
-  void Logger::write(const LogLevel log_level, std::string value) {
+  void Logger::write(const LogLevel log_level, std::string value) const {
     if (!isLogLevelEnabled(log_level)) {
       return;
     }

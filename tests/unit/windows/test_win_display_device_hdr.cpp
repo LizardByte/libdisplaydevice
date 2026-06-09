@@ -30,7 +30,7 @@ namespace {
 
   class WinDisplayDeviceHdrMocked: public BaseTest {
   public:
-    void setupExpectedGetActivePathCall(int id_number, InSequence & /* To ensure that sequence is created outside this scope */) {
+    void setupExpectedGetActivePathCall(int id_number, InSequence & /* To ensure that sequence is created outside this scope */) const {
       for (int i = 1; i <= id_number; ++i) {
         EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
           .Times(1)
