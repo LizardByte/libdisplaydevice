@@ -311,7 +311,7 @@ TEST_F_S_MOCKED(SetDisplayModes, Relaxed) {
     {"DeviceId4", {1000, 2160, {90, 10}}},
   };
 
-  const auto pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto &pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId1"})};
 
   InSequence sequence;
@@ -346,7 +346,7 @@ TEST_F_S_MOCKED(SetDisplayModes, Strict) {
     {"DeviceId4", {3840, 2160, {90, 1}}},
   };
 
-  const auto pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto &pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId4"})};
 
   InSequence sequence;
@@ -529,7 +529,7 @@ TEST_F_S_MOCKED(SetDisplayModes, Relaxed, FailedToSetDisplayConfig) {
     {"DeviceId4", {1000, 2160, {90, 10}}},
   };
 
-  const auto pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto &pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId1"})};
 
   InSequence sequence;
@@ -567,7 +567,7 @@ TEST_F_S_MOCKED(SetDisplayModes, Relaxed, FailedToGetCurrentDisplayModes) {
     {"DeviceId4", {1000, 2160, {90, 10}}},
   };
 
-  const auto pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto &pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId1"})};
 
   InSequence sequence;
@@ -609,7 +609,7 @@ TEST_F_S_MOCKED(SetDisplayModes, Strict, FailedToSetDisplayConfig) {
     {"DeviceId4", {3840, 2160, {90, 1}}},
   };
 
-  const auto pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto &pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId4"})};
 
   InSequence sequence;
@@ -673,7 +673,7 @@ TEST_F_S_MOCKED(SetDisplayModes, Strict, FailedToGetCurrentDisplayModes) {
     {"DeviceId4", {3840, 2160, {90, 1}}},
   };
 
-  const auto pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto &pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId4"})};
 
   InSequence sequence;
@@ -737,7 +737,7 @@ TEST_F_S_MOCKED(SetDisplayModes, Strict, ModesDidNotChange) {
     {"DeviceId4", {3840, 2160, {90, 1}}},
   };
 
-  const auto pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto &pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId4"})};
 
   InSequence sequence;
