@@ -2,10 +2,8 @@
 #include "display_device/types.h"
 #include "fixtures/fixtures.h"
 
-namespace {
-  // Specialized TEST macro(s) for this test file
+// Specialized TEST macro(s) for this test file
 #define TEST_S(...) DD_MAKE_TEST(TEST, EdidParsing, __VA_ARGS__)
-}  // namespace
 
 TEST_S(NoData) {
   EXPECT_EQ(display_device::EdidData::parse({}), std::nullopt);

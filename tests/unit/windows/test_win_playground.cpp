@@ -46,20 +46,11 @@ namespace {
 }  // namespace
 
 TEST_F_S(EnumAvailableDevices) {
-  // Usage example:
-  //   test_libdisplaydevice.exe --gtest_color=yes --gtest_also_run_disabled_tests --gtest_filter=*WinPlayground.EnumAvailableDevices
-
   DD_LOG(info) << "enumerated devices:\n"
                << toJson(getImpl().enumAvailableDevices());
 }
 
 TEST_F_S(ApplySettings) {
-  // Usage example:
-  //   test_libdisplaydevice.exe --gtest_color=yes --gtest_also_run_disabled_tests --gtest_filter=*WinPlayground.ApplySettings config='{\"device_id\":\"{77f67f3e-754f-5d31-af64-ee037e18100a}\",\"device_prep\":\"EnsureActive\",\"hdr_state\":null,\"refresh_rate\":null,\"resolution\":null}'
-  //
-  // With workarounds (optional):
-  //   test_libdisplaydevice.exe --gtest_color=yes --gtest_also_run_disabled_tests --gtest_filter=*WinPlayground.ApplySettings config='...' workarounds='{\"hdr_blank_delay\":500}'
-
   const auto config_arg {getArgWithMatchingPattern(R"(^config=)", true)};
   if (!config_arg) {
     GTEST_FAIL() << "\"config=<json_string>\" argument not found!";

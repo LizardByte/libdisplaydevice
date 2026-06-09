@@ -41,7 +41,8 @@ namespace display_device {
           return false;
         }
 
-        const auto source_mode {win_utils::getSourceMode(win_utils::getSourceIndex(*path, display_data->m_modes), display_data->m_modes)};
+        auto &mutable_path {display_data->m_paths[static_cast<std::size_t>(path - display_data->m_paths.data())]};
+        const auto source_mode {win_utils::getSourceMode(win_utils::getSourceIndex(mutable_path, display_data->m_modes), display_data->m_modes)};
         if (!source_mode) {
           DD_LOG(error) << "Active device does not have a source mode: " << device_id << "!";
           return false;
@@ -52,11 +53,11 @@ namespace display_device {
 
         bool refresh_rate_changed;
         if (strategy == Strategy::Relaxed) {
-          refresh_rate_changed = !win_utils::fuzzyCompareRefreshRates(Rational {path->targetInfo.refreshRate.Numerator, path->targetInfo.refreshRate.Denominator}, mode.m_refresh_rate);
+          refresh_rate_changed = !win_utils::fuzzyCompareRefreshRates(Rational {mutable_path.targetInfo.refreshRate.Numerator, mutable_path.targetInfo.refreshRate.Denominator}, mode.m_refresh_rate);
         } else {
           // Since we are in strict mode, do not fuzzy compare it
-          refresh_rate_changed = path->targetInfo.refreshRate.Numerator != mode.m_refresh_rate.m_numerator ||
-                                 path->targetInfo.refreshRate.Denominator != mode.m_refresh_rate.m_denominator;
+          refresh_rate_changed = mutable_path.targetInfo.refreshRate.Numerator != mode.m_refresh_rate.m_numerator ||
+                                 mutable_path.targetInfo.refreshRate.Denominator != mode.m_refresh_rate.m_denominator;
         }
 
         if (resolution_changed) {
@@ -66,14 +67,14 @@ namespace display_device {
         }
 
         if (refresh_rate_changed) {
-          path->targetInfo.refreshRate = {mode.m_refresh_rate.m_numerator, mode.m_refresh_rate.m_denominator};
+          mutable_path.targetInfo.refreshRate = {mode.m_refresh_rate.m_numerator, mode.m_refresh_rate.m_denominator};
           new_changes = true;
         }
 
         if (new_changes) {
           // Clear the target index so that Windows has to select/modify the target to best match the requirements.
-          win_utils::setTargetIndex(*path, std::nullopt);
-          win_utils::setDesktopIndex(*path, std::nullopt);  // Part of struct containing target index and so it needs to be cleared
+          win_utils::setTargetIndex(mutable_path, std::nullopt);
+          win_utils::setDesktopIndex(mutable_path, std::nullopt);  // Part of struct containing target index and so it needs to be cleared
         }
 
         changes_applied = changes_applied || new_changes;

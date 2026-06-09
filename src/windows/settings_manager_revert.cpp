@@ -19,6 +19,7 @@ namespace display_device {
      * @brief Function that does nothing.
      */
     void noopFn() {
+      // Intentionally empty guard callback.
     }
   }  // namespace
 

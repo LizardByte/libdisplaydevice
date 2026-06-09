@@ -424,55 +424,45 @@ TEST_F_S_MOCKED(GetDeviceInfo, UnavailablePath, ActivePath) {
 
 TEST_F_S_MOCKED(GetActivePath, InstantMatch) {
   EXPECT_CALL(m_layer, getMonitorDevicePath(_))
-    .Times(2)
+    .Times(1)
     .WillRepeatedly(Return("Path1"));
   EXPECT_CALL(m_layer, getDisplayName(_))
-    .Times(2)
+    .Times(1)
     .WillRepeatedly(Return("DisplayNameX"));
   EXPECT_CALL(m_layer, getDeviceId(_))
-    .Times(2)
+    .Times(1)
     .WillRepeatedly(Return("DeviceId1"));
 
-  auto *path {display_device::win_utils::getActivePath(m_layer, "DeviceId1", const_cast<std::vector<DISPLAYCONFIG_PATH_INFO> &>(PATHS_WITH_SOURCE_IDS))};
-  auto *const_path {display_device::win_utils::getActivePath(m_layer, "DeviceId1", PATHS_WITH_SOURCE_IDS)};
+  const auto *path {display_device::win_utils::getActivePath(m_layer, "DeviceId1", PATHS_WITH_SOURCE_IDS)};
 
-  EXPECT_EQ(path, const_path);
   EXPECT_EQ(path, &PATHS_WITH_SOURCE_IDS.at(0));
 }
 
 TEST_F_S_MOCKED(GetActivePath, SecondMatch) {
   EXPECT_CALL(m_layer, getMonitorDevicePath(_))
-    .Times(4)
-    .WillOnce(Return("Path1"))
-    .WillOnce(Return("Path2"))
+    .Times(2)
     .WillOnce(Return("Path1"))
     .WillOnce(Return("Path2"));
   EXPECT_CALL(m_layer, getDisplayName(_))
-    .Times(4)
+    .Times(2)
     .WillRepeatedly(Return("DisplayNameX"));
   EXPECT_CALL(m_layer, getDeviceId(_))
-    .Times(4)
-    .WillOnce(Return("DeviceId1"))
-    .WillOnce(Return("DeviceId2"))
+    .Times(2)
     .WillOnce(Return("DeviceId1"))
     .WillOnce(Return("DeviceId2"));
 
-  auto *path {display_device::win_utils::getActivePath(m_layer, "DeviceId2", const_cast<std::vector<DISPLAYCONFIG_PATH_INFO> &>(PATHS_WITH_SOURCE_IDS))};
-  auto *const_path {display_device::win_utils::getActivePath(m_layer, "DeviceId2", PATHS_WITH_SOURCE_IDS)};
+  const auto *path {display_device::win_utils::getActivePath(m_layer, "DeviceId2", PATHS_WITH_SOURCE_IDS)};
 
-  EXPECT_EQ(path, const_path);
   EXPECT_EQ(path, &PATHS_WITH_SOURCE_IDS.at(1));
 }
 
 TEST_F_S_MOCKED(GetActivePath, NoMatch) {
   EXPECT_CALL(m_layer, getMonitorDevicePath(_))
-    .Times(4)
-    .WillOnce(Return(""));
+    .Times(2)
+    .WillRepeatedly(Return(""));
 
-  auto *path {display_device::win_utils::getActivePath(m_layer, "DeviceId1", const_cast<std::vector<DISPLAYCONFIG_PATH_INFO> &>(PATHS_WITH_SOURCE_IDS))};
-  auto *const_path {display_device::win_utils::getActivePath(m_layer, "DeviceId1", PATHS_WITH_SOURCE_IDS)};
+  const auto *path {display_device::win_utils::getActivePath(m_layer, "DeviceId1", PATHS_WITH_SOURCE_IDS)};
 
-  EXPECT_EQ(path, const_path);
   EXPECT_EQ(path, nullptr);
 }
 
@@ -827,8 +817,6 @@ TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, FailedToQueryDevices) {
 }
 
 TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, EmptyDeviceIdInProvidedList) {
-  //  InSequence sequence;
-  //  setupExpectCallFor4ActivePathsAndModes(display_device::QueryType::Active, sequence);
   EXPECT_CALL(m_layer, queryDisplayConfig(display_device::QueryType::Active))
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES));

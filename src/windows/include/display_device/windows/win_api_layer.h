@@ -4,6 +4,9 @@
  */
 #pragma once
 
+// system includes
+#include <string_view>
+
 // local includes
 #include "win_api_layer_interface.h"
 
@@ -44,6 +47,6 @@ namespace display_device {
     [[nodiscard]] bool setHdrState(const DISPLAYCONFIG_PATH_INFO &path, HdrState state) override;
 
     /** For details @see WinApiLayerInterface::getDisplayScale */
-    [[nodiscard]] std::optional<Rational> getDisplayScale(const std::string &display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const override;
+    [[nodiscard]] std::optional<Rational> getDisplayScale(std::string_view display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const override;
   };
 }  // namespace display_device

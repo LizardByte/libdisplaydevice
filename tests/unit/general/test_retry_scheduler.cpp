@@ -2,6 +2,8 @@
 #include <exception>
 #include <gmock/gmock.h>
 #include <stdexcept>
+#include <string_view>
+#include <type_traits>
 
 // local includes
 #include "display_device/retry_scheduler.h"
@@ -106,7 +108,7 @@ TEST_F_S(Schedule, SchedulingDurations) {
       std::this_thread::sleep_for(1ms);
     }
 
-    return m_impl.execute([](TestIface &iface) {
+    return m_impl.execute([](const TestIface &iface) {
       int sum {0};
       for (const auto timing : iface.m_durations) {
         sum += timing;
@@ -299,8 +301,8 @@ TEST_F_S(Schedule, ExceptionThrown, DuringImmediateCall) {
   }
 
   std::string output;
-  logger.setCustomCallback([&output](auto, const std::string &value) {
-    output = value;
+  logger.setCustomCallback([&output](auto, const std::string_view value) {
+    output = std::string {value};
   });
 
   EXPECT_TRUE(m_impl.isScheduled());
@@ -329,8 +331,8 @@ TEST_F_S(Schedule, ExceptionThrown, DuringScheduledCall) {
   auto &logger {display_device::Logger::get()};
 
   std::string output;
-  logger.setCustomCallback([&output](auto, const std::string &value) {
-    output = value;
+  logger.setCustomCallback([&output](auto, const std::string_view value) {
+    output = std::string {value};
   });
 
   bool first_call {true};
@@ -530,7 +532,9 @@ TEST_F_S(Execute, ConstVsNonConst, WithoutStopToken) {
   const auto const_callback_auto = [](const auto &iface) {
     iface.constMethod();
   };
-  const auto non_const_callback_auto = [](auto &iface) {
+  const auto non_const_callback_auto = []<class Iface>(Iface &iface)
+    requires(!std::is_const_v<Iface>)
+  {
     iface.nonConstMethod();
   };
 
@@ -541,12 +545,12 @@ TEST_F_S(Execute, ConstVsNonConst, WithoutStopToken) {
   non_const_impl.execute(const_callback_auto);
   non_const_impl.execute(non_const_callback_auto);
 
-  // Verify it compiles with const (commented out code will not compile)
+  // Verify it compiles with const
   const auto &const_impl {m_impl};
   const_impl.execute(const_callback);
-  // const_impl.execute(non_const_callback);
+  static_assert(!std::is_invocable_v<decltype(non_const_callback), const TestIface &>);
   const_impl.execute(const_callback_auto);
-  // const_impl.execute(non_const_callback_auto);
+  static_assert(!std::is_invocable_v<decltype(non_const_callback_auto), const TestIface &>);
 }
 
 TEST_F_S(Execute, ConstVsNonConst, WithStopToken) {
@@ -570,15 +574,21 @@ TEST_F_S(Execute, ConstVsNonConst, WithStopToken) {
     iface.constMethod();
     (void) token.stopRequested();
   };
-  const auto const_non_const_callback_auto = [](const auto &iface, auto &token) {
+  const auto const_non_const_callback_auto = []<class Iface, class Token>(const Iface &iface, Token &token)
+    requires(!std::is_const_v<Token>)
+  {
     iface.constMethod();
     token.requestStop();
   };
-  const auto non_const_const_callback_auto = [](auto &iface, const auto &token) {
+  const auto non_const_const_callback_auto = []<class Iface, class Token>(Iface &iface, const Token &token)
+    requires(!std::is_const_v<Iface>)
+  {
     iface.nonConstMethod();
     (void) token.stopRequested();
   };
-  const auto non_const_non_const_callback_auto = [](auto &iface, auto &token) {
+  const auto non_const_non_const_callback_auto = []<class Iface, class Token>(Iface &iface, Token &token)
+    requires(!std::is_const_v<Iface> && !std::is_const_v<Token>)
+  {
     iface.nonConstMethod();
     token.requestStop();
   };
@@ -594,16 +604,16 @@ TEST_F_S(Execute, ConstVsNonConst, WithStopToken) {
   non_const_impl.execute(non_const_const_callback_auto);
   non_const_impl.execute(non_const_non_const_callback_auto);
 
-  // Verify it compiles with const (commented out code will not compile)
+  // Verify it compiles with const
   const auto &const_impl {m_impl};
   const_impl.execute(const_const_callback);
-  // const_impl.execute(const_non_const_callback);
-  // const_impl.execute(non_const_const_callback);
-  // const_impl.execute(non_const_non_const_callback);
+  static_assert(!std::is_invocable_v<decltype(const_non_const_callback), const TestIface &, const display_device::SchedulerStopToken &>);
+  static_assert(!std::is_invocable_v<decltype(non_const_const_callback), const TestIface &, const display_device::SchedulerStopToken &>);
+  static_assert(!std::is_invocable_v<decltype(non_const_non_const_callback), const TestIface &, const display_device::SchedulerStopToken &>);
   const_impl.execute(const_const_callback_auto);
-  // const_impl.execute(const_non_const_callback_auto);
-  // const_impl.execute(non_const_const_callback_auto);
-  // const_impl.execute(non_const_non_const_callback_auto);
+  static_assert(!std::is_invocable_v<decltype(const_non_const_callback_auto), const TestIface &, const display_device::SchedulerStopToken &>);
+  static_assert(!std::is_invocable_v<decltype(non_const_const_callback_auto), const TestIface &, const display_device::SchedulerStopToken &>);
+  static_assert(!std::is_invocable_v<decltype(non_const_non_const_callback_auto), const TestIface &, const display_device::SchedulerStopToken &>);
 }
 
 TEST_F_S(Stop) {

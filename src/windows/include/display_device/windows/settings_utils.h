@@ -36,7 +36,7 @@ namespace display_device::win_utils {
    * const auto extended_topology { stripTopologyOfUnavailableDevices(*iface) };
    * @examples_end
    */
-  ActiveTopology createFullExtendedTopology(WinDisplayDeviceInterface &win_dd);
+  ActiveTopology createFullExtendedTopology(const WinDisplayDeviceInterface &win_dd);
 
   /**
    * @brief Get one primary device from the provided topology.
@@ -49,7 +49,7 @@ namespace display_device::win_utils {
    * const auto primary_device_id { getPrimaryDevice(*iface, topology) };
    * @examples_end
    */
-  std::string getPrimaryDevice(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
+  std::string getPrimaryDevice(const WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology);
 
   /**
    * @brief Compute the new intial state from arbitrary data.

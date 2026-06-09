@@ -4,7 +4,7 @@
 // local includes
 #include "display_device/windows/json.h"
 
-std::optional<std::vector<std::string>> getAvailableDevices(display_device::WinApiLayer &layer, const bool only_valid_output) {
+std::optional<std::vector<std::string>> getAvailableDevices(const display_device::WinApiLayer &layer, const bool only_valid_output) {
   const auto all_devices {layer.queryDisplayConfig(display_device::QueryType::All)};
   if (!all_devices) {
     return std::nullopt;

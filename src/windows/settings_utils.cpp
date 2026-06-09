@@ -137,7 +137,7 @@ namespace display_device::win_utils {
     return flattened_topology;
   }
 
-  ActiveTopology createFullExtendedTopology(WinDisplayDeviceInterface &win_dd) {
+  ActiveTopology createFullExtendedTopology(const WinDisplayDeviceInterface &win_dd) {
     const auto devices {win_dd.enumAvailableDevices()};
     if (devices.empty()) {
       DD_LOG(error) << "Failed to enumerate available devices for full extended topology!";
@@ -152,7 +152,7 @@ namespace display_device::win_utils {
     return topology;
   }
 
-  std::string getPrimaryDevice(WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology) {
+  std::string getPrimaryDevice(const WinDisplayDeviceInterface &win_dd, const ActiveTopology &topology) {
     const auto flat_topology {flattenTopology(topology)};
     for (const auto &device_id : flat_topology) {
       if (win_dd.isPrimary(device_id)) {
