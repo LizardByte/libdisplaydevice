@@ -51,7 +51,7 @@ namespace {
       return *m_impl;
     }
 
-    void expectedDefaultCallsUntilModifiedSettings(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::SingleDisplayConfigState> &state = ut_consts::SDCS_FULL) {
+    void expectedDefaultCallsUntilModifiedSettings(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::SingleDisplayConfigState> &state = ut_consts::SDCS_FULL) const {
       EXPECT_CALL(*m_settings_persistence_api, load())
         .Times(1)
         .WillOnce(Return(serializeState(state)))
@@ -59,7 +59,7 @@ namespace {
       expectedDefaultCallsUntilModifiedSettingsNoPersistence(sequence);
     }
 
-    void expectedDefaultCallsUntilModifiedSettingsNoPersistence(InSequence & /* To ensure that sequence is created outside this scope */) {
+    void expectedDefaultCallsUntilModifiedSettingsNoPersistence(InSequence & /* To ensure that sequence is created outside this scope */) const {
       EXPECT_CALL(*m_dd_api, isApiAccessAvailable())
         .Times(1)
         .WillOnce(Return(true))
@@ -89,7 +89,7 @@ namespace {
         .RetiresOnSaturation();
     }
 
-    void expectedDefaultHdrStateGuardInitCall(InSequence & /* To ensure that sequence is created outside this scope */) {
+    void expectedDefaultHdrStateGuardInitCall(InSequence & /* To ensure that sequence is created outside this scope */) const {
       EXPECT_CALL(*m_dd_api, getCurrentHdrStates(display_device::win_utils::flattenTopology(ut_consts::SDCS_FULL->m_modified.m_topology)))
         .Times(1)
         .WillOnce(Return(CURRENT_MODIFIED_HDR_STATES))
@@ -103,7 +103,7 @@ namespace {
         .RetiresOnSaturation();
     }
 
-    void expectedDefaultDisplayModeGuardInitCall(InSequence & /* To ensure that sequence is created outside this scope */) {
+    void expectedDefaultDisplayModeGuardInitCall(InSequence & /* To ensure that sequence is created outside this scope */) const {
       EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(display_device::win_utils::flattenTopology(ut_consts::SDCS_FULL->m_modified.m_topology)))
         .Times(1)
         .WillOnce(Return(CURRENT_MODIFIED_DISPLAY_MODES))
@@ -117,7 +117,7 @@ namespace {
         .RetiresOnSaturation();
     }
 
-    void expectedDefaultPrimaryDeviceGuardInitCall(InSequence & /* To ensure that sequence is created outside this scope */) {
+    void expectedDefaultPrimaryDeviceGuardInitCall(InSequence & /* To ensure that sequence is created outside this scope */) const {
       EXPECT_CALL(*m_dd_api, isPrimary("DeviceId1"))
         .Times(1)
         .WillOnce(Return(false))
@@ -231,7 +231,7 @@ namespace {
         .RetiresOnSaturation();
     }
 
-    void expectedHdrWorkaroundCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */) {
+    void expectedHdrWorkaroundCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */) const {
       // Using the "failure" path, to keep it simple
       EXPECT_CALL(*m_dd_api, getCurrentTopology())
         .Times(1)

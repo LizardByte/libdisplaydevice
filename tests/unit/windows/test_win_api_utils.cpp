@@ -17,7 +17,7 @@ namespace {
   // Test fixture(s) for this file
   class WinApiUtilsMocked: public BaseTest {
   public:
-    void setupExpectCallForValidPaths(int number_of_calls, InSequence & /* To ensure that sequence is created outside this scope */) {
+    void setupExpectCallForValidPaths(int number_of_calls, InSequence & /* To ensure that sequence is created outside this scope */) const {
       for (int i = 1; i <= number_of_calls; ++i) {
         EXPECT_CALL(m_layer, getMonitorDevicePath(_))
           .Times(1)

@@ -54,7 +54,7 @@ namespace {
       return *m_impl;
     }
 
-    void expectedDefaultCallsUntilTopologyPrep(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::ActiveTopology &topology = DEFAULT_CURRENT_TOPOLOGY, const std::optional<display_device::SingleDisplayConfigState> &state = ut_consts::SDCS_EMPTY) {
+    void expectedDefaultCallsUntilTopologyPrep(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::ActiveTopology &topology = DEFAULT_CURRENT_TOPOLOGY, const std::optional<display_device::SingleDisplayConfigState> &state = ut_consts::SDCS_EMPTY) const {
       EXPECT_CALL(*m_settings_persistence_api, load())
         .Times(1)
         .WillOnce(Return(serializeState(state)))
@@ -73,7 +73,7 @@ namespace {
         .RetiresOnSaturation();
     }
 
-    void expectedIsCapturedCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const bool is_captured) {
+    void expectedIsCapturedCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const bool is_captured) const {
       EXPECT_CALL(*m_audio_context_api, isCaptured())
         .Times(1)
         .WillOnce(Return(is_captured))
@@ -100,14 +100,14 @@ namespace {
         .RetiresOnSaturation();
     }
 
-    void expectedDeviceEnumCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::EnumeratedDeviceList &devices = DEFAULT_DEVICES) {
+    void expectedDeviceEnumCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::EnumeratedDeviceList &devices = DEFAULT_DEVICES) const {
       EXPECT_CALL(*m_dd_api, enumAvailableDevices())
         .Times(1)
         .WillOnce(Return(devices))
         .RetiresOnSaturation();
     }
 
-    void expectedIsTopologyTheSameCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::ActiveTopology &lhs, const display_device::ActiveTopology &rhs) {
+    void expectedIsTopologyTheSameCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::ActiveTopology &lhs, const display_device::ActiveTopology &rhs) const {
       EXPECT_CALL(*m_dd_api, isTopologyTheSame(lhs, rhs))
         .Times(1)
         .WillOnce(Return(lhs == rhs))
@@ -141,7 +141,7 @@ namespace {
       }
     }
 
-    void expectedIsPrimaryCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::string &device_id, const bool success = true) {
+    void expectedIsPrimaryCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::string &device_id, const bool success = true) const {
       EXPECT_CALL(*m_dd_api, isPrimary(device_id))
         .Times(1)
         .WillOnce(Return(success))
@@ -169,7 +169,7 @@ namespace {
         .RetiresOnSaturation();
     }
 
-    void expectedGetCurrentDisplayModesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::set<std::string> &devices, const display_device::DeviceDisplayModeMap &modes) {
+    void expectedGetCurrentDisplayModesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::set<std::string> &devices, const display_device::DeviceDisplayModeMap &modes) const {
       EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(devices))
         .Times(1)
         .WillOnce(Return(modes))
@@ -190,7 +190,7 @@ namespace {
         .RetiresOnSaturation();
     }
 
-    void expectedGetCurrentHdrStatesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::set<std::string> &devices, const display_device::HdrStateMap &states) {
+    void expectedGetCurrentHdrStatesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::set<std::string> &devices, const display_device::HdrStateMap &states) const {
       EXPECT_CALL(*m_dd_api, getCurrentHdrStates(devices))
         .Times(1)
         .WillOnce(Return(states))
@@ -204,7 +204,7 @@ namespace {
         .RetiresOnSaturation();
     }
 
-    void expectedHdrWorkaroundCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */) {
+    void expectedHdrWorkaroundCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */) const {
       // Using the "failure" path, to keep it simple
       EXPECT_CALL(*m_dd_api, getCurrentTopology())
         .Times(1)

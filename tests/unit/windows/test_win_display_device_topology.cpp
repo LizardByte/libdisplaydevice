@@ -31,7 +31,7 @@ namespace {
 
   class WinDisplayDeviceTopologyMocked: public BaseTest {
   public:
-    void setupExpectCallFor3ActivePathsAndModes(const display_device::QueryType query_type, InSequence & /* To ensure that sequence is created outside this scope */) {
+    void setupExpectCallFor3ActivePathsAndModes(const display_device::QueryType query_type, InSequence & /* To ensure that sequence is created outside this scope */) const {
       EXPECT_CALL(*m_layer, queryDisplayConfig(query_type))
         .Times(1)
         .WillOnce(Return(ut_consts::PAM_3_ACTIVE))
