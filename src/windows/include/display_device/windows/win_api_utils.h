@@ -6,6 +6,7 @@
 
 // system includes
 #include <set>
+#include <string_view>
 
 // local includes
 #include "win_api_layer_interface.h"
@@ -202,12 +203,7 @@ namespace display_device::win_utils {
    * const DISPLAYCONFIG_PATH_INFO* active_path = get_active_path(*iface, "MY_DEVICE_ID", paths);
    * @examples_end
    */
-  [[nodiscard]] const DISPLAYCONFIG_PATH_INFO *getActivePath(const WinApiLayerInterface &w_api, const std::string &device_id, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
-
-  /**
-   * @see getActivePath (const version) for the description.
-   */
-  [[nodiscard]] DISPLAYCONFIG_PATH_INFO *getActivePath(const WinApiLayerInterface &w_api, const std::string &device_id, std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
+  [[nodiscard]] const DISPLAYCONFIG_PATH_INFO *getActivePath(const WinApiLayerInterface &w_api, std::string_view device_id, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths);
 
   /**
    * @brief Collect arbitrary source data from provided paths.

@@ -14,6 +14,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iomanip>
+#include <string_view>
 
 // local includes
 #include "display_device/logging.h"
@@ -310,7 +311,7 @@ namespace display_device {
      * @param value The UTF-16 wide string.
      * @return The converted UTF-8 string.
      */
-    std::string toUtf8(const WinApiLayerInterface &w_api, const std::wstring &value) {
+    std::string toUtf8(const WinApiLayerInterface &w_api, const std::wstring_view value) {
       // No conversion needed if the string is empty
       if (value.empty()) {
         return {};
@@ -637,10 +638,10 @@ namespace display_device {
     return true;
   }
 
-  std::optional<Rational> WinApiLayer::getDisplayScale(const std::string &display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const {
+  std::optional<Rational> WinApiLayer::getDisplayScale(const std::string_view display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const {
     // Note: implementation based on https://stackoverflow.com/a/74046173
     struct EnumData {
-      std::string m_display_name;
+      std::string_view m_display_name;
       std::optional<int> m_width;
     };
 
@@ -648,7 +649,7 @@ namespace display_device {
     EnumDisplayMonitors(
       nullptr,
       nullptr,
-      [](HMONITOR monitor, HDC, LPRECT, LPARAM user_data) -> BOOL {
+      [](HMONITOR monitor, HDC, LPRECT, LPARAM user_data) {
         auto *data = reinterpret_cast<EnumData *>(user_data);
         if (data == nullptr) {
           // Sanity check

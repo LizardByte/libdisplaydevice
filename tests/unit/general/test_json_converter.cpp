@@ -1,10 +1,8 @@
 // local includes
 #include "fixtures/json_converter_test.h"
 
-namespace {
-  // Specialized TEST macro(s) for this test file
+// Specialized TEST macro(s) for this test file
 #define TEST_F_S(...) DD_MAKE_TEST(TEST_F, JsonConverterTest, __VA_ARGS__)
-}  // namespace
 
 TEST_F_S(EdidData) {
   display_device::EdidData item {

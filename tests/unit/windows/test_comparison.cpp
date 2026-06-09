@@ -2,10 +2,8 @@
 #include "display_device/windows/types.h"
 #include "fixtures/fixtures.h"
 
-namespace {
-  // Specialized TEST macro(s) for this test file
+// Specialized TEST macro(s) for this test file
 #define TEST_S(...) DD_MAKE_TEST(TEST, TypeComparison, __VA_ARGS__)
-}  // namespace
 
 TEST_S(DisplayMode) {
   EXPECT_EQ(display_device::DisplayMode({1, 1}, {1, 1}), display_device::DisplayMode({1, 1}, {1, 1}));

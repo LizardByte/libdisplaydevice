@@ -4,6 +4,9 @@
  */
 #pragma once
 
+// system includes
+#include <string_view>
+
 // local includes
 #include "types.h"
 
@@ -195,6 +198,6 @@ namespace display_device {
      * const auto scale = iface->getDisplayScale(iface->getDisplayName(path), source_mode);
      * @examples_end
      */
-    [[nodiscard]] virtual std::optional<Rational> getDisplayScale(const std::string &display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const = 0;
+    [[nodiscard]] virtual std::optional<Rational> getDisplayScale(std::string_view display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const = 0;
   };
 }  // namespace display_device

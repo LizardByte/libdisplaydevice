@@ -1,6 +1,7 @@
 // system includes
 #include <exception>
 #include <format>
+#include <string_view>
 
 // local includes
 #include "display_device/logging.h"
@@ -106,7 +107,7 @@ TEST_S(DefaultLogger) {
   using level = display_device::Logger::LogLevel;
   auto &logger {display_device::Logger::get()};
 
-  const auto write_and_get_cout {[this, &logger](level level, std::string value) -> std::string {
+  const auto write_and_get_cout {[this, &logger](level level, std::string value) {
     m_cout_buffer.str(std::string {});  // reset the buffer
     logger.write(level, std::move(value));
     return m_cout_buffer.str();
@@ -130,7 +131,7 @@ TEST_S(CustomCallback) {
 
   std::string output;
   logger.setLogLevel(level::verbose);
-  logger.setCustomCallback([&output](const level level, const std::string &value) {
+  logger.setCustomCallback([&output](const level level, const std::string_view value) {
     output = std::format("{} {}", static_cast<level_t>(level), value);
   });
 

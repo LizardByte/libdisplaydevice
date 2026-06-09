@@ -204,7 +204,7 @@ namespace display_device::win_utils {
     return ValidatedDeviceInfo {device_path, device_id};
   }
 
-  const DISPLAYCONFIG_PATH_INFO *getActivePath(const WinApiLayerInterface &w_api, const std::string &device_id, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths) {
+  const DISPLAYCONFIG_PATH_INFO *getActivePath(const WinApiLayerInterface &w_api, const std::string_view device_id, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths) {
     for (const auto &path : paths) {
       const auto device_info {getDeviceInfoForValidPath(w_api, path, ValidatedPathType::Active)};
       if (!device_info) {
@@ -217,10 +217,6 @@ namespace display_device::win_utils {
     }
 
     return nullptr;
-  }
-
-  DISPLAYCONFIG_PATH_INFO *getActivePath(const WinApiLayerInterface &w_api, const std::string &device_id, std::vector<DISPLAYCONFIG_PATH_INFO> &paths) {
-    return const_cast<DISPLAYCONFIG_PATH_INFO *>(getActivePath(w_api, device_id, const_cast<const std::vector<DISPLAYCONFIG_PATH_INFO> &>(paths)));
   }
 
   PathSourceIndexDataMap collectSourceDataForMatchingPaths(const WinApiLayerInterface &w_api, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths) {
