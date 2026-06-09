@@ -1,4 +1,5 @@
 // system includes
+#include <format>
 #include <ranges>
 
 // local includes
@@ -39,7 +40,7 @@ namespace {
           .RetiresOnSaturation();
         EXPECT_CALL(*m_layer, getDeviceId(_))
           .Times(1)
-          .WillOnce(Return("DeviceId" + std::to_string(i)))
+          .WillOnce(Return(std::format("DeviceId{}", i)))
           .RetiresOnSaturation();
         EXPECT_CALL(*m_layer, getDisplayName(_))
           .Times(1)
@@ -69,30 +70,30 @@ namespace {
         for (int i = 1; i <= entry; ++i) {
           EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
             .Times(1)
-            .WillOnce(Return("Path" + std::to_string(i)))
+            .WillOnce(Return(std::format("Path{}", i)))
             .RetiresOnSaturation();
           EXPECT_CALL(*m_layer, getDeviceId(_))
             .Times(1)
-            .WillOnce(Return("DeviceId" + std::to_string(i)))
+            .WillOnce(Return(std::format("DeviceId{}", i)))
             .RetiresOnSaturation();
           EXPECT_CALL(*m_layer, getDisplayName(_))
             .Times(1)
-            .WillOnce(Return("DisplayName" + std::to_string(i)))
+            .WillOnce(Return(std::format("DisplayName{}", i)))
             .RetiresOnSaturation();
         }
 
         for (int i = 1; i <= 4; ++i) {
           EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
             .Times(1)
-            .WillOnce(Return("Path" + std::to_string(i)))
+            .WillOnce(Return(std::format("Path{}", i)))
             .RetiresOnSaturation();
           EXPECT_CALL(*m_layer, getDeviceId(_))
             .Times(1)
-            .WillOnce(Return("DeviceId" + std::to_string(i)))
+            .WillOnce(Return(std::format("DeviceId{}", i)))
             .RetiresOnSaturation();
           EXPECT_CALL(*m_layer, getDisplayName(_))
             .Times(1)
-            .WillOnce(Return("DisplayName" + std::to_string(i)))
+            .WillOnce(Return(std::format("DisplayName{}", i)))
             .RetiresOnSaturation();
         }
       }

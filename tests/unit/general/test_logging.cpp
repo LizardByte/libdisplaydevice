@@ -1,5 +1,6 @@
 // system includes
 #include <exception>
+#include <format>
 
 // local includes
 #include "display_device/logging.h"
@@ -130,7 +131,7 @@ TEST_S(CustomCallback) {
   std::string output;
   logger.setLogLevel(level::verbose);
   logger.setCustomCallback([&output](const level level, const std::string &value) {
-    output = std::to_string(static_cast<level_t>(level)) + " " + value;
+    output = std::format("{} {}", static_cast<level_t>(level), value);
   });
 
   logger.write(level::verbose, "Hello World!");

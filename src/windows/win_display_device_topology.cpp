@@ -7,6 +7,7 @@
 
 // system includes
 #include <algorithm>
+#include <format>
 #include <unordered_set>
 
 // local includes
@@ -75,7 +76,7 @@ namespace display_device {
         return {};
       }
 
-      const std::string lazy_lookup {std::to_string(source_mode->position.x) + std::to_string(source_mode->position.y)};
+      const std::string lazy_lookup {std::format("{}{}", source_mode->position.x, source_mode->position.y)};
       auto index_it {position_to_topology_index.find(lazy_lookup)};
 
       if (index_it == std::end(position_to_topology_index)) {

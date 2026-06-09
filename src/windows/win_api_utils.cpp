@@ -6,6 +6,7 @@
 #include "display_device/windows/win_api_utils.h"
 
 // system includes
+#include <format>
 #include <unordered_set>
 
 // local includes
@@ -34,7 +35,7 @@ namespace {
    * @examples_end
    */
   std::string toString(const LUID &id) {
-    return std::to_string(id.HighPart) + std::to_string(id.LowPart);
+    return std::format("{}{}", id.HighPart, id.LowPart);
   }
 
   /**
