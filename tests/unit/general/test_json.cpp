@@ -19,21 +19,17 @@ namespace display_device {
   struct TestStruct {
     struct Nested {
       int m_c {};
+
+      friend bool operator==(const Nested &lhs, const Nested &rhs) = default;
     };
 
     std::string m_a {};
     Nested m_b {};
+
+    friend bool operator==(const TestStruct &lhs, const TestStruct &rhs) = default;
   };
 
   using TestVariant = std::variant<double, Rational>;
-
-  bool operator==(const TestStruct::Nested &lhs, const TestStruct::Nested &rhs) {
-    return lhs.m_c == rhs.m_c;
-  }
-
-  bool operator==(const TestStruct &lhs, const TestStruct &rhs) {
-    return lhs.m_a == rhs.m_a && lhs.m_b == rhs.m_b;
-  }
 
   DD_JSON_DEFINE_SERIALIZE_ENUM_GCOVR_EXCL_BR_LINE(TestEnum, {{TestEnum::Value1, "Value1"}, {TestEnum::Value2, "ValueMaybe2"}})
   DD_JSON_DEFINE_SERIALIZE_STRUCT(TestStruct::Nested, c)
