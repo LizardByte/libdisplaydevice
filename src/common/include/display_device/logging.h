@@ -124,7 +124,7 @@ namespace display_device {
     /**
      * @brief Write out the accumulated output.
      */
-    virtual ~LogWriter();
+    virtual ~LogWriter() noexcept;
 
     /**
      * @brief Stream value to the buffer.

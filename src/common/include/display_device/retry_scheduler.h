@@ -43,7 +43,7 @@ namespace display_device {
     /**
      * @brief Executes cleanup logic if scheduler stop was requested.
      */
-    ~SchedulerStopToken();
+    ~SchedulerStopToken() noexcept;
 
     /**
      * @brief Request the scheduler to be stopped.

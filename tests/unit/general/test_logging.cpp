@@ -1,8 +1,18 @@
+// system includes
+#include <exception>
+
 // local includes
 #include "display_device/logging.h"
 #include "fixtures/fixtures.h"
 
 namespace {
+  class LogWriterDestructorTestException final: public std::exception {
+  public:
+    [[nodiscard]] const char *what() const noexcept override {
+      return "Get rekt!";
+    }
+  };
+
   // Specialized TEST macro(s) for this test file
 #define TEST_S(...) DD_MAKE_TEST(TEST, LoggingTest, __VA_ARGS__)
 }  // namespace
@@ -205,4 +215,16 @@ TEST_S(LogMacroDisablesStreamChain) {
   DD_LOG(info) << some_function();
   EXPECT_EQ(output_logged, true);
   EXPECT_EQ(some_function_invoked, true);
+}
+
+TEST_S(LogWriterDestructorDoesNotPropagateCallbackExceptions) {
+  using level = display_device::Logger::LogLevel;
+  auto &logger {display_device::Logger::get()};
+
+  logger.setLogLevel(level::info);
+  logger.setCustomCallback([](auto, auto) {
+    throw LogWriterDestructorTestException {};
+  });
+
+  EXPECT_NO_THROW(DD_LOG(info) << "Hello World!");
 }
