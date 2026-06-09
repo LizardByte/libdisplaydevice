@@ -61,6 +61,16 @@ namespace display_device {
     std::map<UINT32, std::size_t> m_source_id_to_path_index {}; /**< Maps source ids to its index in the path list. */
     LUID m_adapter_id {}; /**< Adapter id shared by all source ids. */
     std::optional<UINT32> m_active_source {}; /**< Currently active source id. */
+
+    /**
+     * @brief Comparator for strict equality.
+     */
+    friend bool operator==(const PathSourceIndexData &lhs, const PathSourceIndexData &rhs) {
+      return lhs.m_source_id_to_path_index == rhs.m_source_id_to_path_index &&
+             lhs.m_adapter_id.HighPart == rhs.m_adapter_id.HighPart &&
+             lhs.m_adapter_id.LowPart == rhs.m_adapter_id.LowPart &&
+             lhs.m_active_source == rhs.m_active_source;
+    }
   };
 
   /**
@@ -95,7 +105,9 @@ namespace display_device {
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool operator==(const DisplayMode &lhs, const DisplayMode &rhs);
+    friend bool operator==(const DisplayMode &lhs, const DisplayMode &rhs) {
+      return lhs.m_refresh_rate == rhs.m_refresh_rate && lhs.m_resolution == rhs.m_resolution;
+    }
   };
 
   /**
@@ -123,7 +135,7 @@ namespace display_device {
       /**
        * @brief Comparator for strict equality.
        */
-      friend bool operator==(const Initial &lhs, const Initial &rhs);
+      friend bool operator==(const Initial &lhs, const Initial &rhs) = default;
     };
 
     /**
@@ -151,7 +163,7 @@ namespace display_device {
       /**
        * @brief Comparator for strict equality.
        */
-      friend bool operator==(const Modified &lhs, const Modified &rhs);
+      friend bool operator==(const Modified &lhs, const Modified &rhs) = default;
     };
 
     Initial m_initial;
@@ -160,7 +172,7 @@ namespace display_device {
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool operator==(const SingleDisplayConfigState &lhs, const SingleDisplayConfigState &rhs);
+    friend bool operator==(const SingleDisplayConfigState &lhs, const SingleDisplayConfigState &rhs) = default;
   };
 
   /**
@@ -177,6 +189,6 @@ namespace display_device {
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool operator==(const WinWorkarounds &lhs, const WinWorkarounds &rhs);
+    friend bool operator==(const WinWorkarounds &lhs, const WinWorkarounds &rhs) = default;
   };
 }  // namespace display_device

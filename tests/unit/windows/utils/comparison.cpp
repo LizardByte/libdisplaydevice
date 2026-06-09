@@ -1,27 +1,27 @@
 // local includes
 #include "comparison.h"
 
-bool operator==(const LUID &lhs, const LUID &rhs) {
+bool operator==(const LUID &lhs, const LUID &rhs) {  // NOSONAR(cpp:S2807): Windows SDK types cannot declare hidden friend test helpers.
   return lhs.HighPart == rhs.HighPart && lhs.LowPart == rhs.LowPart;
 }
 
-bool operator==(const POINTL &lhs, const POINTL &rhs) {
+bool operator==(const POINTL &lhs, const POINTL &rhs) {  // NOSONAR(cpp:S2807): Windows SDK types cannot declare hidden friend test helpers.
   return lhs.x == rhs.x && lhs.y == rhs.y;
 }
 
-bool operator==(const RECTL &lhs, const RECTL &rhs) {
+bool operator==(const RECTL &lhs, const RECTL &rhs) {  // NOSONAR(cpp:S2807): Windows SDK types cannot declare hidden friend test helpers.
   return lhs.bottom == rhs.bottom && lhs.left == rhs.left && lhs.right == rhs.right && lhs.top == rhs.top;
 }
 
-bool operator==(const DISPLAYCONFIG_RATIONAL &lhs, const DISPLAYCONFIG_RATIONAL &rhs) {
+bool operator==(const DISPLAYCONFIG_RATIONAL &lhs, const DISPLAYCONFIG_RATIONAL &rhs) {  // NOSONAR(cpp:S2807): Windows SDK types cannot declare hidden friend test helpers.
   return lhs.Denominator == rhs.Denominator && lhs.Numerator == rhs.Numerator;
 }
 
-bool operator==(const DISPLAYCONFIG_2DREGION &lhs, const DISPLAYCONFIG_2DREGION &rhs) {
+bool operator==(const DISPLAYCONFIG_2DREGION &lhs, const DISPLAYCONFIG_2DREGION &rhs) {  // NOSONAR(cpp:S2807): Windows SDK types cannot declare hidden friend test helpers.
   return lhs.cx == rhs.cx && lhs.cy == rhs.cy;
 }
 
-bool operator==(const DISPLAYCONFIG_PATH_SOURCE_INFO &lhs, const DISPLAYCONFIG_PATH_SOURCE_INFO &rhs) {
+bool operator==(const DISPLAYCONFIG_PATH_SOURCE_INFO &lhs, const DISPLAYCONFIG_PATH_SOURCE_INFO &rhs) {  // NOSONAR(cpp:S2807): Windows SDK types cannot declare hidden friend test helpers.
   // clang-format off
   return lhs.adapterId == rhs.adapterId &&
          lhs.id == rhs.id &&
@@ -31,7 +31,7 @@ bool operator==(const DISPLAYCONFIG_PATH_SOURCE_INFO &lhs, const DISPLAYCONFIG_P
   // clang-format on
 }
 
-bool operator==(const DISPLAYCONFIG_PATH_TARGET_INFO &lhs, const DISPLAYCONFIG_PATH_TARGET_INFO &rhs) {
+bool operator==(const DISPLAYCONFIG_PATH_TARGET_INFO &lhs, const DISPLAYCONFIG_PATH_TARGET_INFO &rhs) {  // NOSONAR(cpp:S2807): Windows SDK types cannot declare hidden friend test helpers.
   // clang-format off
   return lhs.adapterId == rhs.adapterId &&
          lhs.id == rhs.id &&
@@ -47,15 +47,15 @@ bool operator==(const DISPLAYCONFIG_PATH_TARGET_INFO &lhs, const DISPLAYCONFIG_P
   // clang-format on
 }
 
-bool operator==(const DISPLAYCONFIG_PATH_INFO &lhs, const DISPLAYCONFIG_PATH_INFO &rhs) {
+bool operator==(const DISPLAYCONFIG_PATH_INFO &lhs, const DISPLAYCONFIG_PATH_INFO &rhs) {  // NOSONAR(cpp:S2807): Windows SDK types cannot declare hidden friend test helpers.
   return lhs.sourceInfo == rhs.sourceInfo && lhs.targetInfo == rhs.targetInfo && lhs.flags == rhs.flags;
 }
 
-bool operator==(const DISPLAYCONFIG_SOURCE_MODE &lhs, const DISPLAYCONFIG_SOURCE_MODE &rhs) {
+bool operator==(const DISPLAYCONFIG_SOURCE_MODE &lhs, const DISPLAYCONFIG_SOURCE_MODE &rhs) {  // NOSONAR(cpp:S2807): Windows SDK types cannot declare hidden friend test helpers.
   return lhs.width == rhs.width && lhs.height == rhs.height && lhs.pixelFormat == rhs.pixelFormat && lhs.position == rhs.position;
 }
 
-bool operator==(const DISPLAYCONFIG_VIDEO_SIGNAL_INFO &lhs, const DISPLAYCONFIG_VIDEO_SIGNAL_INFO &rhs) {
+bool operator==(const DISPLAYCONFIG_VIDEO_SIGNAL_INFO &lhs, const DISPLAYCONFIG_VIDEO_SIGNAL_INFO &rhs) {  // NOSONAR(cpp:S2807): Windows SDK types cannot declare hidden friend test helpers.
   // clang-format on
   return lhs.pixelRate == rhs.pixelRate &&
          lhs.hSyncFreq == rhs.hSyncFreq &&
@@ -67,15 +67,15 @@ bool operator==(const DISPLAYCONFIG_VIDEO_SIGNAL_INFO &lhs, const DISPLAYCONFIG_
   // clang-format oon
 }
 
-bool operator==(const DISPLAYCONFIG_TARGET_MODE &lhs, const DISPLAYCONFIG_TARGET_MODE &rhs) {
+bool operator==(const DISPLAYCONFIG_TARGET_MODE &lhs, const DISPLAYCONFIG_TARGET_MODE &rhs) {  // NOSONAR(cpp:S2807): Windows SDK types cannot declare hidden friend test helpers.
   return lhs.targetVideoSignalInfo == rhs.targetVideoSignalInfo;
 }
 
-bool operator==(const DISPLAYCONFIG_DESKTOP_IMAGE_INFO &lhs, const DISPLAYCONFIG_DESKTOP_IMAGE_INFO &rhs) {
+bool operator==(const DISPLAYCONFIG_DESKTOP_IMAGE_INFO &lhs, const DISPLAYCONFIG_DESKTOP_IMAGE_INFO &rhs) {  // NOSONAR(cpp:S2807): Windows SDK types cannot declare hidden friend test helpers.
   return lhs.PathSourceSize == rhs.PathSourceSize && lhs.DesktopImageRegion == rhs.DesktopImageRegion && lhs.DesktopImageClip == rhs.DesktopImageClip;
 }
 
-bool operator==(const DISPLAYCONFIG_MODE_INFO &lhs, const DISPLAYCONFIG_MODE_INFO &rhs) {
+bool operator==(const DISPLAYCONFIG_MODE_INFO &lhs, const DISPLAYCONFIG_MODE_INFO &rhs) {  // NOSONAR(cpp:S2807): Windows SDK types cannot declare hidden friend test helpers.
   if (lhs.infoType == rhs.infoType && lhs.id == rhs.id && lhs.adapterId == rhs.adapterId) {
     if (lhs.infoType == DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE) {
       return lhs.sourceMode == rhs.sourceMode;
@@ -90,9 +90,3 @@ bool operator==(const DISPLAYCONFIG_MODE_INFO &lhs, const DISPLAYCONFIG_MODE_INF
   }
   return false;
 }
-
-namespace display_device {
-  bool operator==(const PathSourceIndexData &lhs, const PathSourceIndexData &rhs) {
-    return lhs.m_source_id_to_path_index == rhs.m_source_id_to_path_index && lhs.m_adapter_id == rhs.m_adapter_id && lhs.m_active_source == rhs.m_active_source;
-  }
-}  // namespace display_device

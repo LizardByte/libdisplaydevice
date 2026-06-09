@@ -5,6 +5,8 @@
 #pragma once
 
 // system includes
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -70,7 +72,9 @@ namespace display_device {
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool operator==(const Resolution &lhs, const Resolution &rhs);
+    friend bool operator==(const Resolution &lhs, const Resolution &rhs) {
+      return lhs.m_height == rhs.m_height && lhs.m_width == rhs.m_width;
+    }
   };
 
   /**
@@ -83,7 +87,7 @@ namespace display_device {
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool operator==(const Point &lhs, const Point &rhs);
+    friend bool operator==(const Point &lhs, const Point &rhs) = default;
   };
 
   /**
@@ -96,13 +100,29 @@ namespace display_device {
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool operator==(const Rational &lhs, const Rational &rhs);
+    friend bool operator==(const Rational &lhs, const Rational &rhs) = default;
   };
 
   /**
    * @brief Floating point type.
    */
   using FloatingPoint = std::variant<double, Rational>;
+
+  namespace detail {
+    inline bool fuzzyCompare(const double lhs, const double rhs) {
+      return std::abs(lhs - rhs) * 1000000000000. <= std::min(std::abs(lhs), std::abs(rhs));
+    }
+
+    inline bool fuzzyCompare(const FloatingPoint &lhs, const FloatingPoint &rhs) {
+      if (lhs.index() == rhs.index()) {
+        if (std::holds_alternative<double>(lhs)) {
+          return fuzzyCompare(std::get<double>(lhs), std::get<double>(rhs));
+        }
+        return lhs == rhs;
+      }
+      return false;
+    }
+  }  // namespace detail
 
   /**
    * @brief Parsed EDID data.
@@ -122,7 +142,7 @@ namespace display_device {
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool operator==(const EdidData &lhs, const EdidData &rhs);
+    friend bool operator==(const EdidData &lhs, const EdidData &rhs) = default;
   };
 
   /**
@@ -143,7 +163,11 @@ namespace display_device {
       /**
        * @brief Comparator for strict equality.
        */
-      friend bool operator==(const Info &lhs, const Info &rhs);
+      friend bool operator==(const Info &lhs, const Info &rhs) {
+        return lhs.m_resolution == rhs.m_resolution && detail::fuzzyCompare(lhs.m_resolution_scale, rhs.m_resolution_scale) &&
+               detail::fuzzyCompare(lhs.m_refresh_rate, rhs.m_refresh_rate) && lhs.m_primary == rhs.m_primary &&
+               lhs.m_origin_point == rhs.m_origin_point && lhs.m_hdr_state == rhs.m_hdr_state;
+      }
     };
 
     std::string m_device_id {}; /**< A unique device ID used by this API to identify the device. */
@@ -155,7 +179,7 @@ namespace display_device {
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool operator==(const EnumeratedDevice &lhs, const EnumeratedDevice &rhs);
+    friend bool operator==(const EnumeratedDevice &lhs, const EnumeratedDevice &rhs) = default;
   };
 
   /**
@@ -189,6 +213,6 @@ namespace display_device {
     /**
      * @brief Comparator for strict equality.
      */
-    friend bool operator==(const SingleDisplayConfiguration &lhs, const SingleDisplayConfiguration &rhs);
+    friend bool operator==(const SingleDisplayConfiguration &lhs, const SingleDisplayConfiguration &rhs) = default;
   };
 }  // namespace display_device

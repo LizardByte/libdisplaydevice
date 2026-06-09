@@ -29,7 +29,3 @@ bool operator==(const DISPLAYCONFIG_TARGET_MODE &lhs, const DISPLAYCONFIG_TARGET
 bool operator==(const DISPLAYCONFIG_DESKTOP_IMAGE_INFO &lhs, const DISPLAYCONFIG_DESKTOP_IMAGE_INFO &rhs);
 
 bool operator==(const DISPLAYCONFIG_MODE_INFO &lhs, const DISPLAYCONFIG_MODE_INFO &rhs);
-
-namespace display_device {
-  bool operator==(const PathSourceIndexData &lhs, const PathSourceIndexData &rhs);
-}  // namespace display_device
