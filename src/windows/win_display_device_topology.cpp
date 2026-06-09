@@ -33,8 +33,7 @@ namespace display_device {
       }
 
       UINT32 flags {SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE};
-      LONG result {w_api.setDisplayConfig(paths, {}, flags)};
-      if (result == ERROR_GEN_FAILURE) {
+      if (LONG result {w_api.setDisplayConfig(paths, {}, flags)}; result == ERROR_GEN_FAILURE) {
         DD_LOG(warning) << w_api.getErrorString(result) << " failed to change topology using the topology from Windows DB! Asking Windows to create the topology.";
 
         flags = SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_ALLOW_CHANGES /* This flag is probably not needed, but who knows really... (not MSDOCS at least) */ | SDC_VIRTUAL_MODE_AWARE | SDC_SAVE_TO_DATABASE;
@@ -160,8 +159,7 @@ namespace display_device {
     }
 
     if (doSetTopology(*m_w_api, new_topology, *original_data)) {
-      const auto updated_topology {getCurrentTopology()};
-      if (isTopologyValid(updated_topology)) {
+      if (const auto updated_topology {getCurrentTopology()}; isTopologyValid(updated_topology)) {
         if (isTopologyTheSame(new_topology, updated_topology)) {
           return true;
         } else {

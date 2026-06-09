@@ -53,8 +53,7 @@ namespace display_device {
     boost::scope::scope_exit topology_prep_guard {[this, topology = topology_before_changes, was_captured = m_audio_context_api->isCaptured(), &release_context]() {
       // It is possible that during topology preparation, some settings will be reverted for the modified topology.
       // To keel it simple, these settings will not be restored!
-      const auto result {m_dd_api->setTopology(topology)};
-      if (!result) {
+      if (const auto result {m_dd_api->setTopology(topology)}; !result) {
         DD_LOG(error) << "Failed to revert back to topology in the topology guard!";
         if (release_context) {
           // We are currently in the topology for which the context was captured.
@@ -240,9 +239,8 @@ namespace display_device {
 
     if (ensure_primary) {
       const auto original_primary_device {cached_primary_device.empty() ? current_primary_device : cached_primary_device};
-      const auto &new_primary_device {device_to_configure};
 
-      if (!try_change(new_primary_device, "Changing primary display to:\n", "Failed to apply new configuration, because a new primary device could not be set!")) {
+      if (const auto &new_primary_device {device_to_configure}; !try_change(new_primary_device, "Changing primary display to:\n", "Failed to apply new configuration, because a new primary device could not be set!")) {
         // Error already logged
         return false;
       }
@@ -301,9 +299,9 @@ namespace display_device {
     if (change_required) {
       const bool configuring_primary_devices {config.m_device_id.empty()};
       const auto original_display_modes {cached_display_modes.empty() ? current_display_modes : cached_display_modes};
-      const auto new_display_modes {win_utils::computeNewDisplayModes(config.m_resolution, config.m_refresh_rate, configuring_primary_devices, device_to_configure, additional_devices_to_configure, original_display_modes)};
 
-      if (!try_change(new_display_modes, "Changing display modes to:\n", "Failed to apply new configuration, because new display modes could not be set!")) {
+      if (const auto new_display_modes {win_utils::computeNewDisplayModes(config.m_resolution, config.m_refresh_rate, configuring_primary_devices, device_to_configure, additional_devices_to_configure, original_display_modes)};
+          !try_change(new_display_modes, "Changing display modes to:\n", "Failed to apply new configuration, because new display modes could not be set!")) {
         // Error already logged
         return false;
       }
@@ -357,9 +355,9 @@ namespace display_device {
     if (change_required) {
       const bool configuring_primary_devices {config.m_device_id.empty()};
       const auto original_hdr_states {cached_hdr_states.empty() ? current_hdr_states : cached_hdr_states};
-      const auto new_hdr_states {win_utils::computeNewHdrStates(config.m_hdr_state, configuring_primary_devices, device_to_configure, additional_devices_to_configure, original_hdr_states)};
 
-      if (!try_change(new_hdr_states, "Changing HDR states to:\n", "Failed to apply new configuration, because new HDR states could not be set!")) {
+      if (const auto new_hdr_states {win_utils::computeNewHdrStates(config.m_hdr_state, configuring_primary_devices, device_to_configure, additional_devices_to_configure, original_hdr_states)};
+          !try_change(new_hdr_states, "Changing HDR states to:\n", "Failed to apply new configuration, because new HDR states could not be set!")) {
         // Error already logged
         return false;
       }

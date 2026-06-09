@@ -43,8 +43,7 @@ namespace ut_consts {
 
 bool testRegex(const std::string &input, const std::string &pattern) {
   std::regex regex(pattern);
-  std::smatch match;
-  if (!std::regex_match(input, match, regex)) {
+  if (std::smatch match; !std::regex_match(input, match, regex)) {
     std::cout << "Regex test failed:\n"
               << "    Input  : " << input << "\n"
               << "    Pattern: " << pattern << std::endl;

@@ -98,8 +98,7 @@ namespace display_device {
     }
 
     const UINT32 flags {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE};
-    const LONG result {m_w_api->setDisplayConfig(display_data->m_paths, display_data->m_modes, flags)};
-    if (result != ERROR_SUCCESS) {
+    if (const LONG result {m_w_api->setDisplayConfig(display_data->m_paths, display_data->m_modes, flags)}; result != ERROR_SUCCESS) {
       DD_LOG(error) << m_w_api->getErrorString(result) << " failed to set primary mode for " << device_id << "!";
       return false;
     }

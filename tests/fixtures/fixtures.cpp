@@ -53,8 +53,7 @@ const std::vector<std::string> &BaseTest::getArgs() const {
 }
 
 std::optional<std::string> BaseTest::getArgWithMatchingPattern(const std::string &pattern, bool remove_match) const {
-  const auto &args {getArgs()};
-  if (!args.empty()) {
+  if (const auto &args {getArgs()}; !args.empty()) {
     const std::regex re_pattern {pattern};
 
     // We are skipping the first arg which is always binary name/path.
