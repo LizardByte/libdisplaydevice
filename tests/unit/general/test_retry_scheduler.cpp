@@ -51,14 +51,14 @@ TEST_F_S(NullptrInterfaceProvided) {
   EXPECT_THAT([]() {
     const display_device::RetryScheduler<TestIface> scheduler(nullptr);
   },
-              ThrowsMessage<std::logic_error>(HasSubstr("Nullptr interface provided in RetryScheduler!")));
+              ThrowsMessage<std::invalid_argument>(HasSubstr("Nullptr interface provided in RetryScheduler!")));
 }
 
 TEST_F_S(Schedule, NullptrCallbackProvided) {
   EXPECT_THAT([&]() {
     m_impl.schedule(nullptr, {.m_sleep_durations = {0ms}});
   },
-              ThrowsMessage<std::logic_error>(HasSubstr("Empty callback function provided in RetryScheduler::schedule!")));
+              ThrowsMessage<std::invalid_argument>(HasSubstr("Empty callback function provided in RetryScheduler::schedule!")));
 }
 
 TEST_F_S(Schedule, NoDurations) {
@@ -67,7 +67,7 @@ TEST_F_S(Schedule, NoDurations) {
     },
                     {.m_sleep_durations = {}});
   },
-              ThrowsMessage<std::logic_error>(HasSubstr("At least 1 sleep duration must be specified in RetryScheduler::schedule!")));
+              ThrowsMessage<std::invalid_argument>(HasSubstr("At least 1 sleep duration must be specified in RetryScheduler::schedule!")));
 }
 
 TEST_F_S(Schedule, ZeroDuration) {
@@ -76,7 +76,7 @@ TEST_F_S(Schedule, ZeroDuration) {
     },
                     {.m_sleep_durations = {0ms}});
   },
-              ThrowsMessage<std::logic_error>(HasSubstr("All of the durations specified in RetryScheduler::schedule must be larger than a 0!")));
+              ThrowsMessage<std::invalid_argument>(HasSubstr("All of the durations specified in RetryScheduler::schedule must be larger than a 0!")));
 }
 
 TEST_F_S(Schedule, SchedulingDurations) {
@@ -305,7 +305,7 @@ TEST_F_S(Schedule, ExceptionThrown, DuringImmediateCall) {
 
   EXPECT_TRUE(m_impl.isScheduled());
   m_impl.schedule([](auto, auto &) {
-    throw std::runtime_error("Get rekt!");
+    throw SchedulerStopTokenTestException {};
   },
                   {.m_sleep_durations = {1ms}});
   EXPECT_FALSE(m_impl.isScheduled());
@@ -337,7 +337,7 @@ TEST_F_S(Schedule, ExceptionThrown, DuringScheduledCall) {
   EXPECT_EQ(output, "");
   m_impl.schedule([&first_call](auto, auto &) {
     if (!first_call) {
-      throw std::runtime_error("Get rekt!");
+      throw SchedulerStopTokenTestException {};
     }
     first_call = false;
   },
@@ -367,7 +367,7 @@ TEST_F_S(Execute, NonConst, NullptrCallbackProvided) {
     auto &non_const_impl {m_impl};
     non_const_impl.execute(std::function<void(TestIface &)> {});
   },
-              ThrowsMessage<std::logic_error>(HasSubstr("Empty callback function provided in RetryScheduler::execute!")));
+              ThrowsMessage<std::invalid_argument>(HasSubstr("Empty callback function provided in RetryScheduler::execute!")));
 }
 
 TEST_F_S(Execute, Const, NullptrCallbackProvided) {
@@ -376,7 +376,7 @@ TEST_F_S(Execute, Const, NullptrCallbackProvided) {
     auto &const_impl {m_impl};
     const_impl.execute(std::function<void(TestIface &)> {});
   },
-              ThrowsMessage<std::logic_error>(HasSubstr("Empty callback function provided in RetryScheduler::execute!")));
+              ThrowsMessage<std::invalid_argument>(HasSubstr("Empty callback function provided in RetryScheduler::execute!")));
 }
 
 TEST_F_S(Execute, SchedulerNotStopped) {

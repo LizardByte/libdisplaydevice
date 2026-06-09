@@ -5,6 +5,9 @@
 // class header include
 #include "display_device/windows/settings_manager.h"
 
+// system includes
+#include <stdexcept>
+
 // local includes
 #include "display_device/logging.h"
 #include "display_device/noop_audio_context.h"
@@ -22,7 +25,7 @@ namespace display_device {
       m_persistence_state {std::move(persistent_state)},
       m_workarounds {std::move(workarounds)} {
     if (!m_dd_api) {
-      throw std::logic_error {"Nullptr provided for WinDisplayDeviceInterface in SettingsManager!"};
+      throw std::invalid_argument {"Nullptr provided for WinDisplayDeviceInterface in SettingsManager!"};
     }
 
     if (!m_audio_context_api) {
@@ -30,7 +33,7 @@ namespace display_device {
     }
 
     if (!m_persistence_state) {
-      throw std::logic_error {"Nullptr provided for PersistentState in SettingsManager!"};
+      throw std::invalid_argument {"Nullptr provided for PersistentState in SettingsManager!"};
     }
 
     DD_LOG(info) << "Provided workaround settings for SettingsManager:\n"

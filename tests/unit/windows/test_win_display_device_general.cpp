@@ -1,5 +1,6 @@
 // system includes
 #include <format>
+#include <stdexcept>
 
 // local includes
 #include "display_device/windows/settings_utils.h"
@@ -44,7 +45,7 @@ TEST_F_S(NullptrLayerProvided) {
   EXPECT_THAT([]() {
     const auto win_dd {display_device::WinDisplayDevice {nullptr}};
   },
-              ThrowsMessage<std::logic_error>(HasSubstr("Nullptr provided for WinApiLayerInterface in WinDisplayDevice!")));
+              ThrowsMessage<std::invalid_argument>(HasSubstr("Nullptr provided for WinApiLayerInterface in WinDisplayDevice!")));
 }
 
 TEST_F_S(IsApiAccessAvailable) {

@@ -5,6 +5,9 @@
 // class header include
 #include "display_device/windows/win_display_device.h"
 
+// system includes
+#include <stdexcept>
+
 // local includes
 #include "display_device/logging.h"
 #include "display_device/windows/win_api_utils.h"
@@ -13,7 +16,7 @@ namespace display_device {
   WinDisplayDevice::WinDisplayDevice(std::shared_ptr<WinApiLayerInterface> w_api):
       m_w_api {std::move(w_api)} {
     if (!m_w_api) {
-      throw std::logic_error {"Nullptr provided for WinApiLayerInterface in WinDisplayDevice!"};
+      throw std::invalid_argument {"Nullptr provided for WinApiLayerInterface in WinDisplayDevice!"};
     }
   }
 

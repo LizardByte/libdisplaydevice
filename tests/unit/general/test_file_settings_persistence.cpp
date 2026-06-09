@@ -1,6 +1,7 @@
 // system includes
 #include <fstream>
 #include <gmock/gmock.h>
+#include <stdexcept>
 
 // local includes
 #include "display_device/file_settings_persistence.h"
@@ -39,7 +40,7 @@ TEST_F_S(EmptyFilenameProvided) {
   EXPECT_THAT([]() {
     const display_device::FileSettingsPersistence persistence {{}};
   },
-              ThrowsMessage<std::runtime_error>(HasSubstr("Empty filename provided for FileSettingsPersistence!")));
+              ThrowsMessage<std::invalid_argument>(HasSubstr("Empty filename provided for FileSettingsPersistence!")));
 }
 
 TEST_F_S(Store, NewFileCreated) {

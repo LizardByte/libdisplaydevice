@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iterator>
+#include <stdexcept>
 
 // local includes
 #include "display_device/logging.h"
@@ -17,7 +18,7 @@ namespace display_device {
   FileSettingsPersistence::FileSettingsPersistence(std::filesystem::path filepath):
       m_filepath {std::move(filepath)} {
     if (m_filepath.empty()) {
-      throw std::runtime_error {"Empty filename provided for FileSettingsPersistence!"};
+      throw std::invalid_argument {"Empty filename provided for FileSettingsPersistence!"};
     }
   }
 

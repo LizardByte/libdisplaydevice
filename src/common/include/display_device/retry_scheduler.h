@@ -9,6 +9,7 @@
 #include <condition_variable>
 #include <functional>
 #include <memory>
+#include <stdexcept>
 #include <thread>
 
 // local includes
@@ -147,7 +148,7 @@ namespace display_device {
      * @param iface Interface to be passed around to the executor functions.
      */
     explicit RetryScheduler(std::unique_ptr<T> iface):
-        m_iface {iface ? std::move(iface) : throw std::logic_error {"Nullptr interface provided in RetryScheduler!"}},
+        m_iface {iface ? std::move(iface) : throw std::invalid_argument {"Nullptr interface provided in RetryScheduler!"}},
         m_thread {[this]() {
           std::unique_lock lock {m_mutex};
           while (m_keep_alive) {
@@ -218,17 +219,17 @@ namespace display_device {
      */
     void schedule(std::function<void(T &, SchedulerStopToken &stop_token)> exec_fn, const SchedulerOptions &options) {
       if (!exec_fn) {
-        throw std::logic_error {"Empty callback function provided in RetryScheduler::schedule!"};
+        throw std::invalid_argument {"Empty callback function provided in RetryScheduler::schedule!"};
       }
 
       if (options.m_sleep_durations.empty()) {
-        throw std::logic_error {"At least 1 sleep duration must be specified in RetryScheduler::schedule!"};
+        throw std::invalid_argument {"At least 1 sleep duration must be specified in RetryScheduler::schedule!"};
       }
 
       if (std::ranges::any_of(options.m_sleep_durations, [&](const auto &duration) {
             return duration == std::chrono::milliseconds::zero();
           })) {
-        throw std::logic_error {"All of the durations specified in RetryScheduler::schedule must be larger than a 0!"};
+        throw std::invalid_argument {"All of the durations specified in RetryScheduler::schedule must be larger than a 0!"};
       }
 
       std::lock_guard lock {m_mutex};
@@ -348,7 +349,7 @@ namespace display_device {
 
       if constexpr (detail::OptionalFunction<FunctionT>) {
         if (!exec_fn) {
-          throw std::logic_error {"Empty callback function provided in RetryScheduler::execute!"};
+          throw std::invalid_argument {"Empty callback function provided in RetryScheduler::execute!"};
         }
       }
 
