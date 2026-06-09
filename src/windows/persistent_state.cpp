@@ -5,12 +5,22 @@
 // class header include
 #include "display_device/windows/persistent_state.h"
 
+// system includes
+#include <stdexcept>
+
 // local includes
 #include "display_device/logging.h"
 #include "display_device/noop_settings_persistence.h"
 #include "display_device/windows/json.h"
 
 namespace display_device {
+  namespace {
+    class PersistentStateLoadException final: public std::runtime_error {
+    public:
+      using std::runtime_error::runtime_error;
+    };
+  }  // namespace
+
   PersistentState::PersistentState(std::shared_ptr<SettingsPersistenceInterface> settings_persistence_api, const bool throw_on_load_error):
       m_settings_persistence_api {std::move(settings_persistence_api)} {
     if (!m_settings_persistence_api) {
@@ -31,7 +41,7 @@ namespace display_device {
 
     if (!error_message.empty()) {
       if (throw_on_load_error) {
-        throw std::runtime_error {error_message};
+        throw PersistentStateLoadException {error_message};
       }
 
       DD_LOG(error) << error_message;

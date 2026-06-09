@@ -7,6 +7,7 @@
 #ifdef DD_JSON_DETAIL
   // system includes
   #include <nlohmann/json.hpp>
+  #include <stdexcept>
 
   // Special versions of the NLOHMANN definitions to remove the "m_" prefix in string form ('cause I like it that way ;P)
   #define DD_JSON_TO(v1) nlohmann_json_j[#v1] = nlohmann_json_t.m_##v1;
@@ -85,7 +86,7 @@ namespace display_device {
     const auto &map {getEnumMap(T {})};
     auto it {std::find_if(std::begin(map), std::end(map), predicate)};
     if (it == std::end(map)) {  // GCOVR_EXCL_BR_LINE for fallthrough branch
-      throw std::runtime_error(error_msg);  // GCOVR_EXCL_BR_LINE for fallthrough branch
+      throw std::out_of_range(error_msg);  // GCOVR_EXCL_BR_LINE for fallthrough branch
     }
     return it;
   }
@@ -131,7 +132,7 @@ namespace nlohmann {
       const bool found {(display_device::detail::variantFromJson<Ts>(nlohmann_json_j, nlohmann_json_t) || ...)};
       if (!found) {
         const std::string error {"Could not parse variant from type " + nlohmann_json_j.at("type").get<std::string>() + "!"};
-        throw std::runtime_error(error);
+        throw std::invalid_argument(error);
       }
     }
   };

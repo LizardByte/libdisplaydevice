@@ -1,3 +1,6 @@
+// system includes
+#include <stdexcept>
+
 // local includes
 #include "display_device/noop_audio_context.h"
 #include "display_device/noop_settings_persistence.h"
@@ -44,7 +47,7 @@ TEST_F_S_MOCKED(NullptrDisplayDeviceApiProvided) {
   EXPECT_THAT([]() {
     const display_device::SettingsManager settings_manager(nullptr, nullptr, nullptr, {});
   },
-              ThrowsMessage<std::logic_error>(HasSubstr("Nullptr provided for WinDisplayDeviceInterface in SettingsManager!")));
+              ThrowsMessage<std::invalid_argument>(HasSubstr("Nullptr provided for WinDisplayDeviceInterface in SettingsManager!")));
 }
 
 TEST_F_S_MOCKED(NoopAudioContext) {
@@ -62,7 +65,7 @@ TEST_F_S_MOCKED(NullptrPersistentStateProvided) {
   EXPECT_THAT([this]() {
     const display_device::SettingsManager settings_manager(m_dd_api, nullptr, nullptr, {});
   },
-              ThrowsMessage<std::logic_error>(HasSubstr("Nullptr provided for PersistentState in SettingsManager!")));
+              ThrowsMessage<std::invalid_argument>(HasSubstr("Nullptr provided for PersistentState in SettingsManager!")));
 }
 
 TEST_F_S_MOCKED(EnumAvailableDevices) {
