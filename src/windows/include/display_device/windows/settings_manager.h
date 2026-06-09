@@ -57,7 +57,7 @@ namespace display_device {
      * @param system_settings_touched Inticates whether a "write" operation could have been performed on the OS.
      * @return A tuple of (new_state that is to be updated/persisted, device_to_configure, additional_devices_to_configure).
      */
-    [[nodiscard]] std::optional<std::tuple<SingleDisplayConfigState, std::string, std::set<std::string>>> prepareTopology(const SingleDisplayConfiguration &config, const ActiveTopology &topology_before_changes, bool &release_context, bool &system_settings_touched);
+    [[nodiscard]] std::optional<std::tuple<SingleDisplayConfigState, std::string, StringSet>> prepareTopology(const SingleDisplayConfiguration &config, const ActiveTopology &topology_before_changes, bool &release_context, bool &system_settings_touched);
 
     /**
      * @brief Changes or restores the primary device based on the cached state, new state and configuration.
@@ -80,7 +80,7 @@ namespace display_device {
      * @param system_settings_touched Inticates whether a "write" operation could have been performed on the OS.
      * @return True if no errors have occured, false otherwise.
      */
-    [[nodiscard]] bool prepareDisplayModes(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched);
+    [[nodiscard]] bool prepareDisplayModes(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const StringSet &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched);
 
     /**
      * @brief Changes or restores the HDR states based on the cached state, new state and configuration.
@@ -92,7 +92,7 @@ namespace display_device {
      * @param system_settings_touched Inticates whether a "write" operation could have been performed on the OS.
      * @return True if no errors have occured, false otherwise.
      */
-    [[nodiscard]] bool prepareHdrStates(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched);
+    [[nodiscard]] bool prepareHdrStates(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const StringSet &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched);
 
     /**
      * @brief Try to revert the modified settings.

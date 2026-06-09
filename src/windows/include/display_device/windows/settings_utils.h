@@ -25,7 +25,7 @@ namespace display_device::win_utils {
    * const auto device_ids { flattenTopology(topology) };
    * @examples_end
    */
-  std::set<std::string> flattenTopology(const ActiveTopology &topology);
+  StringSet flattenTopology(const ActiveTopology &topology);
 
   /**
    * @brief Create extended topology from all the available devices.
@@ -84,7 +84,7 @@ namespace display_device::win_utils {
    * @param initial_topology The initial topology from `computeInitialState(...)`.
    * @return New topology that should be set.
    */
-  ActiveTopology computeNewTopology(SingleDisplayConfiguration::DevicePreparation device_prep, bool configuring_primary_devices, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, const ActiveTopology &initial_topology);
+  ActiveTopology computeNewTopology(SingleDisplayConfiguration::DevicePreparation device_prep, bool configuring_primary_devices, const std::string &device_to_configure, const StringSet &additional_devices_to_configure, const ActiveTopology &initial_topology);
 
   /**
    * @brief Compute new topology + metadata from config settings and initial state.
@@ -93,7 +93,7 @@ namespace display_device::win_utils {
    * @param initial_state The initial topology from `computeInitialState(...)` or `stripInitialState(...)` (or both).
    * @return A tuple of (new_topology, device_to_configure, addotional_devices_to_configure).
    */
-  std::tuple<ActiveTopology, std::string, std::set<std::string>> computeNewTopologyAndMetadata(SingleDisplayConfiguration::DevicePreparation device_prep, const std::string &device_id, const SingleDisplayConfigState::Initial &initial_state);
+  std::tuple<ActiveTopology, std::string, StringSet> computeNewTopologyAndMetadata(SingleDisplayConfiguration::DevicePreparation device_prep, const std::string &device_id, const SingleDisplayConfigState::Initial &initial_state);
 
   /**
    * @brief Compute new display modes from arbitrary data.
@@ -105,7 +105,7 @@ namespace display_device::win_utils {
    * @param original_modes Display modes to be used as a base onto which changes are made.
    * @return New display modes that should be set.
    */
-  DeviceDisplayModeMap computeNewDisplayModes(const std::optional<Resolution> &resolution, const std::optional<FloatingPoint> &refresh_rate, bool configuring_primary_devices, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, const DeviceDisplayModeMap &original_modes);
+  DeviceDisplayModeMap computeNewDisplayModes(const std::optional<Resolution> &resolution, const std::optional<FloatingPoint> &refresh_rate, bool configuring_primary_devices, const std::string &device_to_configure, const StringSet &additional_devices_to_configure, const DeviceDisplayModeMap &original_modes);
 
   /**
    * @brief Compute new HDR states from arbitrary data.
@@ -116,7 +116,7 @@ namespace display_device::win_utils {
    * @param original_states HDR states to be used as a base onto which changes are made.
    * @return New HDR states that should be set.
    */
-  HdrStateMap computeNewHdrStates(const std::optional<HdrState> &hdr_state, bool configuring_primary_devices, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, const HdrStateMap &original_states);
+  HdrStateMap computeNewHdrStates(const std::optional<HdrState> &hdr_state, bool configuring_primary_devices, const std::string &device_to_configure, const StringSet &additional_devices_to_configure, const HdrStateMap &original_states);
 
   /**
    * @brief Toggle enabled HDR states off and on again if quick succession.

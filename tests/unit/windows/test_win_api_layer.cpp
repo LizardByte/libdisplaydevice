@@ -104,7 +104,7 @@ TEST_F_S(GetDeviceId) {
   const auto all_devices {m_layer.queryDisplayConfig(display_device::QueryType::All)};
   ASSERT_TRUE(all_devices);
 
-  std::map<std::string, std::string> device_id_per_device_path;
+  display_device::StringMap<std::string> device_id_per_device_path;
   for (const auto &path : all_devices->m_paths) {
     const auto device_id {m_layer.getDeviceId(path)};
     const auto device_id_2 {m_layer.getDeviceId(path)};
@@ -135,7 +135,7 @@ TEST_F_S(GetMonitorDevicePath) {
   const auto all_devices {m_layer.queryDisplayConfig(display_device::QueryType::All)};
   ASSERT_TRUE(all_devices);
 
-  std::set<std::string> current_device_paths;
+  display_device::StringSet current_device_paths;
   for (const auto &path : all_devices->m_paths) {
     const auto device_path {m_layer.getMonitorDevicePath(path)};
     const auto device_path_2 {m_layer.getMonitorDevicePath(path)};

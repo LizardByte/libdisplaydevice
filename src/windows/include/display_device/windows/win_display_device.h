@@ -45,7 +45,7 @@ namespace display_device {
     [[nodiscard]] bool setTopology(const ActiveTopology &new_topology) override;
 
     /** For details @see WinDisplayDeviceInterface::getCurrentDisplayModes */
-    [[nodiscard]] DeviceDisplayModeMap getCurrentDisplayModes(const std::set<std::string> &device_ids) const override;
+    [[nodiscard]] DeviceDisplayModeMap getCurrentDisplayModes(const StringSet &device_ids) const override;
 
     /** For details @see WinDisplayDeviceInterface::setDisplayModes */
     [[nodiscard]] bool setDisplayModes(const DeviceDisplayModeMap &modes) override;
@@ -57,7 +57,7 @@ namespace display_device {
     [[nodiscard]] bool setAsPrimary(const std::string &device_id) override;
 
     /** For details @see WinDisplayDeviceInterface::getCurrentHdrStates */
-    [[nodiscard]] HdrStateMap getCurrentHdrStates(const std::set<std::string> &device_ids) const override;
+    [[nodiscard]] HdrStateMap getCurrentHdrStates(const StringSet &device_ids) const override;
 
     /** For details @see WinDisplayDeviceInterface::setHdrStates */
     [[nodiscard]] bool setHdrStates(const HdrStateMap &states) override;

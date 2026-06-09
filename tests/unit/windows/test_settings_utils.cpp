@@ -35,9 +35,9 @@ namespace {
 }  // namespace
 
 TEST_F_S_MOCKED(FlattenTopology) {
-  EXPECT_EQ(display_device::win_utils::flattenTopology({{"DeviceId1"}, {"DeviceId2", "DeviceId3"}, {}, {"DeviceId2"}}), (std::set<std::string> {"DeviceId1", "DeviceId2", "DeviceId3"}));
-  EXPECT_EQ(display_device::win_utils::flattenTopology({{}, {}, {}}), std::set<std::string> {});
-  EXPECT_EQ(display_device::win_utils::flattenTopology({}), std::set<std::string> {});
+  EXPECT_EQ(display_device::win_utils::flattenTopology({{"DeviceId1"}, {"DeviceId2", "DeviceId3"}, {}, {"DeviceId2"}}), (display_device::StringSet {"DeviceId1", "DeviceId2", "DeviceId3"}));
+  EXPECT_EQ(display_device::win_utils::flattenTopology({{}, {}, {}}), display_device::StringSet {});
+  EXPECT_EQ(display_device::win_utils::flattenTopology({}), display_device::StringSet {});
 }
 
 TEST_F_S_MOCKED(CreateFullExtendedTopology, NoDevicesAreAvailable) {
@@ -225,7 +225,7 @@ TEST_F_S_MOCKED(ComputeNewTopologyAndMetadata, EmptyDeviceId, AdditionalDevicesN
     display_device::win_utils::computeNewTopologyAndMetadata(DevicePrep::EnsureActive, device_id, initial_state);
   EXPECT_EQ(new_topology, DEFAULT_INITIAL_TOPOLOGY);
   EXPECT_EQ(device_to_configure, "DeviceId1");
-  EXPECT_EQ(additional_devices_to_configure, std::set<std::string> {"DeviceId2"});
+  EXPECT_EQ(additional_devices_to_configure, display_device::StringSet {"DeviceId2"});
 }
 
 TEST_F_S_MOCKED(ComputeNewTopologyAndMetadata, EmptyDeviceId, AdditionalDevicesStripped) {
@@ -237,7 +237,7 @@ TEST_F_S_MOCKED(ComputeNewTopologyAndMetadata, EmptyDeviceId, AdditionalDevicesS
     display_device::win_utils::computeNewTopologyAndMetadata(DevicePrep::EnsureActive, device_id, initial_state);
   EXPECT_EQ(new_topology, DEFAULT_INITIAL_TOPOLOGY);
   EXPECT_EQ(device_to_configure, "DeviceId3");
-  EXPECT_EQ(additional_devices_to_configure, std::set<std::string> {});
+  EXPECT_EQ(additional_devices_to_configure, display_device::StringSet {});
 }
 
 TEST_F_S_MOCKED(ComputeNewTopologyAndMetadata, ValidDeviceId, WithAdditionalDevices) {
@@ -249,7 +249,7 @@ TEST_F_S_MOCKED(ComputeNewTopologyAndMetadata, ValidDeviceId, WithAdditionalDevi
     display_device::win_utils::computeNewTopologyAndMetadata(DevicePrep::EnsureActive, device_id, initial_state);
   EXPECT_EQ(new_topology, DEFAULT_INITIAL_TOPOLOGY);
   EXPECT_EQ(device_to_configure, device_id);
-  EXPECT_EQ(additional_devices_to_configure, std::set<std::string> {"DeviceId2"});
+  EXPECT_EQ(additional_devices_to_configure, display_device::StringSet {"DeviceId2"});
 }
 
 TEST_F_S_MOCKED(ComputeNewTopologyAndMetadata, ValidDeviceId, NoAdditionalDevices) {
@@ -261,7 +261,7 @@ TEST_F_S_MOCKED(ComputeNewTopologyAndMetadata, ValidDeviceId, NoAdditionalDevice
     display_device::win_utils::computeNewTopologyAndMetadata(DevicePrep::EnsureOnlyDisplay, device_id, initial_state);
   EXPECT_EQ(new_topology, display_device::ActiveTopology {{"DeviceId1"}});
   EXPECT_EQ(device_to_configure, device_id);
-  EXPECT_EQ(additional_devices_to_configure, std::set<std::string> {});
+  EXPECT_EQ(additional_devices_to_configure, display_device::StringSet {});
 }
 
 TEST_F_S_MOCKED(TopologyGuardFn, Success) {
@@ -380,7 +380,7 @@ TEST_F_S_MOCKED(TopologyGuardFn, Failure) {
 }
 
 TEST_F_S_MOCKED(ModeGuardFn, Success) {
-  EXPECT_CALL(m_dd_api, getCurrentDisplayModes(std::set<std::string> {"DeviceId1"}))
+  EXPECT_CALL(m_dd_api, getCurrentDisplayModes(display_device::StringSet {"DeviceId1"}))
     .Times(1)
     .WillOnce(Return(display_device::DeviceDisplayModeMap {{"DeviceId1", {}}}))
     .RetiresOnSaturation();
@@ -394,7 +394,7 @@ TEST_F_S_MOCKED(ModeGuardFn, Success) {
 }
 
 TEST_F_S_MOCKED(ModeGuardFn, Failure) {
-  EXPECT_CALL(m_dd_api, getCurrentDisplayModes(std::set<std::string> {"DeviceId1"}))
+  EXPECT_CALL(m_dd_api, getCurrentDisplayModes(display_device::StringSet {"DeviceId1"}))
     .Times(1)
     .WillOnce(Return(display_device::DeviceDisplayModeMap {{"DeviceId1", {}}}))
     .RetiresOnSaturation();
@@ -436,7 +436,7 @@ TEST_F_S_MOCKED(PrimaryGuardFn, Failure) {
 }
 
 TEST_F_S_MOCKED(HdrStateGuardFn, Success) {
-  EXPECT_CALL(m_dd_api, getCurrentHdrStates(std::set<std::string> {"DeviceId1"}))
+  EXPECT_CALL(m_dd_api, getCurrentHdrStates(display_device::StringSet {"DeviceId1"}))
     .Times(1)
     .WillOnce(Return(display_device::HdrStateMap {{"DeviceId1", {}}}))
     .RetiresOnSaturation();
@@ -450,7 +450,7 @@ TEST_F_S_MOCKED(HdrStateGuardFn, Success) {
 }
 
 TEST_F_S_MOCKED(HdrStateGuardFn, Failure) {
-  EXPECT_CALL(m_dd_api, getCurrentHdrStates(std::set<std::string> {"DeviceId1"}))
+  EXPECT_CALL(m_dd_api, getCurrentHdrStates(display_device::StringSet {"DeviceId1"}))
     .Times(1)
     .WillOnce(Return(display_device::HdrStateMap {{"DeviceId1", {}}}))
     .RetiresOnSaturation();

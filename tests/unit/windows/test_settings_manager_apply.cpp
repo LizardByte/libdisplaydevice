@@ -169,7 +169,7 @@ namespace {
         .RetiresOnSaturation();
     }
 
-    void expectedGetCurrentDisplayModesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::set<std::string> &devices, const display_device::DeviceDisplayModeMap &modes) const {
+    void expectedGetCurrentDisplayModesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::StringSet &devices, const display_device::DeviceDisplayModeMap &modes) const {
       EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(devices))
         .Times(1)
         .WillOnce(Return(modes))
@@ -190,7 +190,7 @@ namespace {
         .RetiresOnSaturation();
     }
 
-    void expectedGetCurrentHdrStatesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::set<std::string> &devices, const display_device::HdrStateMap &states) const {
+    void expectedGetCurrentHdrStatesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::StringSet &devices, const display_device::HdrStateMap &states) const {
       EXPECT_CALL(*m_dd_api, getCurrentHdrStates(devices))
         .Times(1)
         .WillOnce(Return(states))

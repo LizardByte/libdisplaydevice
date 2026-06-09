@@ -118,7 +118,7 @@ namespace display_device {
     return ApplyResult::Ok;
   }
 
-  std::optional<std::tuple<SingleDisplayConfigState, std::string, std::set<std::string>>> SettingsManager::prepareTopology(const SingleDisplayConfiguration &config, const ActiveTopology &topology_before_changes, bool &release_context, bool &system_settings_touched) {
+  std::optional<std::tuple<SingleDisplayConfigState, std::string, StringSet>> SettingsManager::prepareTopology(const SingleDisplayConfiguration &config, const ActiveTopology &topology_before_changes, bool &release_context, bool &system_settings_touched) {
     const EnumeratedDeviceList devices {m_dd_api->enumAvailableDevices()};
     if (devices.empty()) {
       DD_LOG(error) << "Failed to enumerate display devices!";
@@ -262,7 +262,7 @@ namespace display_device {
     return true;
   }
 
-  bool SettingsManager::prepareDisplayModes(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched) {
+  bool SettingsManager::prepareDisplayModes(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const StringSet &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched) {
     const auto &cached_state {m_persistence_state->getState()};
     const auto cached_display_modes {cached_state ? cached_state->m_modified.m_original_modes : DeviceDisplayModeMap {}};
     const bool change_required {config.m_resolution || config.m_refresh_rate};
@@ -323,7 +323,7 @@ namespace display_device {
     return true;
   }
 
-  [[nodiscard]] bool SettingsManager::prepareHdrStates(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched) {
+  [[nodiscard]] bool SettingsManager::prepareHdrStates(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const StringSet &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched) {
     const auto &cached_state {m_persistence_state->getState()};
     const auto cached_hdr_states {cached_state ? cached_state->m_modified.m_original_hdr_states : HdrStateMap {}};
     const bool change_required {config.m_hdr_state};

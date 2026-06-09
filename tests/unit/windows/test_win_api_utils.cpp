@@ -815,7 +815,7 @@ TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates) {
     setupExpectCallForValidPaths(4, sequence);
   }
 
-  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {"DeviceId1", "DeviceId2"}), (std::set<std::string> {"DeviceId1", "DeviceId2", "DeviceId3"}));
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {"DeviceId1", "DeviceId2"}), (display_device::StringSet {"DeviceId1", "DeviceId2", "DeviceId3"}));
 }
 
 TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, FailedToQueryDevices) {
@@ -823,7 +823,7 @@ TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, FailedToQueryDevices) {
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_NULL));
 
-  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {"DeviceId2"}), std::set<std::string> {});
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {"DeviceId2"}), display_device::StringSet {});
 }
 
 TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, EmptyDeviceIdInProvidedList) {
@@ -833,7 +833,7 @@ TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, EmptyDeviceIdInProvidedLis
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES));
 
-  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {""}), std::set<std::string> {});
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {""}), display_device::StringSet {});
 }
 
 TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, FailedToFindActivePath) {
@@ -844,7 +844,7 @@ TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, FailedToFindActivePath) {
     .Times(4)
     .WillOnce(Return(""));
 
-  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {"DeviceId2"}), std::set<std::string> {});
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {"DeviceId2"}), display_device::StringSet {});
 }
 
 TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, NoSourceModeFound) {
@@ -857,7 +857,7 @@ TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, NoSourceModeFound) {
     .WillOnce(Return(pam_no_modes));
   setupExpectCallForValidPaths(2, sequence);
 
-  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {"DeviceId2"}), std::set<std::string> {});
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {"DeviceId2"}), display_device::StringSet {});
 }
 
 TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, IncompleteListOfSources) {
@@ -875,7 +875,7 @@ TEST_F_S_MOCKED(GetAllDeviceIdsAndMatchingDuplicates, IncompleteListOfSources) {
     .RetiresOnSaturation();
   setupExpectCallForValidPaths(1, sequence);
 
-  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {"DeviceId1"}), std::set<std::string> {});
+  EXPECT_EQ(display_device::win_utils::getAllDeviceIdsAndMatchingDuplicates(m_layer, {"DeviceId1"}), display_device::StringSet {});
 }
 
 TEST_F_S_MOCKED(FuzzyCompareRefreshRates) {

@@ -67,7 +67,7 @@ namespace display_device {
    * @brief Ordered map of [DEVICE_ID -> PathSourceIndexData].
    * @see PathSourceIndexData
    */
-  using PathSourceIndexDataMap = std::map<std::string, PathSourceIndexData>;
+  using PathSourceIndexDataMap = StringMap<PathSourceIndexData>;
 
   /**
    * @brief A LIST[LIST[DEVICE_ID]] structure which represents an active topology.
@@ -101,12 +101,12 @@ namespace display_device {
   /**
    * @brief Ordered map of [DEVICE_ID -> DisplayMode].
    */
-  using DeviceDisplayModeMap = std::map<std::string, DisplayMode>;
+  using DeviceDisplayModeMap = StringMap<DisplayMode>;
 
   /**
    * @brief Ordered map of [DEVICE_ID -> std::optional<HdrState>].
    */
-  using HdrStateMap = std::map<std::string, std::optional<HdrState>>;
+  using HdrStateMap = StringMap<std::optional<HdrState>>;
 
   /**
    * @brief Arbitrary data for making and undoing changes.
@@ -118,7 +118,7 @@ namespace display_device {
      */
     struct Initial {
       ActiveTopology m_topology {};
-      std::set<std::string> m_primary_devices {};
+      StringSet m_primary_devices {};
 
       /**
        * @brief Comparator for strict equality.

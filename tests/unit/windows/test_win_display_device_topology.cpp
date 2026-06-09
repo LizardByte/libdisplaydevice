@@ -83,7 +83,7 @@ TEST_F_S(GetCurrentTopology) {
     GTEST_SKIP_("No active devices are available in the system.");
   }
 
-  std::set<std::string> expected_devices;
+  display_device::StringSet expected_devices;
   for (const auto &path : active_devices->m_paths) {
     const auto device_id {m_layer->getDeviceId(path)};
     EXPECT_FALSE(device_id.empty());

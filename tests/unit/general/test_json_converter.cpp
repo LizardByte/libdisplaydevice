@@ -103,9 +103,9 @@ TEST_F_S(SingleDisplayConfiguration) {
 }
 
 TEST_F_S(StringSet) {
-  executeTestCase(std::set<std::string> {}, R"([])");
-  executeTestCase(std::set<std::string> {"ABC", "DEF"}, R"(["ABC","DEF"])");
-  executeTestCase(std::set<std::string> {"DEF", "ABC"}, R"(["ABC","DEF"])");
+  executeTestCase(display_device::StringSet {}, R"([])");
+  executeTestCase(display_device::StringSet {"ABC", "DEF"}, R"(["ABC","DEF"])");
+  executeTestCase(display_device::StringSet {"DEF", "ABC"}, R"(["ABC","DEF"])");
 }
 
 TEST_F_S(String) {

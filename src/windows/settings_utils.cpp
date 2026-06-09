@@ -42,8 +42,8 @@ namespace display_device::win_utils {
      * const auto primary_only_ids { getDeviceIds(devices, primaryOnlyDevices) };
      * @examples_end
      */
-    std::set<std::string> getDeviceIds(const EnumeratedDeviceList &devices, std::add_lvalue_reference_t<bool(const EnumeratedDevice &)> &predicate) {
-      std::set<std::string> device_ids;
+    StringSet getDeviceIds(const EnumeratedDeviceList &devices, std::add_lvalue_reference_t<bool(const EnumeratedDevice &)> &predicate) {
+      StringSet device_ids;
       for (const auto &device : devices) {
         if (predicate(device)) {
           device_ids.insert(device.m_device_id);
@@ -60,7 +60,7 @@ namespace display_device::win_utils {
      * @return Topology without missing device ids.
      */
     ActiveTopology stripTopology(const ActiveTopology &topology, const EnumeratedDeviceList &devices) {
-      const std::set<std::string> available_device_ids {getDeviceIds(devices, anyDevice)};
+      const StringSet available_device_ids {getDeviceIds(devices, anyDevice)};
 
       ActiveTopology stripped_topology;
       for (const auto &group : topology) {
@@ -85,10 +85,10 @@ namespace display_device::win_utils {
      * @param devices List of devices.
      * @return List without missing device ids.
      */
-    std::set<std::string> stripDevices(const std::set<std::string> &device_ids, const EnumeratedDeviceList &devices) {
-      std::set<std::string> available_device_ids {getDeviceIds(devices, anyDevice)};
+    StringSet stripDevices(const StringSet &device_ids, const EnumeratedDeviceList &devices) {
+      StringSet available_device_ids {getDeviceIds(devices, anyDevice)};
 
-      std::set<std::string> available_devices;
+      StringSet available_devices;
       std::ranges::set_intersection(device_ids, available_device_ids, std::inserter(available_devices, std::begin(available_devices)));
       return available_devices;
     }
@@ -99,8 +99,8 @@ namespace display_device::win_utils {
      * @param target_device_id Device id whose group to search for.
      * @return Other ids in the group without (excluding the provided one).
      */
-    std::set<std::string> tryGetOtherDevicesInTheSameGroup(const ActiveTopology &topology, const std::string &target_device_id) {
-      std::set<std::string> device_ids;
+    StringSet tryGetOtherDevicesInTheSameGroup(const ActiveTopology &topology, const std::string &target_device_id) {
+      StringSet device_ids;
 
       for (const auto &group : topology) {
         for (const auto &group_device_id : group) {
@@ -119,15 +119,15 @@ namespace display_device::win_utils {
     /**
      * @brief Merge the configurable devices into a vector.
      */
-    std::vector<std::string> joinConfigurableDevices(const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure) {
+    std::vector<std::string> joinConfigurableDevices(const std::string &device_to_configure, const StringSet &additional_devices_to_configure) {
       std::vector<std::string> devices {device_to_configure};
       devices.insert(std::end(devices), std::begin(additional_devices_to_configure), std::end(additional_devices_to_configure));
       return devices;
     }
   }  // namespace
 
-  std::set<std::string> flattenTopology(const ActiveTopology &topology) {
-    std::set<std::string> flattened_topology;
+  StringSet flattenTopology(const ActiveTopology &topology) {
+    StringSet flattened_topology;
     for (const auto &group : topology) {
       for (const auto &device_id : group) {
         flattened_topology.insert(device_id);
@@ -191,7 +191,7 @@ namespace display_device::win_utils {
     };
   }
 
-  ActiveTopology computeNewTopology(const SingleDisplayConfiguration::DevicePreparation device_prep, const bool configuring_primary_devices, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, const ActiveTopology &initial_topology) {
+  ActiveTopology computeNewTopology(const SingleDisplayConfiguration::DevicePreparation device_prep, const bool configuring_primary_devices, const std::string &device_to_configure, const StringSet &additional_devices_to_configure, const ActiveTopology &initial_topology) {
     using DevicePrep = SingleDisplayConfiguration::DevicePreparation;
 
     if (device_prep != DevicePrep::VerifyOnly) {
@@ -249,10 +249,10 @@ namespace display_device::win_utils {
     };
   }
 
-  std::tuple<ActiveTopology, std::string, std::set<std::string>> computeNewTopologyAndMetadata(const SingleDisplayConfiguration::DevicePreparation device_prep, const std::string &device_id, const SingleDisplayConfigState::Initial &initial_state) {
+  std::tuple<ActiveTopology, std::string, StringSet> computeNewTopologyAndMetadata(const SingleDisplayConfiguration::DevicePreparation device_prep, const std::string &device_id, const SingleDisplayConfigState::Initial &initial_state) {
     const bool configuring_unspecified_devices {device_id.empty()};
     const auto device_to_configure {configuring_unspecified_devices ? *std::begin(initial_state.m_primary_devices) : device_id};
-    auto additional_devices_to_configure {configuring_unspecified_devices ? std::set<std::string> {std::next(std::begin(initial_state.m_primary_devices)), std::end(initial_state.m_primary_devices)} : tryGetOtherDevicesInTheSameGroup(initial_state.m_topology, device_to_configure)};
+    auto additional_devices_to_configure {configuring_unspecified_devices ? StringSet {std::next(std::begin(initial_state.m_primary_devices)), std::end(initial_state.m_primary_devices)} : tryGetOtherDevicesInTheSameGroup(initial_state.m_topology, device_to_configure)};
     DD_LOG(info) << "Will compute new display device topology from the following input:\n"
                  << "  - initial topology: " << toJson(initial_state.m_topology, JSON_COMPACT) << "\n"
                  << "  - initial primary devices: " << toJson(initial_state.m_primary_devices, JSON_COMPACT) << "\n"
@@ -265,7 +265,7 @@ namespace display_device::win_utils {
     return std::make_tuple(new_topology, device_to_configure, additional_devices_to_configure);
   }
 
-  DeviceDisplayModeMap computeNewDisplayModes(const std::optional<Resolution> &resolution, const std::optional<FloatingPoint> &refresh_rate, const bool configuring_primary_devices, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, const DeviceDisplayModeMap &original_modes) {
+  DeviceDisplayModeMap computeNewDisplayModes(const std::optional<Resolution> &resolution, const std::optional<FloatingPoint> &refresh_rate, const bool configuring_primary_devices, const std::string &device_to_configure, const StringSet &additional_devices_to_configure, const DeviceDisplayModeMap &original_modes) {
     DeviceDisplayModeMap new_modes {original_modes};
 
     if (resolution) {
@@ -310,7 +310,7 @@ namespace display_device::win_utils {
     return new_modes;
   }
 
-  HdrStateMap computeNewHdrStates(const std::optional<HdrState> &hdr_state, bool configuring_primary_devices, const std::string &device_to_configure, const std::set<std::string> &additional_devices_to_configure, const HdrStateMap &original_states) {
+  HdrStateMap computeNewHdrStates(const std::optional<HdrState> &hdr_state, bool configuring_primary_devices, const std::string &device_to_configure, const StringSet &additional_devices_to_configure, const HdrStateMap &original_states) {
     HdrStateMap new_states {original_states};
 
     if (hdr_state) {
@@ -359,7 +359,7 @@ namespace display_device::win_utils {
       return;
     }
 
-    std::set<std::string> device_ids;
+    StringSet device_ids;
     HdrStateMap original_states;
     HdrStateMap inverse_states;
     for (const auto &[device_id, state] : current_states) {
