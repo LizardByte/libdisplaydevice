@@ -188,7 +188,7 @@ TEST_F_S_MOCKED(SetAsPrimary, AlreadyPrimary) {
 }
 
 TEST_F_S_MOCKED(SetAsPrimary, DuplicatePrimaryDevicesSet) {
-  const auto initial_pam {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto &initial_pam {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
 
   auto origin_point {initial_pam->m_modes.at(initial_pam->m_paths.at(1).sourceInfo.sourceModeInfoIdx).sourceMode.position};
   auto expected_pam {initial_pam};
@@ -218,7 +218,7 @@ TEST_F_S_MOCKED(SetAsPrimary, DuplicatePrimaryDevicesSet) {
 }
 
 TEST_F_S_MOCKED(SetAsPrimary, NonDuplicatePrimaryDeviceSet) {
-  const auto initial_pam {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto &initial_pam {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
 
   auto origin_point {initial_pam->m_modes.at(initial_pam->m_paths.at(3).sourceInfo.sourceModeInfoIdx).sourceMode.position};
   auto expected_pam {initial_pam};
@@ -345,7 +345,7 @@ TEST_F_S_MOCKED(SetAsPrimary, FailedToGetSourceMode, DuringShift) {
 }
 
 TEST_F_S_MOCKED(SetAsPrimary, FailedToSetDisplayConfig) {
-  const auto initial_pam {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto &initial_pam {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
 
   auto origin_point {initial_pam->m_modes.at(initial_pam->m_paths.at(3).sourceInfo.sourceModeInfoIdx).sourceMode.position};
   auto expected_pam {initial_pam};
