@@ -102,7 +102,7 @@ namespace display_device::win_utils {
     // that is just BS (maybe copy-pasta mistake), because some cases were found where the flag is not set and the union
     // is still being used.
 
-    if (index) {
+    if (index.has_value()) {
       path.sourceInfo.sourceModeInfoIdx = *index;
     } else {
       path.sourceInfo.sourceModeInfoIdx = DISPLAYCONFIG_PATH_SOURCE_MODE_IDX_INVALID;
@@ -117,7 +117,7 @@ namespace display_device::win_utils {
     // that is just BS (maybe copy-pasta mistake), because some cases were found where the flag is not set and the union
     // is still being used.
 
-    if (index) {
+    if (index.has_value()) {
       path.targetInfo.targetModeInfoIdx = *index;
     } else {
       path.targetInfo.targetModeInfoIdx = DISPLAYCONFIG_PATH_TARGET_MODE_IDX_INVALID;
@@ -132,7 +132,7 @@ namespace display_device::win_utils {
     // that is just BS (maybe copy-pasta mistake), because some cases were found where the flag is not set and the union
     // is still being used.
 
-    if (index) {
+    if (index.has_value()) {
       path.targetInfo.desktopModeInfoIdx = *index;
     } else {
       path.targetInfo.desktopModeInfoIdx = DISPLAYCONFIG_PATH_DESKTOP_IMAGE_IDX_INVALID;
@@ -147,7 +147,7 @@ namespace display_device::win_utils {
     // that is just BS (maybe copy-pasta mistake), because some cases were found where the flag is not set and the union
     // is still being used.
 
-    if (id) {
+    if (id.has_value()) {
       path.sourceInfo.cloneGroupId = *id;
     } else {
       path.sourceInfo.cloneGroupId = DISPLAYCONFIG_PATH_CLONE_GROUP_INVALID;
@@ -155,7 +155,7 @@ namespace display_device::win_utils {
   }
 
   const DISPLAYCONFIG_SOURCE_MODE *getSourceMode(const std::optional<UINT32> &index, const std::vector<DISPLAYCONFIG_MODE_INFO> &modes) {
-    if (!index) {
+    if (!index.has_value()) {
       return nullptr;
     }
 
@@ -322,7 +322,7 @@ namespace display_device::win_utils {
         const auto &source_data {path_source_data_it->second};
 
         const auto already_used_source_id {get_already_used_source_id_in_group(source_data.m_adapter_id)};
-        if (already_used_source_id) {
+        if (already_used_source_id.has_value()) {
           // Some device in the group is already using the source id, and we belong to the same adapter.
           // This means we must also use the path with matching source id.
           auto path_index_it {source_data.m_source_id_to_path_index.find(*already_used_source_id)};
@@ -349,7 +349,7 @@ namespace display_device::win_utils {
             }
           }
 
-          if (!path_index_candidate) {
+          if (!path_index_candidate.has_value()) {
             // Apparently nvidia GPU can only render 4 different sources at a time (according to Google).
             // However, it seems to be true only for physical connections as we also have virtual displays.
             //

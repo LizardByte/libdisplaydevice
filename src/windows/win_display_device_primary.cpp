@@ -80,7 +80,7 @@ namespace display_device {
       const auto source_index {win_utils::getSourceIndex(path, display_data->m_modes)};
       auto source_mode {win_utils::getSourceMode(source_index, display_data->m_modes)};
 
-      if (!source_index || !source_mode) {
+      if (!source_index.has_value() || !source_mode) {
         DD_LOG(error) << "Active device does not have a source mode: " << current_id << "!";
         return false;
       }
