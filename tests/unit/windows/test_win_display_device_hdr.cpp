@@ -1,3 +1,6 @@
+// system includes
+#include <format>
+
 // local includes
 #include "display_device/windows/settings_utils.h"
 #include "display_device/windows/win_api_layer.h"
@@ -35,7 +38,7 @@ namespace {
           .RetiresOnSaturation();
         EXPECT_CALL(*m_layer, getDeviceId(_))
           .Times(1)
-          .WillOnce(Return("DeviceId" + std::to_string(i)))
+          .WillOnce(Return(std::format("DeviceId{}", i)))
           .RetiresOnSaturation();
         EXPECT_CALL(*m_layer, getDisplayName(_))
           .Times(1)
