@@ -1,4 +1,5 @@
 // system includes
+#include <algorithm>
 #include <format>
 #include <stdexcept>
 
@@ -87,7 +88,7 @@ TEST_F_S(EnumAvailableDevices) {
 
   const auto topology {display_device::win_utils::flattenTopology(m_win_dd.getCurrentTopology())};
   for (const auto &device_id : *available_devices) {
-    auto enum_it {std::find_if(std::begin(enum_devices), std::end(enum_devices), [&device_id](const auto &entry) {
+    auto enum_it {std::ranges::find_if(enum_devices, [&device_id](const auto &entry) {
       return entry.m_device_id == device_id;
     })};
 

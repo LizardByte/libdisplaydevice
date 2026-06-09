@@ -6,6 +6,7 @@
 
 #ifdef DD_JSON_DETAIL
   // system includes
+  #include <algorithm>
   #include <nlohmann/json.hpp>
   #include <stdexcept>
 
@@ -84,7 +85,7 @@ namespace display_device {
   template<class T, class Predicate>
   typename std::map<T, nlohmann::json>::const_iterator findInEnumMap(const char *error_msg, Predicate predicate) {
     const auto &map {getEnumMap(T {})};
-    auto it {std::find_if(std::begin(map), std::end(map), predicate)};
+    auto it {std::ranges::find_if(map, predicate)};
     if (it == std::end(map)) {  // GCOVR_EXCL_BR_LINE for fallthrough branch
       throw std::out_of_range(error_msg);  // GCOVR_EXCL_BR_LINE for fallthrough branch
     }

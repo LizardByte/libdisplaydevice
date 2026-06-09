@@ -183,10 +183,8 @@ namespace display_device::win_utils {
       return std::nullopt;
     }
 
-    if (type == ValidatedPathType::Active) {
-      if (!isActive(path)) {
-        return std::nullopt;
-      }
+    if (type == ValidatedPathType::Active && !isActive(path)) {
+      return std::nullopt;
     }
 
     const auto device_path {w_api.getMonitorDevicePath(path)};

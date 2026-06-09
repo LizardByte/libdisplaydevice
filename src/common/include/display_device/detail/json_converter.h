@@ -7,6 +7,7 @@
 #ifdef DD_JSON_DETAIL
   // system includes
   #include <nlohmann/json.hpp>
+  #include <stdexcept>
 
 namespace display_device {
   // A shared "toJson" implementation. Extracted here for UTs + coverage.
@@ -19,7 +20,19 @@ namespace display_device {
 
       nlohmann::json json_obj = obj;
       return json_obj.dump(static_cast<int>(indent.value_or(-1)));
-    } catch (const std::exception &err) {  // GCOVR_EXCL_BR_LINE for fallthrough branch
+    } catch (const nlohmann::json::exception &err) {  // GCOVR_EXCL_BR_LINE for fallthrough branch
+      if (success) {
+        *success = false;
+      }
+
+      return err.what();
+    } catch (const std::out_of_range &err) {  // GCOVR_EXCL_BR_LINE for fallthrough branch
+      if (success) {
+        *success = false;
+      }
+
+      return err.what();
+    } catch (const std::invalid_argument &err) {  // GCOVR_EXCL_BR_LINE for fallthrough branch
       if (success) {
         *success = false;
       }
@@ -39,7 +52,19 @@ namespace display_device {
       Type parsed_obj = nlohmann::json::parse(string);
       obj = std::move(parsed_obj);
       return true;
-    } catch (const std::exception &err) {
+    } catch (const nlohmann::json::exception &err) {
+      if (error_message) {
+        *error_message = err.what();
+      }
+
+      return false;
+    } catch (const std::out_of_range &err) {
+      if (error_message) {
+        *error_message = err.what();
+      }
+
+      return false;
+    } catch (const std::invalid_argument &err) {
       if (error_message) {
         *error_message = err.what();
       }
