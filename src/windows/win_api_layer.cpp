@@ -668,7 +668,7 @@ namespace display_device {
       reinterpret_cast<LPARAM>(&enum_data)
     );
 
-    if (!enum_data.m_width) {
+    if (!enum_data.m_width.has_value()) {
       DD_LOG(debug) << "Failed to get monitor info for " << display_name << "!";
       return std::nullopt;
     }
