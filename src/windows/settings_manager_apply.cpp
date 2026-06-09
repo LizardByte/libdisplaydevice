@@ -221,17 +221,18 @@ namespace display_device {
       }
     }
 
-    const auto try_change {[this, &current_primary_device, &guard_fn, &system_settings_touched](const std::string &new_device, const auto info_preamble, const auto error_log) {
+    auto &dd_api {*m_dd_api};
+    const auto try_change {[&current_primary_device, &dd_api, &guard_fn, &system_settings_touched](const std::string &new_device, const auto info_preamble, const auto error_log) {
       if (current_primary_device != new_device) {
         system_settings_touched = true;
 
         DD_LOG(info) << info_preamble << toJson(new_device);
-        if (!m_dd_api->setAsPrimary(new_device)) {
+        if (!dd_api.setAsPrimary(new_device)) {
           DD_LOG(error) << error_log;
           return false;
         }
 
-        guard_fn = win_utils::primaryGuardFn(*m_dd_api, current_primary_device);
+        guard_fn = win_utils::primaryGuardFn(dd_api, current_primary_device);
       }
 
       return true;
@@ -275,10 +276,11 @@ namespace display_device {
       }
     }
 
-    const auto try_change {[this, &current_display_modes, &guard_fn, &new_state, &system_settings_touched](const DeviceDisplayModeMap &new_modes, const auto info_preamble, const auto error_log) {
+    auto &dd_api {*m_dd_api};
+    const auto try_change {[&current_display_modes, &dd_api, &guard_fn, &new_state, &system_settings_touched](const DeviceDisplayModeMap &new_modes, const auto info_preamble, const auto error_log) {
       if (current_display_modes != new_modes) {
         DD_LOG(info) << info_preamble << toJson(new_modes);
-        if (!m_dd_api->setDisplayModes(new_modes)) {
+        if (!dd_api.setDisplayModes(new_modes)) {
           system_settings_touched = true;
           DD_LOG(error) << error_log;
           return false;
@@ -287,9 +289,9 @@ namespace display_device {
         // It is possible that the display modes will not actually change even though the "current != new" condition is true.
         // This is because of some additional internal checks that determine whether the change is actually needed.
         // Therefore we should check the current display modes after the fact!
-        if (current_display_modes != m_dd_api->getCurrentDisplayModes(win_utils::flattenTopology(new_state.m_modified.m_topology))) {
+        if (current_display_modes != dd_api.getCurrentDisplayModes(win_utils::flattenTopology(new_state.m_modified.m_topology))) {
           system_settings_touched = true;
-          guard_fn = win_utils::modeGuardFn(*m_dd_api, current_display_modes);
+          guard_fn = win_utils::modeGuardFn(dd_api, current_display_modes);
         }
       }
 
@@ -336,17 +338,18 @@ namespace display_device {
       }
     }
 
-    const auto try_change {[this, &current_hdr_states, &guard_fn, &system_settings_touched](const HdrStateMap &new_states, const auto info_preamble, const auto error_log) {
+    auto &dd_api {*m_dd_api};
+    const auto try_change {[&current_hdr_states, &dd_api, &guard_fn, &system_settings_touched](const HdrStateMap &new_states, const auto info_preamble, const auto error_log) {
       if (current_hdr_states != new_states) {
         system_settings_touched = true;
 
         DD_LOG(info) << info_preamble << toJson(new_states);
-        if (!m_dd_api->setHdrStates(new_states)) {
+        if (!dd_api.setHdrStates(new_states)) {
           DD_LOG(error) << error_log;
           return false;
         }
 
-        guard_fn = win_utils::hdrStateGuardFn(*m_dd_api, current_hdr_states);
+        guard_fn = win_utils::hdrStateGuardFn(dd_api, current_hdr_states);
       }
 
       return true;
