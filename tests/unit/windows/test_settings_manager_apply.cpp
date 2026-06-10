@@ -1,5 +1,6 @@
 // system includes
 #include <string>
+#include <string_view>
 
 // local includes
 #include "display_device/windows/settings_manager.h"
@@ -270,99 +271,99 @@ namespace {
       expectedIsPrimaryCall(sequence, "DeviceId3");
     }
 
-    static display_device::SingleDisplayConfigState makePrimaryDevicePersistenceInput(const std::string &original_primary_device) {
-      auto state {DEFAULT_PERSISTENCE_INPUT_BASE};
-      state.m_modified.m_topology = {{"DeviceId1", "DeviceId2"}, {"DeviceId3"}, {"DeviceId4"}};
-      state.m_modified.m_original_primary_device = original_primary_device;
-      return state;
-    }
-
-    static display_device::SingleDisplayConfigState makeDisplayModePersistenceInput() {
-      auto state {DEFAULT_PERSISTENCE_INPUT_BASE};
-      state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-      state.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
-      return state;
-    }
-
-    static display_device::SingleDisplayConfigState makeTopologyOnlyPersistenceInput() {
-      auto state {DEFAULT_PERSISTENCE_INPUT_BASE};
-      state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-      return state;
-    }
-
-    static display_device::DeviceDisplayModeMap makeModesWithDevice1Resolution() {
-      auto modes {DEFAULT_CURRENT_MODES};
-      modes["DeviceId1"].m_resolution = {1920, 1080};
-      return modes;
-    }
-
-    static display_device::DeviceDisplayModeMap makeModesWithDevice1RefreshRate() {
-      auto modes {DEFAULT_CURRENT_MODES};
-      modes["DeviceId1"].m_refresh_rate = {308500, 10000};
-      return modes;
-    }
-
-    static display_device::DeviceDisplayModeMap makeModesWithDevice1ResolutionAndRefreshRate() {
-      auto modes {makeModesWithDevice1Resolution()};
-      modes["DeviceId1"].m_refresh_rate = {308500, 10000};
-      return modes;
-    }
-
-    static display_device::DeviceDisplayModeMap makeModesWithPrimaryResolutionAndRefreshRate() {
-      auto modes {makeModesWithDevice1ResolutionAndRefreshRate()};
-      modes["DeviceId2"].m_resolution = {1920, 1080};
-      modes["DeviceId2"].m_refresh_rate = {308500, 10000};
-      return modes;
-    }
-
-    static display_device::SingleDisplayConfigState makeHdrStatePersistenceInput() {
-      auto state {DEFAULT_PERSISTENCE_INPUT_BASE};
-      state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-      state.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
-      return state;
-    }
-
-    static display_device::HdrStateMap makeHdrStatesWithDevice1Enabled() {
-      auto states {DEFAULT_CURRENT_HDR_STATES};
-      states["DeviceId1"] = display_device::HdrState::Enabled;
-      return states;
-    }
-
-    static display_device::HdrStateMap makeHdrStatesWithPrimaryDevicesEnabled() {
-      auto states {makeHdrStatesWithDevice1Enabled()};
-      states["DeviceId2"] = display_device::HdrState::Enabled;
-      return states;
-    }
-
-    static display_device::SingleDisplayConfigState makeDisplayModeRestoreInitialState() {
-      auto state {makeDisplayModePersistenceInput()};
-      state.m_modified.m_original_modes["DeviceId1"].m_resolution = {1920, 1080};
-      return state;
-    }
-
-    static display_device::SingleDisplayConfigState makeHdrStateRestoreInitialState() {
-      auto state {makeHdrStatePersistenceInput()};
-      state.m_modified.m_original_hdr_states["DeviceId1"] = display_device::HdrState::Enabled;
-      return state;
-    }
-
-    static display_device::SingleDisplayConfigState makeAudioDelayedReleasePersistenceInput() {
-      auto state {*ut_consts::SDCS_NO_MODIFICATIONS};
-      state.m_modified = {{{"DeviceId1"}}};
-      return state;
-    }
-
-    static std::optional<display_device::SingleDisplayConfigState> makePrimaryRestoreInitialState() {
-      auto state {ut_consts::SDCS_NO_MODIFICATIONS};
-      state->m_modified.m_original_primary_device = "DeviceId1";
-      return state;
-    }
-
     std::shared_ptr<StrictMock<display_device::MockWinDisplayDevice>> m_dd_api {std::make_shared<StrictMock<display_device::MockWinDisplayDevice>>()};
     std::shared_ptr<StrictMock<display_device::MockSettingsPersistence>> m_settings_persistence_api {std::make_shared<StrictMock<display_device::MockSettingsPersistence>>()};
     std::shared_ptr<StrictMock<display_device::MockAudioContext>> m_audio_context_api {std::make_shared<StrictMock<display_device::MockAudioContext>>()};
     std::unique_ptr<display_device::SettingsManager> m_impl;
   };
+
+  display_device::SingleDisplayConfigState makePrimaryDevicePersistenceInput(const std::string_view original_primary_device) {
+    auto state {DEFAULT_PERSISTENCE_INPUT_BASE};
+    state.m_modified.m_topology = {{"DeviceId1", "DeviceId2"}, {"DeviceId3"}, {"DeviceId4"}};
+    state.m_modified.m_original_primary_device = std::string {original_primary_device};
+    return state;
+  }
+
+  display_device::SingleDisplayConfigState makeDisplayModePersistenceInput() {
+    auto state {DEFAULT_PERSISTENCE_INPUT_BASE};
+    state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+    state.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+    return state;
+  }
+
+  display_device::SingleDisplayConfigState makeTopologyOnlyPersistenceInput() {
+    auto state {DEFAULT_PERSISTENCE_INPUT_BASE};
+    state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+    return state;
+  }
+
+  display_device::DeviceDisplayModeMap makeModesWithDevice1Resolution() {
+    auto modes {DEFAULT_CURRENT_MODES};
+    modes["DeviceId1"].m_resolution = {1920, 1080};
+    return modes;
+  }
+
+  display_device::DeviceDisplayModeMap makeModesWithDevice1RefreshRate() {
+    auto modes {DEFAULT_CURRENT_MODES};
+    modes["DeviceId1"].m_refresh_rate = {308500, 10000};
+    return modes;
+  }
+
+  display_device::DeviceDisplayModeMap makeModesWithDevice1ResolutionAndRefreshRate() {
+    auto modes {makeModesWithDevice1Resolution()};
+    modes["DeviceId1"].m_refresh_rate = {308500, 10000};
+    return modes;
+  }
+
+  display_device::DeviceDisplayModeMap makeModesWithPrimaryResolutionAndRefreshRate() {
+    auto modes {makeModesWithDevice1ResolutionAndRefreshRate()};
+    modes["DeviceId2"].m_resolution = {1920, 1080};
+    modes["DeviceId2"].m_refresh_rate = {308500, 10000};
+    return modes;
+  }
+
+  display_device::SingleDisplayConfigState makeHdrStatePersistenceInput() {
+    auto state {DEFAULT_PERSISTENCE_INPUT_BASE};
+    state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+    state.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
+    return state;
+  }
+
+  display_device::HdrStateMap makeHdrStatesWithDevice1Enabled() {
+    auto states {DEFAULT_CURRENT_HDR_STATES};
+    states["DeviceId1"] = display_device::HdrState::Enabled;
+    return states;
+  }
+
+  display_device::HdrStateMap makeHdrStatesWithPrimaryDevicesEnabled() {
+    auto states {makeHdrStatesWithDevice1Enabled()};
+    states["DeviceId2"] = display_device::HdrState::Enabled;
+    return states;
+  }
+
+  display_device::SingleDisplayConfigState makeDisplayModeRestoreInitialState() {
+    auto state {makeDisplayModePersistenceInput()};
+    state.m_modified.m_original_modes["DeviceId1"].m_resolution = {1920, 1080};
+    return state;
+  }
+
+  display_device::SingleDisplayConfigState makeHdrStateRestoreInitialState() {
+    auto state {makeHdrStatePersistenceInput()};
+    state.m_modified.m_original_hdr_states["DeviceId1"] = display_device::HdrState::Enabled;
+    return state;
+  }
+
+  display_device::SingleDisplayConfigState makeAudioDelayedReleasePersistenceInput() {
+    auto state {*ut_consts::SDCS_NO_MODIFICATIONS};
+    state.m_modified = {{{"DeviceId1"}}};
+    return state;
+  }
+
+  std::optional<display_device::SingleDisplayConfigState> makePrimaryRestoreInitialState() {
+    auto state {ut_consts::SDCS_NO_MODIFICATIONS};
+    state->m_modified.m_original_primary_device = "DeviceId1";
+    return state;
+  }
 
   // Specialized TEST macro(s) for this test
 #define TEST_F_S_MOCKED(...) DD_MAKE_TEST(TEST_F, SettingsManagerApplyMocked, __VA_ARGS__)

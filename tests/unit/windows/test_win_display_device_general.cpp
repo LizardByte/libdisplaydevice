@@ -1,5 +1,6 @@
 // system includes
 #include <algorithm>
+#include <format>
 #include <stdexcept>
 
 // local includes
@@ -39,12 +40,12 @@ namespace {
     ) const {
       EXPECT_CALL(*m_layer, getFriendlyName(_))
         .Times(1)
-        .WillOnce(Return("FriendlyName" + std::to_string(id_number)))
+        .WillOnce(Return(std::format("FriendlyName{}", id_number)))
         .RetiresOnSaturation();
       if (include_display_name) {
         EXPECT_CALL(*m_layer, getDisplayName(_))
           .Times(1)
-          .WillOnce(Return("DisplayName" + std::to_string(id_number)))
+          .WillOnce(Return(std::format("DisplayName{}", id_number)))
           .RetiresOnSaturation();
       }
       EXPECT_CALL(*m_layer, getEdid(_))

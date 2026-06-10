@@ -231,7 +231,7 @@ namespace {
         .RetiresOnSaturation();
     }
 
-    void expectedFallbackTopologyEvaluationCalls(InSequence & /* To ensure that sequence is created outside this scope */, const bool full_topology_valid, const display_device::ActiveTopology &comparison_topology, const bool is_same) {
+    void expectedFallbackTopologyEvaluationCalls(InSequence & /* To ensure that sequence is created outside this scope */, const bool full_topology_valid, const display_device::ActiveTopology &comparison_topology, const bool is_same) const {
       EXPECT_CALL(*m_dd_api, enumAvailableDevices())
         .Times(1)
         .WillOnce(Return(CURRENT_DEVICES))

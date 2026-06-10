@@ -225,6 +225,8 @@ TEST_F_S_MOCKED(SetHdrStates, FailedToGetHdrState) {
 }
 
 TEST_F_S_MOCKED(SetHdrStates, FailedToSetHdrState, LastDevice) {
+  using enum display_device::HdrState;
+
   InSequence sequence;
   EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
     .Times(1)
@@ -233,26 +235,28 @@ TEST_F_S_MOCKED(SetHdrStates, FailedToSetHdrState, LastDevice) {
 
   // Setting states
   {
-    setupExpectedDuplicatedPathHdrStateChange(1, 0, display_device::HdrState::Disabled, display_device::HdrState::Enabled, true, sequence);
-    setupExpectedDuplicatedPathHdrStateRead(3, 2, display_device::HdrState::Disabled, sequence);
+    setupExpectedDuplicatedPathHdrStateChange(1, 0, Disabled, Enabled, true, sequence);
+    setupExpectedDuplicatedPathHdrStateRead(3, 2, Disabled, sequence);
     setupExpectedDuplicatedPathHdrStateRead(4, 3, std::nullopt, sequence);
   }
 
   // Reverting only changed states
   {
-    setupExpectedDuplicatedPathHdrStateChange(1, 0, display_device::HdrState::Enabled, display_device::HdrState::Disabled, true, sequence);
+    setupExpectedDuplicatedPathHdrStateChange(1, 0, Enabled, Disabled, true, sequence);
   }
 
   const display_device::HdrStateMap new_states {
-    {"DeviceId1", std::make_optional(display_device::HdrState::Enabled)},
+    {"DeviceId1", std::make_optional(Enabled)},
     {"DeviceId2", std::nullopt},
-    {"DeviceId3", std::make_optional(display_device::HdrState::Disabled)},
-    {"DeviceId4", std::make_optional(display_device::HdrState::Enabled)}
+    {"DeviceId3", std::make_optional(Disabled)},
+    {"DeviceId4", std::make_optional(Enabled)}
   };
   EXPECT_FALSE(m_win_dd.setHdrStates(new_states));
 }
 
 TEST_F_S_MOCKED(SetHdrStates, FailedToSetHdrState, LastDevice, NoEarlyExitInRecovery) {
+  using enum display_device::HdrState;
+
   InSequence sequence;
   EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
     .Times(1)
@@ -261,24 +265,24 @@ TEST_F_S_MOCKED(SetHdrStates, FailedToSetHdrState, LastDevice, NoEarlyExitInReco
 
   // Setting states
   {
-    setupExpectedDuplicatedPathHdrStateChange(1, 0, display_device::HdrState::Disabled, display_device::HdrState::Enabled, true, sequence);
-    setupExpectedDuplicatedPathHdrStateChange(2, 1, display_device::HdrState::Disabled, display_device::HdrState::Enabled, true, sequence);
-    setupExpectedDuplicatedPathHdrStateChange(3, 2, display_device::HdrState::Disabled, display_device::HdrState::Enabled, true, sequence);
+    setupExpectedDuplicatedPathHdrStateChange(1, 0, Disabled, Enabled, true, sequence);
+    setupExpectedDuplicatedPathHdrStateChange(2, 1, Disabled, Enabled, true, sequence);
+    setupExpectedDuplicatedPathHdrStateChange(3, 2, Disabled, Enabled, true, sequence);
     setupExpectedDuplicatedPathHdrStateRead(4, 3, std::nullopt, sequence);
   }
 
   // Reverting only changed states
   {
-    setupExpectedDuplicatedPathHdrStateChange(1, 0, display_device::HdrState::Enabled, display_device::HdrState::Disabled, false, sequence);
+    setupExpectedDuplicatedPathHdrStateChange(1, 0, Enabled, Disabled, false, sequence);
     setupExpectedDuplicatedPathHdrStateRead(2, 1, std::nullopt, sequence);
-    setupExpectedDuplicatedPathHdrStateChange(3, 2, display_device::HdrState::Enabled, display_device::HdrState::Disabled, true, sequence);
+    setupExpectedDuplicatedPathHdrStateChange(3, 2, Enabled, Disabled, true, sequence);
   }
 
   const display_device::HdrStateMap new_states {
-    {"DeviceId1", std::make_optional(display_device::HdrState::Enabled)},
-    {"DeviceId2", std::make_optional(display_device::HdrState::Enabled)},
-    {"DeviceId3", std::make_optional(display_device::HdrState::Enabled)},
-    {"DeviceId4", std::make_optional(display_device::HdrState::Enabled)}
+    {"DeviceId1", std::make_optional(Enabled)},
+    {"DeviceId2", std::make_optional(Enabled)},
+    {"DeviceId3", std::make_optional(Enabled)},
+    {"DeviceId4", std::make_optional(Enabled)}
   };
   EXPECT_FALSE(m_win_dd.setHdrStates(new_states));
 }

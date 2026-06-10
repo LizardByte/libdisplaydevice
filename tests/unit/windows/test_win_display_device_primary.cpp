@@ -83,6 +83,12 @@ namespace {
 
     return expected_pam;
   }
+
+  std::optional<display_device::PathAndModeData> makePamWithSharedMode() {
+    auto pam {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+    pam->m_paths.at(2).sourceInfo.sourceModeInfoIdx = pam->m_paths.at(1).sourceInfo.sourceModeInfoIdx;
+    return pam;
+  }
 }  // namespace
 
 TEST_F_S(IsPrimary) {
@@ -226,8 +232,7 @@ TEST_F_S_MOCKED(SetAsPrimary, NonDuplicatePrimaryDeviceSet) {
 }
 
 TEST_F_S_MOCKED(SetAsPrimary, SharedModeShiftedOnce) {
-  auto initial_pam {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
-  initial_pam->m_paths.at(2).sourceInfo.sourceModeInfoIdx = initial_pam->m_paths.at(1).sourceInfo.sourceModeInfoIdx;
+  const auto initial_pam {makePamWithSharedMode()};
   const auto expected_pam {makeShiftedPrimaryPam(initial_pam, 1, {0, 1, 3})};
 
   InSequence sequence;
