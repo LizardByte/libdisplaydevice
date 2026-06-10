@@ -1,10 +1,12 @@
 // system includes
-#include <format>
+#include <array>
+#include <string>
 
 // local includes
 #include "display_device/windows/win_api_utils.h"
 #include "fixtures/fixtures.h"
 #include "utils/comparison.h"
+#include "utils/helpers.h"
 #include "utils/mock_win_api_layer.h"
 
 namespace {
@@ -18,20 +20,24 @@ namespace {
   class WinApiUtilsMocked: public BaseTest {
   public:
     void setupExpectCallForValidPaths(int number_of_calls, InSequence & /* To ensure that sequence is created outside this scope */) const {
-      for (int i = 1; i <= number_of_calls; ++i) {
-        EXPECT_CALL(m_layer, getMonitorDevicePath(_))
-          .Times(1)
-          .WillOnce(Return(std::format("Path{}", i)))
-          .RetiresOnSaturation();
-        EXPECT_CALL(m_layer, getDeviceId(_))
-          .Times(1)
-          .WillOnce(Return(std::format("DeviceId{}", i)))
-          .RetiresOnSaturation();
-        EXPECT_CALL(m_layer, getDisplayName(_))
-          .Times(1)
-          .WillOnce(Return(std::format("DisplayName{}", i)))
-          .RetiresOnSaturation();
-      }
+      expectPathMetadataLookups(m_layer, number_of_calls);
+    }
+
+    template<class Path, class DeviceId>
+    void setupExpectCallForSourceData(const std::array<Path, 3> &paths, const std::array<DeviceId, 3> &device_ids) const {
+      EXPECT_CALL(m_layer, getMonitorDevicePath(_))
+        .Times(3)
+        .WillOnce(Return(std::string {paths.at(0)}))
+        .WillOnce(Return(std::string {paths.at(1)}))
+        .WillOnce(Return(std::string {paths.at(2)}));
+      EXPECT_CALL(m_layer, getDisplayName(_))
+        .Times(3)
+        .WillRepeatedly(Return("DisplayNameX"));
+      EXPECT_CALL(m_layer, getDeviceId(_))
+        .Times(3)
+        .WillOnce(Return(std::string {device_ids.at(0)}))
+        .WillOnce(Return(std::string {device_ids.at(1)}))
+        .WillOnce(Return(std::string {device_ids.at(2)}));
     }
 
     StrictMock<display_device::MockWinApiLayer> m_layer;
@@ -136,6 +142,27 @@ namespace {
   };
 
   // Helper functions
+  std::vector<DISPLAYCONFIG_PATH_INFO> makeSameAdapterPaths(const UINT32 inactive_source_id) {
+    std::vector<DISPLAYCONFIG_PATH_INFO> paths;
+
+    paths.push_back(AVAILABLE_AND_ACTIVE_PATH);
+    paths.back().sourceInfo.adapterId = {1, 1};
+    paths.back().sourceInfo.id = 0;
+
+    paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
+    paths.back().sourceInfo.adapterId = {1, 1};
+    paths.back().sourceInfo.id = inactive_source_id;
+
+    return paths;
+  }
+
+  display_device::PathSourceIndexDataMap makeSameAdapterPathSourceData(const UINT32 device_2_source_id) {
+    return {
+      {"DeviceId1", {{{0, 0}}, {1, 1}, {0}}},
+      {"DeviceId2", {{{device_2_source_id, 1}}, {1, 1}, std::nullopt}}
+    };
+  }
+
   void wipeIndexesAndActivatePaths(std::vector<DISPLAYCONFIG_PATH_INFO> &paths) {
     for (auto &path : paths) {
       display_device::win_utils::setSourceIndex(path, std::nullopt);
@@ -143,6 +170,16 @@ namespace {
       display_device::win_utils::setDesktopIndex(path, std::nullopt);
       display_device::win_utils::setActive(path);
     }
+  }
+
+  std::vector<DISPLAYCONFIG_PATH_INFO> makeExpectedSameAdapterClonedPaths(const std::vector<DISPLAYCONFIG_PATH_INFO> &paths) {
+    std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths {paths.at(0), paths.at(1)};
+    wipeIndexesAndActivatePaths(expected_paths);
+
+    display_device::win_utils::setCloneGroupId(expected_paths.at(0), 0);
+    display_device::win_utils::setCloneGroupId(expected_paths.at(1), 0);
+
+    return expected_paths;
   }
 
 }  // namespace
@@ -535,19 +572,7 @@ TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, DuplicatePathsWithDifferentId
 }
 
 TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, DifferentPathsWithSameId) {
-  EXPECT_CALL(m_layer, getMonitorDevicePath(_))
-    .Times(3)
-    .WillOnce(Return("Path1"))
-    .WillOnce(Return("Path2"))
-    .WillOnce(Return("Path3"));
-  EXPECT_CALL(m_layer, getDisplayName(_))
-    .Times(3)
-    .WillRepeatedly(Return("DisplayNameX"));
-  EXPECT_CALL(m_layer, getDeviceId(_))
-    .Times(3)
-    .WillOnce(Return("DeviceId1"))
-    .WillOnce(Return("DeviceId2"))
-    .WillOnce(Return("DeviceId1"));
+  setupExpectCallForSourceData(std::array {"Path1", "Path2", "Path3"}, std::array {"DeviceId1", "DeviceId2", "DeviceId1"});
 
   const display_device::PathSourceIndexDataMap expected_data {};
   EXPECT_EQ(display_device::win_utils::collectSourceDataForMatchingPaths(m_layer, PATHS_WITH_SOURCE_IDS), expected_data);
@@ -559,19 +584,7 @@ TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, MismatchingAdapterIdsForPaths
   // Invalidate the adapter id
   paths.at(2).sourceInfo.adapterId.HighPart++;
 
-  EXPECT_CALL(m_layer, getMonitorDevicePath(_))
-    .Times(3)
-    .WillOnce(Return("Path1"))
-    .WillOnce(Return("Path2"))
-    .WillOnce(Return("Path1"));
-  EXPECT_CALL(m_layer, getDisplayName(_))
-    .Times(3)
-    .WillRepeatedly(Return("DisplayNameX"));
-  EXPECT_CALL(m_layer, getDeviceId(_))
-    .Times(3)
-    .WillOnce(Return("DeviceId1"))
-    .WillOnce(Return("DeviceId2"))
-    .WillOnce(Return("DeviceId1"));
+  setupExpectCallForSourceData(std::array {"Path1", "Path2", "Path1"}, std::array {"DeviceId1", "DeviceId2", "DeviceId1"});
 
   const display_device::PathSourceIndexDataMap expected_data {};
   EXPECT_EQ(display_device::win_utils::collectSourceDataForMatchingPaths(m_layer, paths), expected_data);
@@ -583,19 +596,7 @@ TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, MismatchingAdapterIdsForPaths
   // Invalidate the adapter id
   paths.at(2).sourceInfo.adapterId.LowPart++;
 
-  EXPECT_CALL(m_layer, getMonitorDevicePath(_))
-    .Times(3)
-    .WillOnce(Return("Path1"))
-    .WillOnce(Return("Path2"))
-    .WillOnce(Return("Path1"));
-  EXPECT_CALL(m_layer, getDisplayName(_))
-    .Times(3)
-    .WillRepeatedly(Return("DisplayNameX"));
-  EXPECT_CALL(m_layer, getDeviceId(_))
-    .Times(3)
-    .WillOnce(Return("DeviceId1"))
-    .WillOnce(Return("DeviceId2"))
-    .WillOnce(Return("DeviceId1"));
+  setupExpectCallForSourceData(std::array {"Path1", "Path2", "Path1"}, std::array {"DeviceId1", "DeviceId2", "DeviceId1"});
 
   const display_device::PathSourceIndexDataMap expected_data {};
   EXPECT_EQ(display_device::win_utils::collectSourceDataForMatchingPaths(m_layer, paths), expected_data);
@@ -607,19 +608,7 @@ TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, ActiveDeviceNotFirst) {
   // Swapping around the active/inactive pair
   std::swap(paths.at(0), paths.at(2));
 
-  EXPECT_CALL(m_layer, getMonitorDevicePath(_))
-    .Times(3)
-    .WillOnce(Return("Path1"))
-    .WillOnce(Return("Path2"))
-    .WillOnce(Return("Path1"));
-  EXPECT_CALL(m_layer, getDisplayName(_))
-    .Times(3)
-    .WillRepeatedly(Return("DisplayNameX"));
-  EXPECT_CALL(m_layer, getDeviceId(_))
-    .Times(3)
-    .WillOnce(Return("DeviceId1"))
-    .WillOnce(Return("DeviceId2"))
-    .WillOnce(Return("DeviceId1"));
+  setupExpectCallForSourceData(std::array {"Path1", "Path2", "Path1"}, std::array {"DeviceId1", "DeviceId2", "DeviceId1"});
 
   const display_device::PathSourceIndexDataMap expected_data {};
   EXPECT_EQ(display_device::win_utils::collectSourceDataForMatchingPaths(m_layer, paths), expected_data);
@@ -631,19 +620,7 @@ TEST_F_S_MOCKED(CollectSourceDataForMatchingPaths, DuplicateSourceIds) {
   // Making sure source ids match (adapter ids don't matter)
   paths.at(0).sourceInfo.id = paths.at(2).sourceInfo.id;
 
-  EXPECT_CALL(m_layer, getMonitorDevicePath(_))
-    .Times(3)
-    .WillOnce(Return("Path1"))
-    .WillOnce(Return("Path2"))
-    .WillOnce(Return("Path1"));
-  EXPECT_CALL(m_layer, getDisplayName(_))
-    .Times(3)
-    .WillRepeatedly(Return("DisplayNameX"));
-  EXPECT_CALL(m_layer, getDeviceId(_))
-    .Times(3)
-    .WillOnce(Return("DeviceId1"))
-    .WillOnce(Return("DeviceId2"))
-    .WillOnce(Return("DeviceId1"));
+  setupExpectCallForSourceData(std::array {"Path1", "Path2", "Path1"}, std::array {"DeviceId1", "DeviceId2", "DeviceId1"});
 
   const display_device::PathSourceIndexDataMap expected_data {};
   EXPECT_EQ(display_device::win_utils::collectSourceDataForMatchingPaths(m_layer, paths), expected_data);
@@ -696,20 +673,8 @@ TEST_F_S_MOCKED(MakePathsForNewTopology, MissingPathsForDuplicatedDisplays) {
   // For the same adapter, only devices with matching ids can be grouped (duplicated).
   // In this case, have only 0 and 1 ids. You may also notice that 0 != 1, and thus we cannot group them.
   const display_device::ActiveTopology new_topology {{"DeviceId1", "DeviceId2"}};
-  std::vector<DISPLAYCONFIG_PATH_INFO> paths {};
-
-  paths.push_back(AVAILABLE_AND_ACTIVE_PATH);
-  paths.back().sourceInfo.adapterId = {1, 1};
-  paths.back().sourceInfo.id = 0;
-
-  paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
-  paths.back().sourceInfo.adapterId = {1, 1};
-  paths.back().sourceInfo.id = 1;
-
-  const display_device::PathSourceIndexDataMap path_source_data {
-    {"DeviceId1", {{{0, 0}}, {1, 1}, {0}}},
-    {"DeviceId2", {{{1, 1}}, {1, 1}, std::nullopt}}
-  };
+  const auto paths {makeSameAdapterPaths(1)};
+  const auto path_source_data {makeSameAdapterPathSourceData(1)};
 
   const std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths {};
   EXPECT_EQ(display_device::win_utils::makePathsForNewTopology(new_topology, path_source_data, paths), expected_paths);
@@ -719,26 +684,9 @@ TEST_F_S_MOCKED(MakePathsForNewTopology, GpuLimit, DuplicatedDisplays) {
   // We can only render 1 source, however since they are duplicated, source is reused
   // and can be rendered to different devices.
   const display_device::ActiveTopology new_topology {{"DeviceId1", "DeviceId2"}};
-  std::vector<DISPLAYCONFIG_PATH_INFO> paths {};
-
-  paths.push_back(AVAILABLE_AND_ACTIVE_PATH);
-  paths.back().sourceInfo.adapterId = {1, 1};
-  paths.back().sourceInfo.id = 0;
-
-  paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
-  paths.back().sourceInfo.adapterId = {1, 1};
-  paths.back().sourceInfo.id = 0;
-
-  const display_device::PathSourceIndexDataMap path_source_data {
-    {"DeviceId1", {{{0, 0}}, {1, 1}, {0}}},
-    {"DeviceId2", {{{0, 1}}, {1, 1}, std::nullopt}}
-  };
-
-  std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths {paths.at(0), paths.at(1)};
-  wipeIndexesAndActivatePaths(expected_paths);
-
-  display_device::win_utils::setCloneGroupId(expected_paths.at(0), 0);
-  display_device::win_utils::setCloneGroupId(expected_paths.at(1), 0);
+  const auto paths {makeSameAdapterPaths(0)};
+  const auto path_source_data {makeSameAdapterPathSourceData(0)};
+  const auto expected_paths {makeExpectedSameAdapterClonedPaths(paths)};
 
   EXPECT_EQ(display_device::win_utils::makePathsForNewTopology(new_topology, path_source_data, paths), expected_paths);
 }
@@ -746,20 +694,8 @@ TEST_F_S_MOCKED(MakePathsForNewTopology, GpuLimit, DuplicatedDisplays) {
 TEST_F_S_MOCKED(MakePathsForNewTopology, GpuLimit, ExtendedDisplays) {
   // We can only render 1 source and since want extended displays, we must have 2 and that's impossible.
   const display_device::ActiveTopology new_topology {{"DeviceId1"}, {"DeviceId2"}};
-  std::vector<DISPLAYCONFIG_PATH_INFO> paths {};
-
-  paths.push_back(AVAILABLE_AND_ACTIVE_PATH);
-  paths.back().sourceInfo.adapterId = {1, 1};
-  paths.back().sourceInfo.id = 0;
-
-  paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
-  paths.back().sourceInfo.adapterId = {1, 1};
-  paths.back().sourceInfo.id = 0;
-
-  const display_device::PathSourceIndexDataMap path_source_data {
-    {"DeviceId1", {{{0, 0}}, {1, 1}, {0}}},
-    {"DeviceId2", {{{0, 1}}, {1, 1}, std::nullopt}}
-  };
+  const auto paths {makeSameAdapterPaths(0)};
+  const auto path_source_data {makeSameAdapterPathSourceData(0)};
 
   const std::vector<DISPLAYCONFIG_PATH_INFO> expected_paths {};
   EXPECT_EQ(display_device::win_utils::makePathsForNewTopology(new_topology, path_source_data, paths), expected_paths);

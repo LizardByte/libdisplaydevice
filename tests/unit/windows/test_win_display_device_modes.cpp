@@ -1,5 +1,4 @@
 // system includes
-#include <format>
 #include <ranges>
 
 // local includes
@@ -10,6 +9,7 @@
 #include "fixtures/fixtures.h"
 #include "utils/comparison.h"
 #include "utils/guards.h"
+#include "utils/helpers.h"
 #include "utils/mock_win_api_layer.h"
 
 namespace {
@@ -18,6 +18,11 @@ namespace {
   using ::testing::InSequence;
   using ::testing::Return;
   using ::testing::StrictMock;
+
+  // Additional convenience global const(s)
+  const UINT32 RELAXED_FLAGS {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE | SDC_ALLOW_CHANGES};
+  const UINT32 STRICT_FLAGS {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE};
+  const UINT32 UNDO_FLAGS {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE};
 
   // Test fixture(s) for this file
   class WinDisplayDeviceModes: public BaseTest {
@@ -33,20 +38,7 @@ namespace {
   class WinDisplayDeviceModesMocked: public BaseTest {
   public:
     void setupExpectedGetActivePathCall(int id_number, InSequence & /* To ensure that sequence is created outside this scope */) const {
-      for (int i = 1; i <= id_number; ++i) {
-        EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
-          .Times(1)
-          .WillOnce(Return("PathX"))
-          .RetiresOnSaturation();
-        EXPECT_CALL(*m_layer, getDeviceId(_))
-          .Times(1)
-          .WillOnce(Return(std::format("DeviceId{}", i)))
-          .RetiresOnSaturation();
-        EXPECT_CALL(*m_layer, getDisplayName(_))
-          .Times(1)
-          .WillOnce(Return("DisplayNameX"))
-          .RetiresOnSaturation();
-      }
+      expectActivePathLookup(m_layer, id_number);
     }
 
     void setupExpectedGetCurrentDisplayModesCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::PathAndModeData> &pam = ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES) const {
@@ -67,36 +59,54 @@ namespace {
         .RetiresOnSaturation();
 
       for (const auto entry : entries) {
-        for (int i = 1; i <= entry; ++i) {
-          EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
-            .Times(1)
-            .WillOnce(Return(std::format("Path{}", i)))
-            .RetiresOnSaturation();
-          EXPECT_CALL(*m_layer, getDeviceId(_))
-            .Times(1)
-            .WillOnce(Return(std::format("DeviceId{}", i)))
-            .RetiresOnSaturation();
-          EXPECT_CALL(*m_layer, getDisplayName(_))
-            .Times(1)
-            .WillOnce(Return(std::format("DisplayName{}", i)))
-            .RetiresOnSaturation();
-        }
-
-        for (int i = 1; i <= 4; ++i) {
-          EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
-            .Times(1)
-            .WillOnce(Return(std::format("Path{}", i)))
-            .RetiresOnSaturation();
-          EXPECT_CALL(*m_layer, getDeviceId(_))
-            .Times(1)
-            .WillOnce(Return(std::format("DeviceId{}", i)))
-            .RetiresOnSaturation();
-          EXPECT_CALL(*m_layer, getDisplayName(_))
-            .Times(1)
-            .WillOnce(Return(std::format("DisplayName{}", i)))
-            .RetiresOnSaturation();
-        }
+        expectPathMetadataLookups(m_layer, entry);
+        expectPathMetadataLookups(m_layer, 4);
       }
+    }
+
+    void setupExpectedSetDisplayModesStart(
+      InSequence &sequence,
+      const std::optional<display_device::PathAndModeData> &pam_initial
+    ) const {
+      setupExpectedGetAllDeviceIdsCall(sequence);
+      EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
+        .Times(1)
+        .WillOnce(Return(pam_initial))
+        .RetiresOnSaturation();
+    }
+
+    void setupExpectedDisplayModeSubmitAttempt(
+      InSequence &sequence,
+      const std::optional<display_device::PathAndModeData> &pam_initial,
+      const std::optional<display_device::PathAndModeData> &pam_submitted,
+      const UINT32 flags,
+      const LONG result = ERROR_SUCCESS
+    ) const {
+      EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
+        .Times(1)
+        .WillOnce(Return(pam_initial))
+        .RetiresOnSaturation();
+      for (int i = 1; i <= 4; ++i) {
+        setupExpectedGetActivePathCall(i, sequence);
+      }
+
+      EXPECT_CALL(*m_layer, setDisplayConfig(pam_submitted->m_paths, pam_submitted->m_modes, flags))
+        .Times(1)
+        .WillOnce(Return(result))
+        .RetiresOnSaturation();
+      if (result != ERROR_SUCCESS) {
+        EXPECT_CALL(*m_layer, getErrorString(result))
+          .Times(1)
+          .WillRepeatedly(Return("ErrorDesc"))
+          .RetiresOnSaturation();
+      }
+    }
+
+    void setupExpectedDisplayModeUndo(const std::optional<display_device::PathAndModeData> &pam_initial) const {
+      EXPECT_CALL(*m_layer, setDisplayConfig(pam_initial->m_paths, pam_initial->m_modes, UNDO_FLAGS))
+        .Times(1)
+        .WillOnce(Return(ERROR_SUCCESS))
+        .RetiresOnSaturation();
     }
 
     std::shared_ptr<StrictMock<display_device::MockWinApiLayer>> m_layer {std::make_shared<StrictMock<display_device::MockWinApiLayer>>()};
@@ -106,11 +116,6 @@ namespace {
   // Specialized TEST macro(s) for this test file
 #define TEST_F_S(...) DD_MAKE_TEST(TEST_F, WinDisplayDeviceModes, __VA_ARGS__)
 #define TEST_F_S_MOCKED(...) DD_MAKE_TEST(TEST_F, WinDisplayDeviceModesMocked, __VA_ARGS__)
-
-  // Additional convenience global const(s)
-  const UINT32 RELAXED_FLAGS {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE | SDC_ALLOW_CHANGES};
-  const UINT32 STRICT_FLAGS {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE};
-  const UINT32 UNDO_FLAGS {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE};
 
   // Helper functions
   std::optional<display_device::PathAndModeData> applyExpectedModesOntoInput(std::optional<display_device::PathAndModeData> input, const display_device::DeviceDisplayModeMap &modes, const display_device::StringSet &excluded_ids = {}) {
@@ -141,6 +146,24 @@ namespace {
     }
 
     return {1920, 1080, {60, 1}};
+  }
+
+  display_device::DeviceDisplayModeMap makeRelaxedDisplayModes() {
+    return {
+      {"DeviceId1", {1920, 1080, {120, 1}}},
+      {"DeviceId2", {1920, 1000, {144, 1}}},
+      {"DeviceId3", {1000, 1000, {90, 1}}},
+      {"DeviceId4", {1000, 2160, {90, 10}}},
+    };
+  }
+
+  display_device::DeviceDisplayModeMap makeStrictDisplayModes() {
+    return {
+      {"DeviceId1", {1920, 1080, {120, 10}}},
+      {"DeviceId2", {1000, 2160, {119995, 100}}},
+      {"DeviceId3", {1000, 1000, {90, 1}}},
+      {"DeviceId4", {3840, 2160, {90, 1}}},
+    };
   }
 }  // namespace
 
@@ -304,91 +327,35 @@ TEST_F_S_MOCKED(GetCurrentDisplayModes, FailedToGetSourceMode) {
 }
 
 TEST_F_S_MOCKED(SetDisplayModes, Relaxed) {
-  const display_device::DeviceDisplayModeMap new_modes {
-    {"DeviceId1", {1920, 1080, {120, 1}}},
-    {"DeviceId2", {1920, 1000, {144, 1}}},
-    {"DeviceId3", {1000, 1000, {90, 1}}},
-    {"DeviceId4", {1000, 2160, {90, 10}}},
-  };
-
+  const auto new_modes {makeRelaxedDisplayModes()};
   const auto &pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId1"})};
 
   InSequence sequence;
-  setupExpectedGetAllDeviceIdsCall(sequence);
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
-    .Times(1)
-    .WillOnce(Return(pam_initial))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-    .Times(1)
-    .WillOnce(Return(pam_initial))
-    .RetiresOnSaturation();
-  setupExpectedGetActivePathCall(1, sequence);
-  setupExpectedGetActivePathCall(2, sequence);
-  setupExpectedGetActivePathCall(3, sequence);
-  setupExpectedGetActivePathCall(4, sequence);
-
-  EXPECT_CALL(*m_layer, setDisplayConfig(pam_submitted->m_paths, pam_submitted->m_modes, RELAXED_FLAGS))
-    .Times(1)
-    .WillOnce(Return(ERROR_SUCCESS))
-    .RetiresOnSaturation();
+  setupExpectedSetDisplayModesStart(sequence, pam_initial);
+  setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, RELAXED_FLAGS);
   setupExpectedGetCurrentDisplayModesCall(sequence, pam_submitted);
 
   EXPECT_TRUE(m_win_dd.setDisplayModes(new_modes));
 }
 
 TEST_F_S_MOCKED(SetDisplayModes, Strict) {
-  const display_device::DeviceDisplayModeMap new_modes {
-    {"DeviceId1", {1920, 1080, {120, 10}}},
-    {"DeviceId2", {1000, 2160, {119995, 100}}},
-    {"DeviceId3", {1000, 1000, {90, 1}}},
-    {"DeviceId4", {3840, 2160, {90, 1}}},
-  };
-
+  const auto new_modes {makeStrictDisplayModes()};
   const auto &pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId4"})};
 
   InSequence sequence;
-  setupExpectedGetAllDeviceIdsCall(sequence);
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
-    .Times(1)
-    .WillOnce(Return(pam_initial))
-    .RetiresOnSaturation();
+  setupExpectedSetDisplayModesStart(sequence, pam_initial);
 
   // Relaxed try
   {
-    EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-      .Times(1)
-      .WillOnce(Return(pam_initial))
-      .RetiresOnSaturation();
-    setupExpectedGetActivePathCall(1, sequence);
-    setupExpectedGetActivePathCall(2, sequence);
-    setupExpectedGetActivePathCall(3, sequence);
-    setupExpectedGetActivePathCall(4, sequence);
-
-    EXPECT_CALL(*m_layer, setDisplayConfig(pam_submitted->m_paths, pam_submitted->m_modes, RELAXED_FLAGS))
-      .Times(1)
-      .WillOnce(Return(ERROR_SUCCESS))
-      .RetiresOnSaturation();
+    setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, RELAXED_FLAGS);
     setupExpectedGetCurrentDisplayModesCall(sequence, pam_initial);
   }
 
   // Strict try
   {
-    EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-      .Times(1)
-      .WillOnce(Return(pam_initial))
-      .RetiresOnSaturation();
-    setupExpectedGetActivePathCall(1, sequence);
-    setupExpectedGetActivePathCall(2, sequence);
-    setupExpectedGetActivePathCall(3, sequence);
-    setupExpectedGetActivePathCall(4, sequence);
-
-    EXPECT_CALL(*m_layer, setDisplayConfig(pam_submitted->m_paths, pam_submitted->m_modes, STRICT_FLAGS))
-      .Times(1)
-      .WillOnce(Return(ERROR_SUCCESS))
-      .RetiresOnSaturation();
+    setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, STRICT_FLAGS);
     setupExpectedGetCurrentDisplayModesCall(sequence, pam_submitted);
   }
 
@@ -522,270 +489,103 @@ TEST_F_S_MOCKED(SetDisplayModes, DoSetModes, FailedToGetSourceMode) {
 }
 
 TEST_F_S_MOCKED(SetDisplayModes, Relaxed, FailedToSetDisplayConfig) {
-  const display_device::DeviceDisplayModeMap new_modes {
-    {"DeviceId1", {1920, 1080, {120, 1}}},
-    {"DeviceId2", {1920, 1000, {144, 1}}},
-    {"DeviceId3", {1000, 1000, {90, 1}}},
-    {"DeviceId4", {1000, 2160, {90, 10}}},
-  };
-
+  const auto new_modes {makeRelaxedDisplayModes()};
   const auto &pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId1"})};
 
   InSequence sequence;
-  setupExpectedGetAllDeviceIdsCall(sequence);
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
-    .Times(1)
-    .WillOnce(Return(pam_initial))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-    .Times(1)
-    .WillOnce(Return(pam_initial))
-    .RetiresOnSaturation();
-  setupExpectedGetActivePathCall(1, sequence);
-  setupExpectedGetActivePathCall(2, sequence);
-  setupExpectedGetActivePathCall(3, sequence);
-  setupExpectedGetActivePathCall(4, sequence);
-
-  EXPECT_CALL(*m_layer, setDisplayConfig(pam_submitted->m_paths, pam_submitted->m_modes, RELAXED_FLAGS))
-    .Times(1)
-    .WillOnce(Return(ERROR_ACCESS_DENIED))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getErrorString(ERROR_ACCESS_DENIED))
-    .Times(1)
-    .WillRepeatedly(Return("ErrorDesc"))
-    .RetiresOnSaturation();
+  setupExpectedSetDisplayModesStart(sequence, pam_initial);
+  setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, RELAXED_FLAGS, ERROR_ACCESS_DENIED);
 
   EXPECT_FALSE(m_win_dd.setDisplayModes(new_modes));
 }
 
 TEST_F_S_MOCKED(SetDisplayModes, Relaxed, FailedToGetCurrentDisplayModes) {
-  const display_device::DeviceDisplayModeMap new_modes {
-    {"DeviceId1", {1920, 1080, {120, 1}}},
-    {"DeviceId2", {1920, 1000, {144, 1}}},
-    {"DeviceId3", {1000, 1000, {90, 1}}},
-    {"DeviceId4", {1000, 2160, {90, 10}}},
-  };
-
+  const auto new_modes {makeRelaxedDisplayModes()};
   const auto &pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId1"})};
 
   InSequence sequence;
-  setupExpectedGetAllDeviceIdsCall(sequence);
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
-    .Times(1)
-    .WillOnce(Return(pam_initial))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-    .Times(1)
-    .WillOnce(Return(pam_initial))
-    .RetiresOnSaturation();
-  setupExpectedGetActivePathCall(1, sequence);
-  setupExpectedGetActivePathCall(2, sequence);
-  setupExpectedGetActivePathCall(3, sequence);
-  setupExpectedGetActivePathCall(4, sequence);
-
-  EXPECT_CALL(*m_layer, setDisplayConfig(pam_submitted->m_paths, pam_submitted->m_modes, RELAXED_FLAGS))
-    .Times(1)
-    .WillOnce(Return(ERROR_SUCCESS))
-    .RetiresOnSaturation();
+  setupExpectedSetDisplayModesStart(sequence, pam_initial);
+  setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, RELAXED_FLAGS);
   EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
     .Times(1)
     .WillOnce(Return(ut_consts::PAM_NULL))
     .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, setDisplayConfig(pam_initial->m_paths, pam_initial->m_modes, UNDO_FLAGS))
-    .Times(1)
-    .WillOnce(Return(ERROR_SUCCESS))
-    .RetiresOnSaturation();
+  setupExpectedDisplayModeUndo(pam_initial);
 
   EXPECT_FALSE(m_win_dd.setDisplayModes(new_modes));
 }
 
 TEST_F_S_MOCKED(SetDisplayModes, Strict, FailedToSetDisplayConfig) {
-  const display_device::DeviceDisplayModeMap new_modes {
-    {"DeviceId1", {1920, 1080, {120, 10}}},
-    {"DeviceId2", {1000, 2160, {119995, 100}}},
-    {"DeviceId3", {1000, 1000, {90, 1}}},
-    {"DeviceId4", {3840, 2160, {90, 1}}},
-  };
-
+  const auto new_modes {makeStrictDisplayModes()};
   const auto &pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId4"})};
 
   InSequence sequence;
-  setupExpectedGetAllDeviceIdsCall(sequence);
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
-    .Times(1)
-    .WillOnce(Return(pam_initial))
-    .RetiresOnSaturation();
+  setupExpectedSetDisplayModesStart(sequence, pam_initial);
 
   // Relaxed try
   {
-    EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-      .Times(1)
-      .WillOnce(Return(pam_initial))
-      .RetiresOnSaturation();
-    setupExpectedGetActivePathCall(1, sequence);
-    setupExpectedGetActivePathCall(2, sequence);
-    setupExpectedGetActivePathCall(3, sequence);
-    setupExpectedGetActivePathCall(4, sequence);
-
-    EXPECT_CALL(*m_layer, setDisplayConfig(pam_submitted->m_paths, pam_submitted->m_modes, RELAXED_FLAGS))
-      .Times(1)
-      .WillOnce(Return(ERROR_SUCCESS))
-      .RetiresOnSaturation();
+    setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, RELAXED_FLAGS);
     setupExpectedGetCurrentDisplayModesCall(sequence, pam_initial);
   }
 
   // Strict try
   {
-    EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-      .Times(1)
-      .WillOnce(Return(pam_initial))
-      .RetiresOnSaturation();
-    setupExpectedGetActivePathCall(1, sequence);
-    setupExpectedGetActivePathCall(2, sequence);
-    setupExpectedGetActivePathCall(3, sequence);
-    setupExpectedGetActivePathCall(4, sequence);
-
-    EXPECT_CALL(*m_layer, setDisplayConfig(pam_submitted->m_paths, pam_submitted->m_modes, STRICT_FLAGS))
-      .Times(1)
-      .WillOnce(Return(ERROR_ACCESS_DENIED))
-      .RetiresOnSaturation();
-    EXPECT_CALL(*m_layer, getErrorString(ERROR_ACCESS_DENIED))
-      .Times(1)
-      .WillRepeatedly(Return("ErrorDesc"))
-      .RetiresOnSaturation();
-    EXPECT_CALL(*m_layer, setDisplayConfig(pam_initial->m_paths, pam_initial->m_modes, UNDO_FLAGS))
-      .Times(1)
-      .WillOnce(Return(ERROR_SUCCESS))
-      .RetiresOnSaturation();
+    setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, STRICT_FLAGS, ERROR_ACCESS_DENIED);
+    setupExpectedDisplayModeUndo(pam_initial);
   }
 
   EXPECT_FALSE(m_win_dd.setDisplayModes(new_modes));
 }
 
 TEST_F_S_MOCKED(SetDisplayModes, Strict, FailedToGetCurrentDisplayModes) {
-  const display_device::DeviceDisplayModeMap new_modes {
-    {"DeviceId1", {1920, 1080, {120, 10}}},
-    {"DeviceId2", {1000, 2160, {119995, 100}}},
-    {"DeviceId3", {1000, 1000, {90, 1}}},
-    {"DeviceId4", {3840, 2160, {90, 1}}},
-  };
-
+  const auto new_modes {makeStrictDisplayModes()};
   const auto &pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId4"})};
 
   InSequence sequence;
-  setupExpectedGetAllDeviceIdsCall(sequence);
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
-    .Times(1)
-    .WillOnce(Return(pam_initial))
-    .RetiresOnSaturation();
+  setupExpectedSetDisplayModesStart(sequence, pam_initial);
 
   // Relaxed try
   {
-    EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-      .Times(1)
-      .WillOnce(Return(pam_initial))
-      .RetiresOnSaturation();
-    setupExpectedGetActivePathCall(1, sequence);
-    setupExpectedGetActivePathCall(2, sequence);
-    setupExpectedGetActivePathCall(3, sequence);
-    setupExpectedGetActivePathCall(4, sequence);
-
-    EXPECT_CALL(*m_layer, setDisplayConfig(pam_submitted->m_paths, pam_submitted->m_modes, RELAXED_FLAGS))
-      .Times(1)
-      .WillOnce(Return(ERROR_SUCCESS))
-      .RetiresOnSaturation();
+    setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, RELAXED_FLAGS);
     setupExpectedGetCurrentDisplayModesCall(sequence, pam_initial);
   }
 
   // Strict try
   {
-    EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-      .Times(1)
-      .WillOnce(Return(pam_initial))
-      .RetiresOnSaturation();
-    setupExpectedGetActivePathCall(1, sequence);
-    setupExpectedGetActivePathCall(2, sequence);
-    setupExpectedGetActivePathCall(3, sequence);
-    setupExpectedGetActivePathCall(4, sequence);
-
-    EXPECT_CALL(*m_layer, setDisplayConfig(pam_submitted->m_paths, pam_submitted->m_modes, STRICT_FLAGS))
-      .Times(1)
-      .WillOnce(Return(ERROR_SUCCESS))
-      .RetiresOnSaturation();
+    setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, STRICT_FLAGS);
     EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
       .Times(1)
       .WillOnce(Return(ut_consts::PAM_NULL))
       .RetiresOnSaturation();
-    EXPECT_CALL(*m_layer, setDisplayConfig(pam_initial->m_paths, pam_initial->m_modes, UNDO_FLAGS))
-      .Times(1)
-      .WillOnce(Return(ERROR_SUCCESS))
-      .RetiresOnSaturation();
+    setupExpectedDisplayModeUndo(pam_initial);
   }
 
   EXPECT_FALSE(m_win_dd.setDisplayModes(new_modes));
 }
 
 TEST_F_S_MOCKED(SetDisplayModes, Strict, ModesDidNotChange) {
-  const display_device::DeviceDisplayModeMap new_modes {
-    {"DeviceId1", {1920, 1080, {120, 10}}},
-    {"DeviceId2", {1000, 2160, {119995, 100}}},
-    {"DeviceId3", {1000, 1000, {90, 1}}},
-    {"DeviceId4", {3840, 2160, {90, 1}}},
-  };
-
+  const auto new_modes {makeStrictDisplayModes()};
   const auto &pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId4"})};
 
   InSequence sequence;
-  setupExpectedGetAllDeviceIdsCall(sequence);
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
-    .Times(1)
-    .WillOnce(Return(pam_initial))
-    .RetiresOnSaturation();
+  setupExpectedSetDisplayModesStart(sequence, pam_initial);
 
   // Relaxed try
   {
-    EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-      .Times(1)
-      .WillOnce(Return(pam_initial))
-      .RetiresOnSaturation();
-    setupExpectedGetActivePathCall(1, sequence);
-    setupExpectedGetActivePathCall(2, sequence);
-    setupExpectedGetActivePathCall(3, sequence);
-    setupExpectedGetActivePathCall(4, sequence);
-
-    EXPECT_CALL(*m_layer, setDisplayConfig(pam_submitted->m_paths, pam_submitted->m_modes, RELAXED_FLAGS))
-      .Times(1)
-      .WillOnce(Return(ERROR_SUCCESS))
-      .RetiresOnSaturation();
+    setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, RELAXED_FLAGS);
     setupExpectedGetCurrentDisplayModesCall(sequence, pam_initial);
   }
 
   // Strict try
   {
-    EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-      .Times(1)
-      .WillOnce(Return(pam_initial))
-      .RetiresOnSaturation();
-    setupExpectedGetActivePathCall(1, sequence);
-    setupExpectedGetActivePathCall(2, sequence);
-    setupExpectedGetActivePathCall(3, sequence);
-    setupExpectedGetActivePathCall(4, sequence);
-
-    EXPECT_CALL(*m_layer, setDisplayConfig(pam_submitted->m_paths, pam_submitted->m_modes, STRICT_FLAGS))
-      .Times(1)
-      .WillOnce(Return(ERROR_SUCCESS))
-      .RetiresOnSaturation();
+    setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, STRICT_FLAGS);
     setupExpectedGetCurrentDisplayModesCall(sequence, pam_initial);
-
-    EXPECT_CALL(*m_layer, setDisplayConfig(pam_initial->m_paths, pam_initial->m_modes, UNDO_FLAGS))
-      .Times(1)
-      .WillOnce(Return(ERROR_SUCCESS))
-      .RetiresOnSaturation();
+    setupExpectedDisplayModeUndo(pam_initial);
   }
 
   EXPECT_FALSE(m_win_dd.setDisplayModes(new_modes));

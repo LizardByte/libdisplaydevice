@@ -1,5 +1,5 @@
 // system includes
-#include <format>
+#include <initializer_list>
 
 // local includes
 #include "display_device/windows/settings_utils.h"
@@ -9,6 +9,7 @@
 #include "fixtures/fixtures.h"
 #include "utils/comparison.h"
 #include "utils/guards.h"
+#include "utils/helpers.h"
 #include "utils/mock_win_api_layer.h"
 
 namespace {
@@ -17,6 +18,9 @@ namespace {
   using ::testing::InSequence;
   using ::testing::Return;
   using ::testing::StrictMock;
+
+  // Additional convenience global const(s)
+  const UINT32 FLAGS {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE};
 
   // Test fixture(s) for this file
   class WinDisplayDevicePrimary: public BaseTest {
@@ -32,18 +36,25 @@ namespace {
   class WinDisplayDevicePrimaryMocked: public BaseTest {
   public:
     void setupExpectedGetActivePathCall(int id_number, InSequence & /* To ensure that sequence is created outside this scope */) const {
-      for (int i = 1; i <= id_number; ++i) {
-        EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
+      expectActivePathLookup(m_layer, id_number);
+    }
+
+    void setupExpectedSetAsPrimaryConfigCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::PathAndModeData> &initial_pam, const std::optional<display_device::PathAndModeData> &expected_pam, const int active_path_id, const LONG result = ERROR_SUCCESS) const {
+      EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
+        .Times(1)
+        .WillOnce(Return(initial_pam));
+      setupExpectedGetActivePathCall(active_path_id, sequence);
+      expectDeviceIdLookups(m_layer, 4);
+
+      EXPECT_CALL(*m_layer, setDisplayConfig(expected_pam->m_paths, expected_pam->m_modes, FLAGS))
+        .Times(1)
+        .WillOnce(Return(result))
+        .RetiresOnSaturation();
+
+      if (result != ERROR_SUCCESS) {
+        EXPECT_CALL(*m_layer, getErrorString(result))
           .Times(1)
-          .WillOnce(Return("PathX"))
-          .RetiresOnSaturation();
-        EXPECT_CALL(*m_layer, getDeviceId(_))
-          .Times(1)
-          .WillOnce(Return(std::format("DeviceId{}", i)))
-          .RetiresOnSaturation();
-        EXPECT_CALL(*m_layer, getDisplayName(_))
-          .Times(1)
-          .WillOnce(Return("DisplayNameX"))
+          .WillRepeatedly(Return("ErrorDesc"))
           .RetiresOnSaturation();
       }
     }
@@ -56,14 +67,27 @@ namespace {
 #define TEST_F_S(...) DD_MAKE_TEST(TEST_F, WinDisplayDevicePrimary, __VA_ARGS__)
 #define TEST_F_S_MOCKED(...) DD_MAKE_TEST(TEST_F, WinDisplayDevicePrimaryMocked, __VA_ARGS__)
 
-  // Additional convenience global const(s)
-  const UINT32 FLAGS {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE};
-
   // Helper functions
   void shiftModeBy(std::optional<display_device::PathAndModeData> &pam, int path_index, POINTL point) {
     auto &mode {pam->m_modes.at(pam->m_paths.at(path_index).sourceInfo.sourceModeInfoIdx)};
     mode.sourceMode.position.x -= point.x;
     mode.sourceMode.position.y -= point.y;
+  }
+
+  std::optional<display_device::PathAndModeData> makeShiftedPrimaryPam(const std::optional<display_device::PathAndModeData> &initial_pam, const int origin_path_index, const std::initializer_list<int> shifted_path_indices) {
+    const auto origin_point {initial_pam->m_modes.at(initial_pam->m_paths.at(origin_path_index).sourceInfo.sourceModeInfoIdx).sourceMode.position};
+    auto expected_pam {initial_pam};
+    for (const auto path_index : shifted_path_indices) {
+      shiftModeBy(expected_pam, path_index, origin_point);
+    }
+
+    return expected_pam;
+  }
+
+  std::optional<display_device::PathAndModeData> makePamWithSharedMode() {
+    auto pam {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+    pam->m_paths.at(2).sourceInfo.sourceModeInfoIdx = pam->m_paths.at(1).sourceInfo.sourceModeInfoIdx;
+    return pam;
   }
 }  // namespace
 
@@ -189,90 +213,30 @@ TEST_F_S_MOCKED(SetAsPrimary, AlreadyPrimary) {
 
 TEST_F_S_MOCKED(SetAsPrimary, DuplicatePrimaryDevicesSet) {
   const auto &initial_pam {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
-
-  auto origin_point {initial_pam->m_modes.at(initial_pam->m_paths.at(1).sourceInfo.sourceModeInfoIdx).sourceMode.position};
-  auto expected_pam {initial_pam};
-  shiftModeBy(expected_pam, 0, origin_point);
-  shiftModeBy(expected_pam, 1, origin_point);
-  shiftModeBy(expected_pam, 2, origin_point);
-  shiftModeBy(expected_pam, 3, origin_point);
+  const auto expected_pam {makeShiftedPrimaryPam(initial_pam, 1, {0, 1, 2, 3})};
 
   InSequence sequence;
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-    .Times(1)
-    .WillOnce(Return(initial_pam));
-  setupExpectedGetActivePathCall(2, sequence);
-  for (int i = 1; i <= 4; ++i) {
-    EXPECT_CALL(*m_layer, getDeviceId(_))
-      .Times(1)
-      .WillOnce(Return(std::format("DeviceId{}", i)))
-      .RetiresOnSaturation();
-  }
-
-  EXPECT_CALL(*m_layer, setDisplayConfig(expected_pam->m_paths, expected_pam->m_modes, FLAGS))
-    .Times(1)
-    .WillOnce(Return(ERROR_SUCCESS))
-    .RetiresOnSaturation();
+  setupExpectedSetAsPrimaryConfigCall(sequence, initial_pam, expected_pam, 2);
 
   EXPECT_TRUE(m_win_dd.setAsPrimary("DeviceId2"));
 }
 
 TEST_F_S_MOCKED(SetAsPrimary, NonDuplicatePrimaryDeviceSet) {
   const auto &initial_pam {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
-
-  auto origin_point {initial_pam->m_modes.at(initial_pam->m_paths.at(3).sourceInfo.sourceModeInfoIdx).sourceMode.position};
-  auto expected_pam {initial_pam};
-  shiftModeBy(expected_pam, 0, origin_point);
-  shiftModeBy(expected_pam, 1, origin_point);
-  shiftModeBy(expected_pam, 2, origin_point);
-  shiftModeBy(expected_pam, 3, origin_point);
+  const auto expected_pam {makeShiftedPrimaryPam(initial_pam, 3, {0, 1, 2, 3})};
 
   InSequence sequence;
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-    .Times(1)
-    .WillOnce(Return(initial_pam));
-  setupExpectedGetActivePathCall(4, sequence);
-  for (int i = 1; i <= 4; ++i) {
-    EXPECT_CALL(*m_layer, getDeviceId(_))
-      .Times(1)
-      .WillOnce(Return(std::format("DeviceId{}", i)))
-      .RetiresOnSaturation();
-  }
-
-  EXPECT_CALL(*m_layer, setDisplayConfig(expected_pam->m_paths, expected_pam->m_modes, FLAGS))
-    .Times(1)
-    .WillOnce(Return(ERROR_SUCCESS))
-    .RetiresOnSaturation();
+  setupExpectedSetAsPrimaryConfigCall(sequence, initial_pam, expected_pam, 4);
 
   EXPECT_TRUE(m_win_dd.setAsPrimary("DeviceId4"));
 }
 
 TEST_F_S_MOCKED(SetAsPrimary, SharedModeShiftedOnce) {
-  auto initial_pam {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
-  initial_pam->m_paths.at(2).sourceInfo.sourceModeInfoIdx = initial_pam->m_paths.at(1).sourceInfo.sourceModeInfoIdx;
-
-  auto origin_point {initial_pam->m_modes.at(initial_pam->m_paths.at(1).sourceInfo.sourceModeInfoIdx).sourceMode.position};
-  auto expected_pam {initial_pam};
-  shiftModeBy(expected_pam, 0, origin_point);
-  shiftModeBy(expected_pam, 1, origin_point);
-  shiftModeBy(expected_pam, 3, origin_point);
+  const auto initial_pam {makePamWithSharedMode()};
+  const auto expected_pam {makeShiftedPrimaryPam(initial_pam, 1, {0, 1, 3})};
 
   InSequence sequence;
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-    .Times(1)
-    .WillOnce(Return(initial_pam));
-  setupExpectedGetActivePathCall(2, sequence);
-  for (int i = 1; i <= 4; ++i) {
-    EXPECT_CALL(*m_layer, getDeviceId(_))
-      .Times(1)
-      .WillOnce(Return(std::format("DeviceId{}", i)))
-      .RetiresOnSaturation();
-  }
-
-  EXPECT_CALL(*m_layer, setDisplayConfig(expected_pam->m_paths, expected_pam->m_modes, FLAGS))
-    .Times(1)
-    .WillOnce(Return(ERROR_SUCCESS))
-    .RetiresOnSaturation();
+  setupExpectedSetAsPrimaryConfigCall(sequence, initial_pam, expected_pam, 2);
 
   EXPECT_TRUE(m_win_dd.setAsPrimary("DeviceId2"));
 }
@@ -346,34 +310,10 @@ TEST_F_S_MOCKED(SetAsPrimary, FailedToGetSourceMode, DuringShift) {
 
 TEST_F_S_MOCKED(SetAsPrimary, FailedToSetDisplayConfig) {
   const auto &initial_pam {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
-
-  auto origin_point {initial_pam->m_modes.at(initial_pam->m_paths.at(3).sourceInfo.sourceModeInfoIdx).sourceMode.position};
-  auto expected_pam {initial_pam};
-  shiftModeBy(expected_pam, 0, origin_point);
-  shiftModeBy(expected_pam, 1, origin_point);
-  shiftModeBy(expected_pam, 2, origin_point);
-  shiftModeBy(expected_pam, 3, origin_point);
+  const auto expected_pam {makeShiftedPrimaryPam(initial_pam, 3, {0, 1, 2, 3})};
 
   InSequence sequence;
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-    .Times(1)
-    .WillOnce(Return(initial_pam));
-  setupExpectedGetActivePathCall(4, sequence);
-  for (int i = 1; i <= 4; ++i) {
-    EXPECT_CALL(*m_layer, getDeviceId(_))
-      .Times(1)
-      .WillOnce(Return(std::format("DeviceId{}", i)))
-      .RetiresOnSaturation();
-  }
-
-  EXPECT_CALL(*m_layer, setDisplayConfig(expected_pam->m_paths, expected_pam->m_modes, FLAGS))
-    .Times(1)
-    .WillOnce(Return(ERROR_ACCESS_DENIED))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getErrorString(ERROR_ACCESS_DENIED))
-    .Times(1)
-    .WillRepeatedly(Return("ErrorDesc"))
-    .RetiresOnSaturation();
+  setupExpectedSetAsPrimaryConfigCall(sequence, initial_pam, expected_pam, 4, ERROR_ACCESS_DENIED);
 
   EXPECT_FALSE(m_win_dd.setAsPrimary("DeviceId4"));
 }

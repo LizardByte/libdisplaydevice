@@ -1,3 +1,7 @@
+// system includes
+#include <string>
+#include <string_view>
+
 // local includes
 #include "display_device/windows/settings_manager.h"
 #include "display_device/windows/settings_utils.h"
@@ -216,11 +220,150 @@ namespace {
         .RetiresOnSaturation();
     }
 
+    void expectedStableTopologyPrepCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::SingleDisplayConfigState> &state = ut_consts::SDCS_EMPTY) const {
+      expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, state);
+      expectedIsCapturedCall(sequence, false);
+      expectedDeviceEnumCall(sequence);
+      expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+    }
+
+    void expectedChangedTopologyPrepCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::ActiveTopology &modified_topology) {
+      expectedDefaultCallsUntilTopologyPrep(sequence);
+      expectedIsCapturedCall(sequence, false);
+      expectedDeviceEnumCall(sequence);
+      expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, modified_topology);
+      expectedIsCapturedCall(sequence, false);
+      expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+      expectedSetTopologyCall(sequence, modified_topology);
+      expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, modified_topology);
+    }
+
+    void expectedDisplayModeChangeCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::DeviceDisplayModeMap &new_modes, const display_device::DeviceDisplayModeMap &verified_modes) {
+      expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+      expectedSetDisplayModesCall(sequence, new_modes);
+      expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), verified_modes);
+    }
+
+    void expectedHdrStateChangeCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::HdrStateMap &new_states) {
+      expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
+      expectedSetHdrStatesCall(sequence, new_states);
+    }
+
+    void expectedAudioDelayedReleasePrepCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */, const display_device::SingleDisplayConfigState &persistence_input) {
+      expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, ut_consts::SDCS_NO_MODIFICATIONS);
+      expectedIsCapturedCall(sequence, false);
+      expectedDeviceEnumCall(sequence);
+      expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, {{"DeviceId1"}});
+      expectedIsTopologyTheSameCall(sequence, ut_consts::SDCS_FULL->m_modified.m_topology, {{"DeviceId1"}});
+
+      expectedIsCapturedCall(sequence, true);
+      expectedSetTopologyCall(sequence, persistence_input.m_initial.m_topology);
+      expectedIsTopologyTheSameCall(sequence, ut_consts::SDCS_FULL->m_initial.m_topology, {{"DeviceId1"}});
+    }
+
+    void expectedPrimaryRestorePrepCalls(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::SingleDisplayConfigState> &initial_state) const {
+      expectedDefaultCallsUntilTopologyPrep(sequence, initial_state->m_modified.m_topology, initial_state);
+      expectedIsCapturedCall(sequence, false);
+      expectedDeviceEnumCall(sequence);
+      expectedIsTopologyTheSameCall(sequence, initial_state->m_modified.m_topology, initial_state->m_modified.m_topology);
+
+      expectedIsPrimaryCall(sequence, "DeviceId1", false);
+      expectedIsPrimaryCall(sequence, "DeviceId3");
+    }
+
     std::shared_ptr<StrictMock<display_device::MockWinDisplayDevice>> m_dd_api {std::make_shared<StrictMock<display_device::MockWinDisplayDevice>>()};
     std::shared_ptr<StrictMock<display_device::MockSettingsPersistence>> m_settings_persistence_api {std::make_shared<StrictMock<display_device::MockSettingsPersistence>>()};
     std::shared_ptr<StrictMock<display_device::MockAudioContext>> m_audio_context_api {std::make_shared<StrictMock<display_device::MockAudioContext>>()};
     std::unique_ptr<display_device::SettingsManager> m_impl;
   };
+
+  display_device::SingleDisplayConfigState makePrimaryDevicePersistenceInput(const std::string_view original_primary_device) {
+    auto state {DEFAULT_PERSISTENCE_INPUT_BASE};
+    state.m_modified.m_topology = {{"DeviceId1", "DeviceId2"}, {"DeviceId3"}, {"DeviceId4"}};
+    state.m_modified.m_original_primary_device = std::string {original_primary_device};
+    return state;
+  }
+
+  display_device::SingleDisplayConfigState makeDisplayModePersistenceInput() {
+    auto state {DEFAULT_PERSISTENCE_INPUT_BASE};
+    state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+    state.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+    return state;
+  }
+
+  display_device::SingleDisplayConfigState makeTopologyOnlyPersistenceInput() {
+    auto state {DEFAULT_PERSISTENCE_INPUT_BASE};
+    state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+    return state;
+  }
+
+  display_device::DeviceDisplayModeMap makeModesWithDevice1Resolution() {
+    auto modes {DEFAULT_CURRENT_MODES};
+    modes["DeviceId1"].m_resolution = {1920, 1080};
+    return modes;
+  }
+
+  display_device::DeviceDisplayModeMap makeModesWithDevice1RefreshRate() {
+    auto modes {DEFAULT_CURRENT_MODES};
+    modes["DeviceId1"].m_refresh_rate = {308500, 10000};
+    return modes;
+  }
+
+  display_device::DeviceDisplayModeMap makeModesWithDevice1ResolutionAndRefreshRate() {
+    auto modes {makeModesWithDevice1Resolution()};
+    modes["DeviceId1"].m_refresh_rate = {308500, 10000};
+    return modes;
+  }
+
+  display_device::DeviceDisplayModeMap makeModesWithPrimaryResolutionAndRefreshRate() {
+    auto modes {makeModesWithDevice1ResolutionAndRefreshRate()};
+    modes["DeviceId2"].m_resolution = {1920, 1080};
+    modes["DeviceId2"].m_refresh_rate = {308500, 10000};
+    return modes;
+  }
+
+  display_device::SingleDisplayConfigState makeHdrStatePersistenceInput() {
+    auto state {DEFAULT_PERSISTENCE_INPUT_BASE};
+    state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+    state.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
+    return state;
+  }
+
+  display_device::HdrStateMap makeHdrStatesWithDevice1Enabled() {
+    auto states {DEFAULT_CURRENT_HDR_STATES};
+    states["DeviceId1"] = display_device::HdrState::Enabled;
+    return states;
+  }
+
+  display_device::HdrStateMap makeHdrStatesWithPrimaryDevicesEnabled() {
+    auto states {makeHdrStatesWithDevice1Enabled()};
+    states["DeviceId2"] = display_device::HdrState::Enabled;
+    return states;
+  }
+
+  display_device::SingleDisplayConfigState makeDisplayModeRestoreInitialState() {
+    auto state {makeDisplayModePersistenceInput()};
+    state.m_modified.m_original_modes["DeviceId1"].m_resolution = {1920, 1080};
+    return state;
+  }
+
+  display_device::SingleDisplayConfigState makeHdrStateRestoreInitialState() {
+    auto state {makeHdrStatePersistenceInput()};
+    state.m_modified.m_original_hdr_states["DeviceId1"] = display_device::HdrState::Enabled;
+    return state;
+  }
+
+  display_device::SingleDisplayConfigState makeAudioDelayedReleasePersistenceInput() {
+    auto state {*ut_consts::SDCS_NO_MODIFICATIONS};
+    state.m_modified = {{{"DeviceId1"}}};
+    return state;
+  }
+
+  std::optional<display_device::SingleDisplayConfigState> makePrimaryRestoreInitialState() {
+    auto state {ut_consts::SDCS_NO_MODIFICATIONS};
+    state->m_modified.m_original_primary_device = "DeviceId1";
+    return state;
+  }
 
   // Specialized TEST macro(s) for this test
 #define TEST_F_S_MOCKED(...) DD_MAKE_TEST(TEST_F, SettingsManagerApplyMocked, __VA_ARGS__)
@@ -510,19 +653,10 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, FailedToSetPrimaryDevice) {
 
 TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceSet) {
   using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = {{"DeviceId1", "DeviceId2"}, {"DeviceId3"}, {"DeviceId4"}};
-  persistence_input.m_modified.m_original_primary_device = "DeviceId1";
+  const auto persistence_input {makePrimaryDevicePersistenceInput("DeviceId1")};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, persistence_input.m_modified.m_topology);
-  expectedIsCapturedCall(sequence, false);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-  expectedSetTopologyCall(sequence, persistence_input.m_modified.m_topology);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, persistence_input.m_modified.m_topology);
+  expectedChangedTopologyPrepCalls(sequence, persistence_input.m_modified.m_topology);
 
   expectedIsPrimaryCall(sequence, "DeviceId1");
   expectedSetAsPrimaryCall(sequence, "DeviceId4");
@@ -555,19 +689,10 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceSet, CachedDeviceReused) {
 
 TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceSet, GuardInvoked) {
   using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = {{"DeviceId1", "DeviceId2"}, {"DeviceId3"}, {"DeviceId4"}};
-  persistence_input.m_modified.m_original_primary_device = "DeviceId1";
+  const auto persistence_input {makePrimaryDevicePersistenceInput("DeviceId1")};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, persistence_input.m_modified.m_topology);
-  expectedIsCapturedCall(sequence, false);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-  expectedSetTopologyCall(sequence, persistence_input.m_modified.m_topology);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, persistence_input.m_modified.m_topology);
+  expectedChangedTopologyPrepCalls(sequence, persistence_input.m_modified.m_topology);
 
   expectedIsPrimaryCall(sequence, "DeviceId1");
   expectedSetAsPrimaryCall(sequence, "DeviceId4");
@@ -583,19 +708,10 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceSet, GuardInvoked) {
 
 TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceSetSkipped) {
   using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = {{"DeviceId1", "DeviceId2"}, {"DeviceId3"}, {"DeviceId4"}};
-  persistence_input.m_modified.m_original_primary_device = "DeviceId4";
+  const auto persistence_input {makePrimaryDevicePersistenceInput("DeviceId4")};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, persistence_input.m_modified.m_topology);
-  expectedIsCapturedCall(sequence, false);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-  expectedSetTopologyCall(sequence, persistence_input.m_modified.m_topology);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, persistence_input.m_modified.m_topology);
+  expectedChangedTopologyPrepCalls(sequence, persistence_input.m_modified.m_topology);
 
   expectedIsPrimaryCall(sequence, "DeviceId1", false);
   expectedIsPrimaryCall(sequence, "DeviceId2", false);
@@ -612,20 +728,13 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceSetSkipped) {
 
 TEST_F_S_MOCKED(PreparePrimaryDevice, FailedToRestorePrimaryDevice) {
   using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
-  auto intial_state {ut_consts::SDCS_NO_MODIFICATIONS};
-  intial_state->m_modified.m_original_primary_device = "DeviceId1";
+  const auto initial_state {makePrimaryRestoreInitialState()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence, intial_state->m_modified.m_topology, intial_state);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, intial_state->m_modified.m_topology, intial_state->m_modified.m_topology);
-
-  expectedIsPrimaryCall(sequence, "DeviceId1", false);
-  expectedIsPrimaryCall(sequence, "DeviceId3");
+  expectedPrimaryRestorePrepCalls(sequence, initial_state);
   expectedSetAsPrimaryCall(sequence, "DeviceId1", false);
 
-  expectedTopologyGuardTopologyCall(sequence, intial_state->m_modified.m_topology);
+  expectedTopologyGuardTopologyCall(sequence, initial_state->m_modified.m_topology);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
   expectedHdrWorkaroundCalls(sequence);
 
@@ -634,20 +743,13 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, FailedToRestorePrimaryDevice) {
 
 TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceRestored) {
   using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
-  auto intial_state {ut_consts::SDCS_NO_MODIFICATIONS};
-  intial_state->m_modified.m_original_primary_device = "DeviceId1";
+  const auto initial_state {makePrimaryRestoreInitialState()};
 
-  auto persistence_input {intial_state};
+  auto persistence_input {initial_state};
   persistence_input->m_modified.m_original_primary_device = "";
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence, intial_state->m_modified.m_topology, intial_state);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, intial_state->m_modified.m_topology, intial_state->m_modified.m_topology);
-
-  expectedIsPrimaryCall(sequence, "DeviceId1", false);
-  expectedIsPrimaryCall(sequence, "DeviceId3");
+  expectedPrimaryRestorePrepCalls(sequence, initial_state);
   expectedSetAsPrimaryCall(sequence, "DeviceId1", true);
   expectedPersistenceCall(sequence, persistence_input);
   expectedHdrWorkaroundCalls(sequence);
@@ -657,25 +759,18 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceRestored) {
 
 TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceRestored, PersistenceFailed) {
   using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
-  auto intial_state {ut_consts::SDCS_NO_MODIFICATIONS};
-  intial_state->m_modified.m_original_primary_device = "DeviceId1";
+  const auto initial_state {makePrimaryRestoreInitialState()};
 
-  auto persistence_input {intial_state};
+  auto persistence_input {initial_state};
   persistence_input->m_modified.m_original_primary_device = "";
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence, intial_state->m_modified.m_topology, intial_state);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, intial_state->m_modified.m_topology, intial_state->m_modified.m_topology);
-
-  expectedIsPrimaryCall(sequence, "DeviceId1", false);
-  expectedIsPrimaryCall(sequence, "DeviceId3");
+  expectedPrimaryRestorePrepCalls(sequence, initial_state);
   expectedSetAsPrimaryCall(sequence, "DeviceId1", true);
   expectedPersistenceCall(sequence, persistence_input, false);
 
   expectedPrimaryGuardCall(sequence, "DeviceId3");
-  expectedTopologyGuardTopologyCall(sequence, intial_state->m_modified.m_topology);
+  expectedTopologyGuardTopologyCall(sequence, initial_state->m_modified.m_topology);
   expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
   expectedHdrWorkaroundCalls(sequence);
 
@@ -707,10 +802,7 @@ TEST_F_S_MOCKED(PreparePrimaryDevice, PrimaryDeviceRestoreSkipped, PersistenceFa
 
 TEST_F_S_MOCKED(PrepareDisplayModes, FailedToGetDisplayModes) {
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+  expectedStableTopologyPrepCalls(sequence);
 
   expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), {});
 
@@ -721,14 +813,10 @@ TEST_F_S_MOCKED(PrepareDisplayModes, FailedToGetDisplayModes) {
 }
 
 TEST_F_S_MOCKED(PrepareDisplayModes, FailedToSetDisplayModes) {
-  auto new_modes {DEFAULT_CURRENT_MODES};
-  new_modes["DeviceId1"].m_resolution = {1920, 1080};
+  const auto new_modes {makeModesWithDevice1Resolution()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+  expectedStableTopologyPrepCalls(sequence);
 
   expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
   expectedSetDisplayModesCall(sequence, new_modes, false);
@@ -741,22 +829,12 @@ TEST_F_S_MOCKED(PrepareDisplayModes, FailedToSetDisplayModes) {
 }
 
 TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, ResolutionOnly) {
-  auto new_modes {DEFAULT_CURRENT_MODES};
-  new_modes["DeviceId1"].m_resolution = {1920, 1080};
-
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  persistence_input.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+  const auto new_modes {makeModesWithDevice1Resolution()};
+  const auto persistence_input {makeDisplayModePersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
-  expectedSetDisplayModesCall(sequence, new_modes);
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), new_modes);
+  expectedStableTopologyPrepCalls(sequence);
+  expectedDisplayModeChangeCalls(sequence, new_modes, new_modes);
   expectedPersistenceCall(sequence, persistence_input);
   expectedHdrWorkaroundCalls(sequence);
 
@@ -764,22 +842,12 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, ResolutionOnly) {
 }
 
 TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, RefreshRateOnly) {
-  auto new_modes {DEFAULT_CURRENT_MODES};
-  new_modes["DeviceId1"].m_refresh_rate = {308500, 10000};
-
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  persistence_input.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+  const auto new_modes {makeModesWithDevice1RefreshRate()};
+  const auto persistence_input {makeDisplayModePersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
-  expectedSetDisplayModesCall(sequence, new_modes);
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), new_modes);
+  expectedStableTopologyPrepCalls(sequence);
+  expectedDisplayModeChangeCalls(sequence, new_modes, new_modes);
   expectedPersistenceCall(sequence, persistence_input);
   expectedHdrWorkaroundCalls(sequence);
 
@@ -787,23 +855,12 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, RefreshRateOnly) {
 }
 
 TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, ResolutionAndRefreshRate) {
-  auto new_modes {DEFAULT_CURRENT_MODES};
-  new_modes["DeviceId1"].m_resolution = {1920, 1080};
-  new_modes["DeviceId1"].m_refresh_rate = {308500, 10000};
-
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  persistence_input.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+  const auto new_modes {makeModesWithDevice1ResolutionAndRefreshRate()};
+  const auto persistence_input {makeDisplayModePersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
-  expectedSetDisplayModesCall(sequence, new_modes);
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), new_modes);
+  expectedStableTopologyPrepCalls(sequence);
+  expectedDisplayModeChangeCalls(sequence, new_modes, new_modes);
   expectedPersistenceCall(sequence, persistence_input);
   expectedHdrWorkaroundCalls(sequence);
 
@@ -811,25 +868,12 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, ResolutionAndRefreshRate) 
 }
 
 TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, ResolutionAndRefreshRate, PrimaryDeviceSpecified) {
-  auto new_modes {DEFAULT_CURRENT_MODES};
-  new_modes["DeviceId1"].m_resolution = {1920, 1080};
-  new_modes["DeviceId1"].m_refresh_rate = {308500, 10000};
-  new_modes["DeviceId2"].m_resolution = {1920, 1080};
-  new_modes["DeviceId2"].m_refresh_rate = {308500, 10000};
-
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  persistence_input.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+  const auto new_modes {makeModesWithPrimaryResolutionAndRefreshRate()};
+  const auto persistence_input {makeDisplayModePersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
-  expectedSetDisplayModesCall(sequence, new_modes);
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), new_modes);
+  expectedStableTopologyPrepCalls(sequence);
+  expectedDisplayModeChangeCalls(sequence, new_modes, new_modes);
   expectedPersistenceCall(sequence, persistence_input);
   expectedHdrWorkaroundCalls(sequence);
 
@@ -837,44 +881,24 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, ResolutionAndRefreshRate, 
 }
 
 TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, CachedModesReused) {
-  auto new_modes {DEFAULT_CURRENT_MODES};
-  new_modes["DeviceId1"].m_resolution = {1920, 1080};
-
-  auto initial_state {DEFAULT_PERSISTENCE_INPUT_BASE};
-  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  initial_state.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+  const auto new_modes {makeModesWithDevice1Resolution()};
+  const auto initial_state {makeDisplayModePersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
-  expectedSetDisplayModesCall(sequence, new_modes);
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), new_modes);
+  expectedStableTopologyPrepCalls(sequence, initial_state);
+  expectedDisplayModeChangeCalls(sequence, new_modes, new_modes);
   expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({.m_device_id = "DeviceId1", .m_resolution = {{1920, 1080}}}), display_device::SettingsManager::ApplyResult::Ok);
 }
 
 TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, GuardInvoked) {
-  auto new_modes {DEFAULT_CURRENT_MODES};
-  new_modes["DeviceId1"].m_resolution = {1920, 1080};
-
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  persistence_input.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+  const auto new_modes {makeModesWithDevice1Resolution()};
+  const auto persistence_input {makeDisplayModePersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
-  expectedSetDisplayModesCall(sequence, new_modes);
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), new_modes);
+  expectedStableTopologyPrepCalls(sequence);
+  expectedDisplayModeChangeCalls(sequence, new_modes, new_modes);
   expectedPersistenceCall(sequence, persistence_input, false);
 
   expectedSetDisplayModesGuardCall(sequence, DEFAULT_CURRENT_MODES);
@@ -886,22 +910,12 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, GuardInvoked) {
 }
 
 TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, GuardNotInvoked) {
-  auto new_modes {DEFAULT_CURRENT_MODES};
-  new_modes["DeviceId1"].m_resolution = {1920, 1080};
-
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  persistence_input.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+  const auto new_modes {makeModesWithDevice1Resolution()};
+  const auto persistence_input {makeDisplayModePersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
-  expectedSetDisplayModesCall(sequence, new_modes);
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
+  expectedStableTopologyPrepCalls(sequence);
+  expectedDisplayModeChangeCalls(sequence, new_modes, DEFAULT_CURRENT_MODES);
   expectedPersistenceCall(sequence, persistence_input, false);
 
   expectedTopologyGuardTopologyCall(sequence);
@@ -911,15 +925,10 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSet, GuardNotInvoked) {
 }
 
 TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSetSkipped) {
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  persistence_input.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
+  const auto persistence_input {makeDisplayModePersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+  expectedStableTopologyPrepCalls(sequence);
 
   expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
   expectedPersistenceCall(sequence, persistence_input);
@@ -928,16 +937,10 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesSetSkipped) {
 }
 
 TEST_F_S_MOCKED(PrepareDisplayModes, FailedToRestoreDisplayModes) {
-  auto initial_state {DEFAULT_PERSISTENCE_INPUT_BASE};
-  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  initial_state.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
-  initial_state.m_modified.m_original_modes["DeviceId1"].m_resolution = {1920, 1080};
+  const auto initial_state {makeDisplayModeRestoreInitialState()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+  expectedStableTopologyPrepCalls(sequence, initial_state);
 
   expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
   expectedSetDisplayModesCall(sequence, initial_state.m_modified.m_original_modes, false);
@@ -950,23 +953,12 @@ TEST_F_S_MOCKED(PrepareDisplayModes, FailedToRestoreDisplayModes) {
 }
 
 TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesRestored) {
-  auto initial_state {DEFAULT_PERSISTENCE_INPUT_BASE};
-  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  initial_state.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
-  initial_state.m_modified.m_original_modes["DeviceId1"].m_resolution = {1920, 1080};
-
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  const auto initial_state {makeDisplayModeRestoreInitialState()};
+  const auto persistence_input {makeTopologyOnlyPersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
-  expectedSetDisplayModesCall(sequence, initial_state.m_modified.m_original_modes);
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), initial_state.m_modified.m_original_modes);
+  expectedStableTopologyPrepCalls(sequence, initial_state);
+  expectedDisplayModeChangeCalls(sequence, initial_state.m_modified.m_original_modes, initial_state.m_modified.m_original_modes);
   expectedPersistenceCall(sequence, persistence_input);
   expectedHdrWorkaroundCalls(sequence);
 
@@ -974,23 +966,12 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesRestored) {
 }
 
 TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesRestored, PersistenceFailed) {
-  auto initial_state {DEFAULT_PERSISTENCE_INPUT_BASE};
-  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  initial_state.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
-  initial_state.m_modified.m_original_modes["DeviceId1"].m_resolution = {1920, 1080};
-
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  const auto initial_state {makeDisplayModeRestoreInitialState()};
+  const auto persistence_input {makeTopologyOnlyPersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
-  expectedSetDisplayModesCall(sequence, initial_state.m_modified.m_original_modes);
-  expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), initial_state.m_modified.m_original_modes);
+  expectedStableTopologyPrepCalls(sequence, initial_state);
+  expectedDisplayModeChangeCalls(sequence, initial_state.m_modified.m_original_modes, initial_state.m_modified.m_original_modes);
   expectedPersistenceCall(sequence, persistence_input, false);
 
   expectedSetDisplayModesGuardCall(sequence, DEFAULT_CURRENT_MODES);
@@ -1002,18 +983,11 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesRestored, PersistenceFailed) {
 }
 
 TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesRestoreSkipped, PersistenceFailed) {
-  auto initial_state {DEFAULT_PERSISTENCE_INPUT_BASE};
-  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  initial_state.m_modified.m_original_modes = DEFAULT_CURRENT_MODES;
-
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  const auto initial_state {makeDisplayModePersistenceInput()};
+  const auto persistence_input {makeTopologyOnlyPersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+  expectedStableTopologyPrepCalls(sequence, initial_state);
 
   expectedGetCurrentDisplayModesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_MODES);
   expectedPersistenceCall(sequence, persistence_input, false);
@@ -1026,10 +1000,7 @@ TEST_F_S_MOCKED(PrepareDisplayModes, DisplayModesRestoreSkipped, PersistenceFail
 
 TEST_F_S_MOCKED(PrepareHdrStates, FailedToGetHdrStates) {
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+  expectedStableTopologyPrepCalls(sequence);
 
   expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), {});
 
@@ -1040,14 +1011,10 @@ TEST_F_S_MOCKED(PrepareHdrStates, FailedToGetHdrStates) {
 }
 
 TEST_F_S_MOCKED(PrepareHdrStates, FailedToSetHdrStates) {
-  auto new_states {DEFAULT_CURRENT_HDR_STATES};
-  new_states["DeviceId1"] = display_device::HdrState::Enabled;
+  const auto new_states {makeHdrStatesWithDevice1Enabled()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+  expectedStableTopologyPrepCalls(sequence);
 
   expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
   expectedSetHdrStatesCall(sequence, new_states, false);
@@ -1060,21 +1027,12 @@ TEST_F_S_MOCKED(PrepareHdrStates, FailedToSetHdrStates) {
 }
 
 TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSet) {
-  auto new_states {DEFAULT_CURRENT_HDR_STATES};
-  new_states["DeviceId1"] = display_device::HdrState::Enabled;
-
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  persistence_input.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
+  const auto new_states {makeHdrStatesWithDevice1Enabled()};
+  const auto persistence_input {makeHdrStatePersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-
-  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
-  expectedSetHdrStatesCall(sequence, new_states);
+  expectedStableTopologyPrepCalls(sequence);
+  expectedHdrStateChangeCalls(sequence, new_states);
   expectedPersistenceCall(sequence, persistence_input);
   expectedHdrWorkaroundCalls(sequence);
 
@@ -1082,22 +1040,12 @@ TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSet) {
 }
 
 TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSet, PrimaryDeviceSpecified) {
-  auto new_states {DEFAULT_CURRENT_HDR_STATES};
-  new_states["DeviceId1"] = display_device::HdrState::Enabled;
-  new_states["DeviceId2"] = display_device::HdrState::Enabled;
-
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  persistence_input.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
+  const auto new_states {makeHdrStatesWithPrimaryDevicesEnabled()};
+  const auto persistence_input {makeHdrStatePersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-
-  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
-  expectedSetHdrStatesCall(sequence, new_states);
+  expectedStableTopologyPrepCalls(sequence);
+  expectedHdrStateChangeCalls(sequence, new_states);
   expectedPersistenceCall(sequence, persistence_input);
   expectedHdrWorkaroundCalls(sequence);
 
@@ -1105,42 +1053,24 @@ TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSet, PrimaryDeviceSpecified) {
 }
 
 TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSet, CachedModesReused) {
-  auto new_states {DEFAULT_CURRENT_HDR_STATES};
-  new_states["DeviceId1"] = display_device::HdrState::Enabled;
-
-  auto initial_state {DEFAULT_PERSISTENCE_INPUT_BASE};
-  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  initial_state.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
+  const auto new_states {makeHdrStatesWithDevice1Enabled()};
+  const auto initial_state {makeHdrStatePersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-
-  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
-  expectedSetHdrStatesCall(sequence, new_states);
+  expectedStableTopologyPrepCalls(sequence, initial_state);
+  expectedHdrStateChangeCalls(sequence, new_states);
   expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().applySettings({.m_device_id = "DeviceId1", .m_hdr_state = display_device::HdrState::Enabled}), display_device::SettingsManager::ApplyResult::Ok);
 }
 
 TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSet, GuardInvoked) {
-  auto new_states {DEFAULT_CURRENT_HDR_STATES};
-  new_states["DeviceId1"] = display_device::HdrState::Enabled;
-
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  persistence_input.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
+  const auto new_states {makeHdrStatesWithDevice1Enabled()};
+  const auto persistence_input {makeHdrStatePersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-
-  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
-  expectedSetHdrStatesCall(sequence, new_states);
+  expectedStableTopologyPrepCalls(sequence);
+  expectedHdrStateChangeCalls(sequence, new_states);
   expectedPersistenceCall(sequence, persistence_input, false);
 
   expectedSetHdrStatesGuardCall(sequence, DEFAULT_CURRENT_HDR_STATES);
@@ -1152,15 +1082,10 @@ TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSet, GuardInvoked) {
 }
 
 TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSetSkipped) {
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  persistence_input.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
+  const auto persistence_input {makeHdrStatePersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+  expectedStableTopologyPrepCalls(sequence);
 
   expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
   expectedPersistenceCall(sequence, persistence_input);
@@ -1169,16 +1094,10 @@ TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesSetSkipped) {
 }
 
 TEST_F_S_MOCKED(PrepareHdrStates, FailedToRestoreHdrStates) {
-  auto initial_state {DEFAULT_PERSISTENCE_INPUT_BASE};
-  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  initial_state.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
-  initial_state.m_modified.m_original_hdr_states["DeviceId1"] = display_device::HdrState::Enabled;
+  const auto initial_state {makeHdrStateRestoreInitialState()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+  expectedStableTopologyPrepCalls(sequence, initial_state);
 
   expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
   expectedSetHdrStatesCall(sequence, initial_state.m_modified.m_original_hdr_states, false);
@@ -1191,22 +1110,12 @@ TEST_F_S_MOCKED(PrepareHdrStates, FailedToRestoreHdrStates) {
 }
 
 TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesRestored) {
-  auto initial_state {DEFAULT_PERSISTENCE_INPUT_BASE};
-  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  initial_state.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
-  initial_state.m_modified.m_original_hdr_states["DeviceId1"] = display_device::HdrState::Enabled;
-
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  const auto initial_state {makeHdrStateRestoreInitialState()};
+  const auto persistence_input {makeTopologyOnlyPersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-
-  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
-  expectedSetHdrStatesCall(sequence, initial_state.m_modified.m_original_hdr_states);
+  expectedStableTopologyPrepCalls(sequence, initial_state);
+  expectedHdrStateChangeCalls(sequence, initial_state.m_modified.m_original_hdr_states);
   expectedPersistenceCall(sequence, persistence_input);
   expectedHdrWorkaroundCalls(sequence);
 
@@ -1214,22 +1123,12 @@ TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesRestored) {
 }
 
 TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesRestored, PersistenceFailed) {
-  auto initial_state {DEFAULT_PERSISTENCE_INPUT_BASE};
-  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  initial_state.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
-  initial_state.m_modified.m_original_hdr_states["DeviceId1"] = display_device::HdrState::Enabled;
-
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  const auto initial_state {makeHdrStateRestoreInitialState()};
+  const auto persistence_input {makeTopologyOnlyPersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
-
-  expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
-  expectedSetHdrStatesCall(sequence, initial_state.m_modified.m_original_hdr_states);
+  expectedStableTopologyPrepCalls(sequence, initial_state);
+  expectedHdrStateChangeCalls(sequence, initial_state.m_modified.m_original_hdr_states);
   expectedPersistenceCall(sequence, persistence_input, false);
 
   expectedSetHdrStatesGuardCall(sequence, DEFAULT_CURRENT_HDR_STATES);
@@ -1241,18 +1140,11 @@ TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesRestored, PersistenceFailed) {
 }
 
 TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesRestoreSkipped, PersistenceFailed) {
-  auto initial_state {DEFAULT_PERSISTENCE_INPUT_BASE};
-  initial_state.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
-  initial_state.m_modified.m_original_hdr_states = DEFAULT_CURRENT_HDR_STATES;
-
-  auto persistence_input {DEFAULT_PERSISTENCE_INPUT_BASE};
-  persistence_input.m_modified.m_topology = DEFAULT_CURRENT_TOPOLOGY;
+  const auto initial_state {makeHdrStatePersistenceInput()};
+  const auto persistence_input {makeTopologyOnlyPersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, initial_state);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+  expectedStableTopologyPrepCalls(sequence, initial_state);
 
   expectedGetCurrentHdrStatesCall(sequence, display_device::win_utils::flattenTopology(DEFAULT_CURRENT_TOPOLOGY), DEFAULT_CURRENT_HDR_STATES);
   expectedPersistenceCall(sequence, persistence_input, false);
@@ -1265,19 +1157,10 @@ TEST_F_S_MOCKED(PrepareHdrStates, HdrStatesRestoreSkipped, PersistenceFailed) {
 
 TEST_F_S_MOCKED(AudioContextDelayedRelease) {
   using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
-  auto persistence_input {*ut_consts::SDCS_NO_MODIFICATIONS};
-  persistence_input.m_modified = {{{"DeviceId1"}}};
+  const auto persistence_input {makeAudioDelayedReleasePersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, ut_consts::SDCS_NO_MODIFICATIONS);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, {{"DeviceId1"}});
-  expectedIsTopologyTheSameCall(sequence, ut_consts::SDCS_FULL->m_modified.m_topology, {{"DeviceId1"}});
-
-  expectedIsCapturedCall(sequence, true);
-  expectedSetTopologyCall(sequence, persistence_input.m_initial.m_topology);
-  expectedIsTopologyTheSameCall(sequence, ut_consts::SDCS_FULL->m_initial.m_topology, {{"DeviceId1"}});
+  expectedAudioDelayedReleasePrepCalls(sequence, persistence_input);
   expectedPersistenceCall(sequence, persistence_input);
   expectedReleaseCall(sequence);
   expectedHdrWorkaroundCalls(sequence);
@@ -1290,10 +1173,7 @@ TEST_F_S_MOCKED(FailedToSaveNewState) {
   persistence_input.m_modified = {DEFAULT_CURRENT_TOPOLOGY};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, DEFAULT_CURRENT_TOPOLOGY);
+  expectedStableTopologyPrepCalls(sequence);
   expectedPersistenceCall(sequence, persistence_input, false);
 
   expectedTopologyGuardTopologyCall(sequence);
@@ -1304,20 +1184,10 @@ TEST_F_S_MOCKED(FailedToSaveNewState) {
 
 TEST_F_S_MOCKED(AudioContextDelayedRelease, ViaGuard) {
   using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
-  auto persistence_input {*ut_consts::SDCS_NO_MODIFICATIONS};
-  persistence_input.m_modified = {{{"DeviceId1"}}};
+  const auto persistence_input {makeAudioDelayedReleasePersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, ut_consts::SDCS_NO_MODIFICATIONS);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, {{"DeviceId1"}});
-  expectedIsTopologyTheSameCall(sequence, ut_consts::SDCS_FULL->m_modified.m_topology, {{"DeviceId1"}});
-
-  expectedIsCapturedCall(sequence, true);
-  expectedSetTopologyCall(sequence, persistence_input.m_initial.m_topology);
-  expectedIsTopologyTheSameCall(sequence, ut_consts::SDCS_FULL->m_initial.m_topology, {{"DeviceId1"}});
-
+  expectedAudioDelayedReleasePrepCalls(sequence, persistence_input);
   expectedPersistenceCall(sequence, persistence_input, false);
 
   expectedTopologyGuardTopologyCall(sequence, DEFAULT_CURRENT_TOPOLOGY, false);
@@ -1330,20 +1200,10 @@ TEST_F_S_MOCKED(AudioContextDelayedRelease, ViaGuard) {
 
 TEST_F_S_MOCKED(AudioContextDelayedRelease, SkippedDueToFailure) {
   using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
-  auto persistence_input {*ut_consts::SDCS_NO_MODIFICATIONS};
-  persistence_input.m_modified = {{{"DeviceId1"}}};
+  const auto persistence_input {makeAudioDelayedReleasePersistenceInput()};
 
   InSequence sequence;
-  expectedDefaultCallsUntilTopologyPrep(sequence, DEFAULT_CURRENT_TOPOLOGY, ut_consts::SDCS_NO_MODIFICATIONS);
-  expectedIsCapturedCall(sequence, false);
-  expectedDeviceEnumCall(sequence);
-  expectedIsTopologyTheSameCall(sequence, DEFAULT_CURRENT_TOPOLOGY, {{"DeviceId1"}});
-  expectedIsTopologyTheSameCall(sequence, ut_consts::SDCS_FULL->m_modified.m_topology, {{"DeviceId1"}});
-
-  expectedIsCapturedCall(sequence, true);
-  expectedSetTopologyCall(sequence, persistence_input.m_initial.m_topology);
-  expectedIsTopologyTheSameCall(sequence, ut_consts::SDCS_FULL->m_initial.m_topology, {{"DeviceId1"}});
-
+  expectedAudioDelayedReleasePrepCalls(sequence, persistence_input);
   expectedPersistenceCall(sequence, persistence_input, false);
 
   expectedTopologyGuardTopologyCall(sequence, DEFAULT_CURRENT_TOPOLOGY, true);

@@ -1,6 +1,3 @@
-// system includes
-#include <format>
-
 // local includes
 #include "display_device/windows/settings_utils.h"
 #include "display_device/windows/win_api_layer.h"
@@ -8,6 +5,7 @@
 #include "fixtures/fixtures.h"
 #include "utils/comparison.h"
 #include "utils/guards.h"
+#include "utils/helpers.h"
 #include "utils/mock_win_api_layer.h"
 
 namespace {
@@ -31,20 +29,35 @@ namespace {
   class WinDisplayDeviceHdrMocked: public BaseTest {
   public:
     void setupExpectedGetActivePathCall(int id_number, InSequence & /* To ensure that sequence is created outside this scope */) const {
-      for (int i = 1; i <= id_number; ++i) {
-        EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
-          .Times(1)
-          .WillOnce(Return("PathX"))
-          .RetiresOnSaturation();
-        EXPECT_CALL(*m_layer, getDeviceId(_))
-          .Times(1)
-          .WillOnce(Return(std::format("DeviceId{}", i)))
-          .RetiresOnSaturation();
-        EXPECT_CALL(*m_layer, getDisplayName(_))
-          .Times(1)
-          .WillOnce(Return("DisplayNameX"))
-          .RetiresOnSaturation();
-      }
+      expectActivePathLookup(m_layer, id_number);
+    }
+
+    void setupExpectedDuplicatedPathHdrStateRead(
+      const int id_number,
+      const int path_index,
+      const std::optional<display_device::HdrState> &state,
+      InSequence &sequence
+    ) const {
+      setupExpectedGetActivePathCall(id_number, sequence);
+      EXPECT_CALL(*m_layer, getHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(path_index)))
+        .Times(1)
+        .WillOnce(Return(state))
+        .RetiresOnSaturation();
+    }
+
+    void setupExpectedDuplicatedPathHdrStateChange(
+      const int id_number,
+      const int path_index,
+      const std::optional<display_device::HdrState> &current_state,
+      const display_device::HdrState new_state,
+      const bool result,
+      InSequence &sequence
+    ) const {
+      setupExpectedDuplicatedPathHdrStateRead(id_number, path_index, current_state, sequence);
+      EXPECT_CALL(*m_layer, setHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(path_index), new_state))
+        .Times(1)
+        .WillOnce(Return(result))
+        .RetiresOnSaturation();
     }
 
     std::shared_ptr<StrictMock<display_device::MockWinApiLayer>> m_layer {std::make_shared<StrictMock<display_device::MockWinApiLayer>>()};
@@ -212,6 +225,8 @@ TEST_F_S_MOCKED(SetHdrStates, FailedToGetHdrState) {
 }
 
 TEST_F_S_MOCKED(SetHdrStates, FailedToSetHdrState, LastDevice) {
+  using enum display_device::HdrState;
+
   InSequence sequence;
   EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
     .Times(1)
@@ -220,52 +235,28 @@ TEST_F_S_MOCKED(SetHdrStates, FailedToSetHdrState, LastDevice) {
 
   // Setting states
   {
-    setupExpectedGetActivePathCall(1, sequence);
-    EXPECT_CALL(*m_layer, getHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(0)))
-      .Times(1)
-      .WillOnce(Return(std::make_optional(display_device::HdrState::Disabled)))
-      .RetiresOnSaturation();
-    EXPECT_CALL(*m_layer, setHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(0), display_device::HdrState::Enabled))
-      .Times(1)
-      .WillOnce(Return(true))
-      .RetiresOnSaturation();
-
-    setupExpectedGetActivePathCall(3, sequence);
-    EXPECT_CALL(*m_layer, getHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(2)))
-      .Times(1)
-      .WillOnce(Return(std::make_optional(display_device::HdrState::Disabled)))
-      .RetiresOnSaturation();
-
-    setupExpectedGetActivePathCall(4, sequence);
-    EXPECT_CALL(*m_layer, getHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(3)))
-      .Times(1)
-      .WillOnce(Return(std::nullopt))
-      .RetiresOnSaturation();
+    setupExpectedDuplicatedPathHdrStateChange(1, 0, Disabled, Enabled, true, sequence);
+    setupExpectedDuplicatedPathHdrStateRead(3, 2, Disabled, sequence);
+    setupExpectedDuplicatedPathHdrStateRead(4, 3, std::nullopt, sequence);
   }
 
   // Reverting only changed states
   {
-    setupExpectedGetActivePathCall(1, sequence);
-    EXPECT_CALL(*m_layer, getHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(0)))
-      .Times(1)
-      .WillOnce(Return(std::make_optional(display_device::HdrState::Enabled)))
-      .RetiresOnSaturation();
-    EXPECT_CALL(*m_layer, setHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(0), display_device::HdrState::Disabled))
-      .Times(1)
-      .WillOnce(Return(true))
-      .RetiresOnSaturation();
+    setupExpectedDuplicatedPathHdrStateChange(1, 0, Enabled, Disabled, true, sequence);
   }
 
   const display_device::HdrStateMap new_states {
-    {"DeviceId1", std::make_optional(display_device::HdrState::Enabled)},
+    {"DeviceId1", std::make_optional(Enabled)},
     {"DeviceId2", std::nullopt},
-    {"DeviceId3", std::make_optional(display_device::HdrState::Disabled)},
-    {"DeviceId4", std::make_optional(display_device::HdrState::Enabled)}
+    {"DeviceId3", std::make_optional(Disabled)},
+    {"DeviceId4", std::make_optional(Enabled)}
   };
   EXPECT_FALSE(m_win_dd.setHdrStates(new_states));
 }
 
 TEST_F_S_MOCKED(SetHdrStates, FailedToSetHdrState, LastDevice, NoEarlyExitInRecovery) {
+  using enum display_device::HdrState;
+
   InSequence sequence;
   EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
     .Times(1)
@@ -274,77 +265,24 @@ TEST_F_S_MOCKED(SetHdrStates, FailedToSetHdrState, LastDevice, NoEarlyExitInReco
 
   // Setting states
   {
-    setupExpectedGetActivePathCall(1, sequence);
-    EXPECT_CALL(*m_layer, getHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(0)))
-      .Times(1)
-      .WillOnce(Return(std::make_optional(display_device::HdrState::Disabled)))
-      .RetiresOnSaturation();
-    EXPECT_CALL(*m_layer, setHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(0), display_device::HdrState::Enabled))
-      .Times(1)
-      .WillOnce(Return(true))
-      .RetiresOnSaturation();
-
-    setupExpectedGetActivePathCall(2, sequence);
-    EXPECT_CALL(*m_layer, getHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(1)))
-      .Times(1)
-      .WillOnce(Return(std::make_optional(display_device::HdrState::Disabled)))
-      .RetiresOnSaturation();
-    EXPECT_CALL(*m_layer, setHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(1), display_device::HdrState::Enabled))
-      .Times(1)
-      .WillOnce(Return(true))
-      .RetiresOnSaturation();
-
-    setupExpectedGetActivePathCall(3, sequence);
-    EXPECT_CALL(*m_layer, getHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(2)))
-      .Times(1)
-      .WillOnce(Return(std::make_optional(display_device::HdrState::Disabled)))
-      .RetiresOnSaturation();
-    EXPECT_CALL(*m_layer, setHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(2), display_device::HdrState::Enabled))
-      .Times(1)
-      .WillOnce(Return(true))
-      .RetiresOnSaturation();
-
-    setupExpectedGetActivePathCall(4, sequence);
-    EXPECT_CALL(*m_layer, getHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(3)))
-      .Times(1)
-      .WillOnce(Return(std::nullopt))
-      .RetiresOnSaturation();
+    setupExpectedDuplicatedPathHdrStateChange(1, 0, Disabled, Enabled, true, sequence);
+    setupExpectedDuplicatedPathHdrStateChange(2, 1, Disabled, Enabled, true, sequence);
+    setupExpectedDuplicatedPathHdrStateChange(3, 2, Disabled, Enabled, true, sequence);
+    setupExpectedDuplicatedPathHdrStateRead(4, 3, std::nullopt, sequence);
   }
 
   // Reverting only changed states
   {
-    setupExpectedGetActivePathCall(1, sequence);
-    EXPECT_CALL(*m_layer, getHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(0)))
-      .Times(1)
-      .WillOnce(Return(std::make_optional(display_device::HdrState::Enabled)))
-      .RetiresOnSaturation();
-    EXPECT_CALL(*m_layer, setHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(0), display_device::HdrState::Disabled))
-      .Times(1)
-      .WillOnce(Return(false))
-      .RetiresOnSaturation();
-
-    setupExpectedGetActivePathCall(2, sequence);
-    EXPECT_CALL(*m_layer, getHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(1)))
-      .Times(1)
-      .WillOnce(Return(std::nullopt))
-      .RetiresOnSaturation();
-
-    setupExpectedGetActivePathCall(3, sequence);
-    EXPECT_CALL(*m_layer, getHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(2)))
-      .Times(1)
-      .WillOnce(Return(std::make_optional(display_device::HdrState::Enabled)))
-      .RetiresOnSaturation();
-    EXPECT_CALL(*m_layer, setHdrState(ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES->m_paths.at(2), display_device::HdrState::Disabled))
-      .Times(1)
-      .WillOnce(Return(true))
-      .RetiresOnSaturation();
+    setupExpectedDuplicatedPathHdrStateChange(1, 0, Enabled, Disabled, false, sequence);
+    setupExpectedDuplicatedPathHdrStateRead(2, 1, std::nullopt, sequence);
+    setupExpectedDuplicatedPathHdrStateChange(3, 2, Enabled, Disabled, true, sequence);
   }
 
   const display_device::HdrStateMap new_states {
-    {"DeviceId1", std::make_optional(display_device::HdrState::Enabled)},
-    {"DeviceId2", std::make_optional(display_device::HdrState::Enabled)},
-    {"DeviceId3", std::make_optional(display_device::HdrState::Enabled)},
-    {"DeviceId4", std::make_optional(display_device::HdrState::Enabled)}
+    {"DeviceId1", std::make_optional(Enabled)},
+    {"DeviceId2", std::make_optional(Enabled)},
+    {"DeviceId3", std::make_optional(Enabled)},
+    {"DeviceId4", std::make_optional(Enabled)}
   };
   EXPECT_FALSE(m_win_dd.setHdrStates(new_states));
 }

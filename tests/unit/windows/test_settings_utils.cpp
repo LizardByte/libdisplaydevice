@@ -32,6 +32,31 @@ namespace {
     {"DeviceId2", {display_device::HdrState::Disabled}},
     {"DeviceId3", std::nullopt}
   };
+
+  display_device::HdrStateMap makeBlankHdrInitialStates() {
+    using enum display_device::HdrState;
+
+    return {
+      {"DeviceId1", {Enabled}},
+      {"DeviceId2", {Disabled}},
+      {"DeviceId3", std::nullopt}
+    };
+  }
+
+  display_device::HdrStateMap makeBlankHdrInverseStates() {
+    return {{"DeviceId1", {display_device::HdrState::Disabled}}};
+  }
+
+  display_device::HdrStateMap makeBlankHdrOriginalStates() {
+    return {{"DeviceId1", {display_device::HdrState::Enabled}}};
+  }
+
+  void expectBlankHdrStateSetup(display_device::MockWinDisplayDevice &dd_api, const display_device::HdrStateMap &initial_states, const display_device::HdrStateMap &inverse_states, const bool inverse_result) {
+    EXPECT_CALL(dd_api, getCurrentTopology()).Times(1).WillOnce(Return(DEFAULT_INITIAL_TOPOLOGY)).RetiresOnSaturation();
+    EXPECT_CALL(dd_api, isTopologyValid(DEFAULT_INITIAL_TOPOLOGY)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+    EXPECT_CALL(dd_api, getCurrentHdrStates(display_device::win_utils::flattenTopology(DEFAULT_INITIAL_TOPOLOGY))).Times(1).WillOnce(Return(initial_states)).RetiresOnSaturation();
+    EXPECT_CALL(dd_api, setHdrStates(inverse_states)).Times(1).WillOnce(Return(inverse_result)).RetiresOnSaturation();
+  }
 }  // namespace
 
 TEST_F_S_MOCKED(FlattenTopology) {
@@ -301,46 +326,22 @@ TEST_F_S_MOCKED(BlankHdrStates, NothingToApply) {
 }
 
 TEST_F_S_MOCKED(BlankHdrStates, FailedToApplyInverseStates) {
-  using enum display_device::HdrState;
-
-  const display_device::HdrStateMap initial_states {
-    {"DeviceId1", {Enabled}},
-    {"DeviceId2", {Disabled}},
-    {"DeviceId3", std::nullopt}
-  };
-  const display_device::HdrStateMap inverse_states {
-    {"DeviceId1", {Disabled}}
-  };
+  const auto initial_states {makeBlankHdrInitialStates()};
+  const auto inverse_states {makeBlankHdrInverseStates()};
 
   Sequence sequence;
-  EXPECT_CALL(m_dd_api, getCurrentTopology()).Times(1).WillOnce(Return(DEFAULT_INITIAL_TOPOLOGY)).RetiresOnSaturation();
-  EXPECT_CALL(m_dd_api, isTopologyValid(DEFAULT_INITIAL_TOPOLOGY)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
-  EXPECT_CALL(m_dd_api, getCurrentHdrStates(display_device::win_utils::flattenTopology(DEFAULT_INITIAL_TOPOLOGY))).Times(1).WillOnce(Return(initial_states)).RetiresOnSaturation();
-  EXPECT_CALL(m_dd_api, setHdrStates(inverse_states)).Times(1).WillOnce(Return(false)).RetiresOnSaturation();
+  expectBlankHdrStateSetup(m_dd_api, initial_states, inverse_states, false);
 
   EXPECT_NO_THROW(display_device::win_utils::blankHdrStates(m_dd_api, std::chrono::milliseconds(0)));
 }
 
 TEST_F_S_MOCKED(BlankHdrStates, FailedToApplyOriginalStates) {
-  using enum display_device::HdrState;
-
-  const display_device::HdrStateMap initial_states {
-    {"DeviceId1", {Enabled}},
-    {"DeviceId2", {Disabled}},
-    {"DeviceId3", std::nullopt}
-  };
-  const display_device::HdrStateMap inverse_states {
-    {"DeviceId1", {Disabled}}
-  };
-  const display_device::HdrStateMap original_states {
-    {"DeviceId1", {Enabled}}
-  };
+  const auto initial_states {makeBlankHdrInitialStates()};
+  const auto inverse_states {makeBlankHdrInverseStates()};
+  const auto original_states {makeBlankHdrOriginalStates()};
 
   Sequence sequence;
-  EXPECT_CALL(m_dd_api, getCurrentTopology()).Times(1).WillOnce(Return(DEFAULT_INITIAL_TOPOLOGY)).RetiresOnSaturation();
-  EXPECT_CALL(m_dd_api, isTopologyValid(DEFAULT_INITIAL_TOPOLOGY)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
-  EXPECT_CALL(m_dd_api, getCurrentHdrStates(display_device::win_utils::flattenTopology(DEFAULT_INITIAL_TOPOLOGY))).Times(1).WillOnce(Return(initial_states)).RetiresOnSaturation();
-  EXPECT_CALL(m_dd_api, setHdrStates(inverse_states)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+  expectBlankHdrStateSetup(m_dd_api, initial_states, inverse_states, true);
   EXPECT_CALL(m_dd_api, setHdrStates(original_states)).Times(1).WillOnce(Return(false)).RetiresOnSaturation();
 
   EXPECT_NO_THROW(display_device::win_utils::blankHdrStates(m_dd_api, std::chrono::milliseconds(0)));
@@ -351,25 +352,12 @@ TEST_F_S_MOCKED(BlankHdrStates, NullDelay) {
 }
 
 TEST_F_S_MOCKED(BlankHdrStates, Success) {
-  using enum display_device::HdrState;
-
-  const display_device::HdrStateMap initial_states {
-    {"DeviceId1", {Enabled}},
-    {"DeviceId2", {Disabled}},
-    {"DeviceId3", std::nullopt}
-  };
-  const display_device::HdrStateMap inverse_states {
-    {"DeviceId1", {Disabled}}
-  };
-  const display_device::HdrStateMap original_states {
-    {"DeviceId1", {Enabled}}
-  };
+  const auto initial_states {makeBlankHdrInitialStates()};
+  const auto inverse_states {makeBlankHdrInverseStates()};
+  const auto original_states {makeBlankHdrOriginalStates()};
 
   Sequence sequence;
-  EXPECT_CALL(m_dd_api, getCurrentTopology()).Times(1).WillOnce(Return(DEFAULT_INITIAL_TOPOLOGY)).RetiresOnSaturation();
-  EXPECT_CALL(m_dd_api, isTopologyValid(DEFAULT_INITIAL_TOPOLOGY)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
-  EXPECT_CALL(m_dd_api, getCurrentHdrStates(display_device::win_utils::flattenTopology(DEFAULT_INITIAL_TOPOLOGY))).Times(1).WillOnce(Return(initial_states)).RetiresOnSaturation();
-  EXPECT_CALL(m_dd_api, setHdrStates(inverse_states)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+  expectBlankHdrStateSetup(m_dd_api, initial_states, inverse_states, true);
   EXPECT_CALL(m_dd_api, setHdrStates(original_states)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
 
   EXPECT_NO_THROW(display_device::win_utils::blankHdrStates(m_dd_api, std::chrono::milliseconds(0)));

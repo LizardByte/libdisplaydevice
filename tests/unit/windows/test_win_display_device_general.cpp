@@ -30,6 +30,56 @@ namespace {
 
   class WinDisplayDeviceGeneralMocked: public BaseTest {
   public:
+    void expectEnumeratedDeviceDetails(
+      const int id_number,
+      const bool include_display_name,
+      const std::vector<std::byte> &edid,
+      const bool include_mode_details = false,
+      const std::optional<display_device::Rational> &scale = std::nullopt,
+      const std::optional<display_device::HdrState> &hdr_state = std::nullopt
+    ) const {
+      EXPECT_CALL(*m_layer, getFriendlyName(_))
+        .Times(1)
+        .WillOnce(Return(std::format("FriendlyName{}", id_number)))
+        .RetiresOnSaturation();
+      if (include_display_name) {
+        EXPECT_CALL(*m_layer, getDisplayName(_))
+          .Times(1)
+          .WillOnce(Return(std::format("DisplayName{}", id_number)))
+          .RetiresOnSaturation();
+      }
+      EXPECT_CALL(*m_layer, getEdid(_))
+        .Times(1)
+        .WillOnce(Return(edid))
+        .RetiresOnSaturation();
+      if (include_mode_details) {
+        EXPECT_CALL(*m_layer, getDisplayScale(_, _))
+          .Times(1)
+          .WillOnce(Return(scale))
+          .RetiresOnSaturation();
+        EXPECT_CALL(*m_layer, getHdrState(_))
+          .Times(1)
+          .WillOnce(Return(hdr_state))
+          .RetiresOnSaturation();
+      }
+    }
+
+    void expectDisplayNameLookup(const std::string &resolved_display_name) const {
+      EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
+        .Times(1)
+        .WillOnce(Return(ut_consts::PAM_3_ACTIVE));
+      EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
+        .Times(1)
+        .WillOnce(Return("PathX"));
+      EXPECT_CALL(*m_layer, getDeviceId(_))
+        .Times(1)
+        .WillOnce(Return("DeviceId1"));
+      EXPECT_CALL(*m_layer, getDisplayName(_))
+        .Times(2)
+        .WillOnce(Return("DisplayName1"))
+        .WillOnce(Return(resolved_display_name));
+    }
+
     std::shared_ptr<StrictMock<display_device::MockWinApiLayer>> m_layer {std::make_shared<StrictMock<display_device::MockWinApiLayer>>()};
     display_device::WinDisplayDevice m_win_dd {m_layer};
   };
@@ -111,71 +161,11 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
     .WillOnce(Return(pam_active_and_inactive))
     .RetiresOnSaturation();
 
-  for (int i = 1; i <= 3; ++i) {
-    EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
-      .Times(1)
-      .WillOnce(Return(std::format("Path{}", i)))
-      .RetiresOnSaturation();
-    EXPECT_CALL(*m_layer, getDeviceId(_))
-      .Times(1)
-      .WillOnce(Return(std::format("DeviceId{}", i)))
-      .RetiresOnSaturation();
-    EXPECT_CALL(*m_layer, getDisplayName(_))
-      .Times(1)
-      .WillOnce(Return(std::format("DisplayName{}", i)))
-      .RetiresOnSaturation();
-  }
+  expectPathMetadataLookups(m_layer, 3);
 
-  EXPECT_CALL(*m_layer, getFriendlyName(_))
-    .Times(1)
-    .WillOnce(Return("FriendlyName1"))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getDisplayName(_))
-    .Times(1)
-    .WillOnce(Return("DisplayName1"))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getEdid(_))
-    .Times(1)
-    .WillOnce(Return(std::vector<std::byte> {}))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getDisplayScale(_, _))
-    .Times(1)
-    .WillOnce(Return(std::nullopt))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getHdrState(_))
-    .Times(1)
-    .WillOnce(Return(std::nullopt))
-    .RetiresOnSaturation();
-
-  EXPECT_CALL(*m_layer, getFriendlyName(_))
-    .Times(1)
-    .WillOnce(Return("FriendlyName2"))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getDisplayName(_))
-    .Times(1)
-    .WillOnce(Return("DisplayName2"))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getEdid(_))
-    .Times(1)
-    .WillOnce(Return(ut_consts::DEFAULT_EDID))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getDisplayScale(_, _))
-    .Times(1)
-    .WillOnce(Return(display_device::Rational {175, 100}))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getHdrState(_))
-    .Times(1)
-    .WillOnce(Return(display_device::HdrState::Enabled))
-    .RetiresOnSaturation();
-
-  EXPECT_CALL(*m_layer, getFriendlyName(_))
-    .Times(1)
-    .WillOnce(Return("FriendlyName3"))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getEdid(_))
-    .Times(1)
-    .WillOnce(Return(std::vector<std::byte> {}))
-    .RetiresOnSaturation();
+  expectEnumeratedDeviceDetails(1, true, {}, true);
+  expectEnumeratedDeviceDetails(2, true, ut_consts::DEFAULT_EDID, true, display_device::Rational {175, 100}, display_device::HdrState::Enabled);
+  expectEnumeratedDeviceDetails(3, false, {});
 
   const display_device::EnumeratedDeviceList expected_list {
     {"DeviceId1",
@@ -222,54 +212,10 @@ TEST_F_S_MOCKED(EnumAvailableDevices, MissingSourceModes) {
     .WillOnce(Return(pam_missing_modes))
     .RetiresOnSaturation();
 
-  for (int i = 1; i <= 2; ++i) {
-    EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
-      .Times(1)
-      .WillOnce(Return(std::format("Path{}", i)))
-      .RetiresOnSaturation();
-    EXPECT_CALL(*m_layer, getDeviceId(_))
-      .Times(1)
-      .WillOnce(Return(std::format("DeviceId{}", i)))
-      .RetiresOnSaturation();
-    EXPECT_CALL(*m_layer, getDisplayName(_))
-      .Times(1)
-      .WillOnce(Return(std::format("DisplayName{}", i)))
-      .RetiresOnSaturation();
-  }
+  expectPathMetadataLookups(m_layer, 2);
 
-  EXPECT_CALL(*m_layer, getFriendlyName(_))
-    .Times(1)
-    .WillOnce(Return("FriendlyName1"))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getDisplayName(_))
-    .Times(1)
-    .WillOnce(Return("DisplayName1"))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getEdid(_))
-    .Times(1)
-    .WillOnce(Return(std::vector<std::byte> {}))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getDisplayScale(_, _))
-    .Times(1)
-    .WillOnce(Return(std::nullopt))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getHdrState(_))
-    .Times(1)
-    .WillOnce(Return(std::nullopt))
-    .RetiresOnSaturation();
-
-  EXPECT_CALL(*m_layer, getFriendlyName(_))
-    .Times(1)
-    .WillOnce(Return("FriendlyName2"))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getDisplayName(_))
-    .Times(1)
-    .WillOnce(Return("DisplayName2"))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_layer, getEdid(_))
-    .Times(1)
-    .WillOnce(Return(ut_consts::DEFAULT_EDID))
-    .RetiresOnSaturation();
+  expectEnumeratedDeviceDetails(1, true, {}, true);
+  expectEnumeratedDeviceDetails(2, true, ut_consts::DEFAULT_EDID);
 
   const display_device::EnumeratedDeviceList expected_list {
     {"DeviceId1",
@@ -327,19 +273,7 @@ TEST_F_S(GetDisplayName) {
 }
 
 TEST_F_S_MOCKED(GetDisplayName) {
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-    .Times(1)
-    .WillOnce(Return(ut_consts::PAM_3_ACTIVE));
-  EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
-    .Times(1)
-    .WillOnce(Return("PathX"));
-  EXPECT_CALL(*m_layer, getDeviceId(_))
-    .Times(1)
-    .WillOnce(Return("DeviceId1"));
-  EXPECT_CALL(*m_layer, getDisplayName(_))
-    .Times(2)
-    .WillOnce(Return("DisplayName1"))
-    .WillOnce(Return("DisplayName1"));
+  expectDisplayNameLookup("DisplayName1");
 
   EXPECT_EQ(m_win_dd.getDisplayName("DeviceId1"), "DisplayName1");
 }
@@ -365,19 +299,7 @@ TEST_F_S_MOCKED(GetDisplayName, FailedToGetActivePath) {
 }
 
 TEST_F_S_MOCKED(GetDisplayName, EmptyDisplayName) {
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-    .Times(1)
-    .WillOnce(Return(ut_consts::PAM_3_ACTIVE));
-  EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
-    .Times(1)
-    .WillOnce(Return("PathX"));
-  EXPECT_CALL(*m_layer, getDeviceId(_))
-    .Times(1)
-    .WillOnce(Return("DeviceId1"));
-  EXPECT_CALL(*m_layer, getDisplayName(_))
-    .Times(2)
-    .WillOnce(Return("DisplayName1"))
-    .WillOnce(Return(""));
+  expectDisplayNameLookup("");
 
   EXPECT_EQ(m_win_dd.getDisplayName("DeviceId1"), std::string {});
 }
