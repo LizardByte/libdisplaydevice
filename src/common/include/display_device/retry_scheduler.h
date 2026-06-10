@@ -68,6 +68,11 @@ namespace display_device {
   };
 
   namespace detail {
+    /**
+     * @brief Log an exception thrown by the scheduler or scheduler callback.
+     * @param exception Exception to log.
+     * @param message Context message to prepend.
+     */
     inline void logSchedulerException(const std::exception &exception, const char *message) {
       DD_LOG(error) << message << " Error:\n"
                     << exception.what();
@@ -84,22 +89,40 @@ namespace display_device {
 
     /**
      * @brief A convenience template struct helper for adding const to the type.
+     * @tparam T Base type.
+     * @tparam AddConst Whether to add const to the base type.
      */
     template<class T, bool AddConst>
     struct AutoConst;
 
+    /**
+     * @brief Leaves the base type unchanged.
+     * @tparam T Base type.
+     */
     template<class T>
     struct AutoConst<T, false> {
+      /**
+       * @brief Original type.
+       */
       using type = T;
     };
 
+    /**
+     * @brief Adds const to the base type.
+     * @tparam T Base type.
+     */
     template<class T>
     struct AutoConst<T, true> {
+      /**
+       * @brief Const-qualified type.
+       */
       using type = std::add_const_t<T>;
     };
 
     /**
      * @brief A convenience template helper for adding const to the type.
+     * @tparam T Base type.
+     * @tparam AddConst Whether to add const to the base type.
      */
     template<class T, bool AddConst>
     using auto_const_t = typename AutoConst<T, AddConst>::type;
@@ -242,6 +265,9 @@ namespace display_device {
 
     /**
      * @brief A non-const variant of the `executeImpl` method. See it for details.
+     * @tparam FunctionT Function type.
+     * @param exec_fn Function to execute.
+     * @returns The return value from the function.
      */
     template<class FunctionT>
     auto execute(FunctionT &&exec_fn) {
@@ -250,6 +276,9 @@ namespace display_device {
 
     /**
      * @brief A const variant of the `executeImpl` method. See it for details.
+     * @tparam FunctionT Function type.
+     * @param exec_fn Function to execute.
+     * @returns The return value from the function.
      */
     template<class FunctionT>
     auto execute(FunctionT &&exec_fn) const {
@@ -421,16 +450,16 @@ namespace display_device {
       }
     }
 
-    std::unique_ptr<T> m_iface; /**< Interface to be passed around to the executor functions. */
-    std::vector<std::chrono::milliseconds> m_sleep_durations; /**< Sleep times for the timer. */
-    std::function<void(T &, SchedulerStopToken &)> m_retry_function {nullptr}; /**< Function to be executed until it succeeds. */
+    std::unique_ptr<T> m_iface;  ///< Interface to be passed around to the executor functions.
+    std::vector<std::chrono::milliseconds> m_sleep_durations;  ///< Sleep times for the timer.
+    std::function<void(T &, SchedulerStopToken &)> m_retry_function {nullptr};  ///< Function to be executed until it succeeds.
 
-    mutable std::mutex m_mutex {}; /**< A mutex for synchronizing thread and "external" access. */
-    std::condition_variable m_sleep_cv {}; /**< Condition variable for waking up thread. */
-    bool m_syncing_thread {false}; /**< Safeguard for the condition variable to prevent sporadic thread wake-ups. */
-    bool m_keep_alive {true}; /**< When set to false, scheduler thread will exit. */
+    mutable std::mutex m_mutex {};  ///< A mutex for synchronizing thread and "external" access.
+    std::condition_variable m_sleep_cv {};  ///< Condition variable for waking up thread.
+    bool m_syncing_thread {false};  ///< Safeguard for the condition variable to prevent sporadic thread wake-ups.
+    bool m_keep_alive {true};  ///< When set to false, scheduler thread will exit.
 
     // Always the last in the list so that all the members are already initialized!
-    std::thread m_thread; /**< A scheduler thread. */  // NOSONAR(cpp:S6168): std::jthread is unavailable on the macOS libc++ used by CI.
+    std::thread m_thread; /* NOSONAR(cpp:S6168): std::jthread is unavailable on the macOS libc++ used by CI. */  ///< A scheduler thread.
   };
 }  // namespace display_device

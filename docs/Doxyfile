@@ -32,8 +32,7 @@ DOT_GRAPH_MAX_NODES = 50
 # IMAGE_PATH = ../docs/images
 INCLUDE_PATH =
 
-# TODO: Enable this when we have complete documentation
-WARN_IF_UNDOCUMENTED = NO
+WARN_IF_UNDOCUMENTED = YES
 
 # files and directories to process
 USE_MDFILE_AS_MAINPAGE = ../README.md

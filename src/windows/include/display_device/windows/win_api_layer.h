@@ -16,37 +16,59 @@ namespace display_device {
    */
   class WinApiLayer: public WinApiLayerInterface {
   public:
-    /** For details @see WinApiLayerInterface::getErrorString */
+    /**
+     * @copydoc WinApiLayerInterface::getErrorString
+     */
     [[nodiscard]] std::string getErrorString(LONG error_code) const override;
 
-    /** For details @see WinApiLayerInterface::queryDisplayConfig */
+    /**
+     * @copydoc WinApiLayerInterface::queryDisplayConfig
+     */
     [[nodiscard]] std::optional<PathAndModeData> queryDisplayConfig(QueryType type) const override;
 
-    /** For details @see WinApiLayerInterface::getDeviceId */
+    /**
+     * @copydoc WinApiLayerInterface::getDeviceId
+     */
     [[nodiscard]] std::string getDeviceId(const DISPLAYCONFIG_PATH_INFO &path) const override;
 
-    /** For details @see WinApiLayerInterface::getEdid */
+    /**
+     * @copydoc WinApiLayerInterface::getEdid
+     */
     [[nodiscard]] std::vector<std::byte> getEdid(const DISPLAYCONFIG_PATH_INFO &path) const override;
 
-    /** For details @see WinApiLayerInterface::getMonitorDevicePath */
+    /**
+     * @copydoc WinApiLayerInterface::getMonitorDevicePath
+     */
     [[nodiscard]] std::string getMonitorDevicePath(const DISPLAYCONFIG_PATH_INFO &path) const override;
 
-    /** For details @see WinApiLayerInterface::getFriendlyName */
+    /**
+     * @copydoc WinApiLayerInterface::getFriendlyName
+     */
     [[nodiscard]] std::string getFriendlyName(const DISPLAYCONFIG_PATH_INFO &path) const override;
 
-    /** For details @see WinApiLayerInterface::getDisplayName */
+    /**
+     * @copydoc WinApiLayerInterface::getDisplayName
+     */
     [[nodiscard]] std::string getDisplayName(const DISPLAYCONFIG_PATH_INFO &path) const override;
 
-    /** For details @see WinApiLayerInterface::setDisplayConfig */
+    /**
+     * @copydoc WinApiLayerInterface::setDisplayConfig
+     */
     [[nodiscard]] LONG setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> paths, std::vector<DISPLAYCONFIG_MODE_INFO> modes, UINT32 flags) override;
 
-    /** For details @see WinApiLayerInterface::getHdrState */
+    /**
+     * @copydoc WinApiLayerInterface::getHdrState
+     */
     [[nodiscard]] std::optional<HdrState> getHdrState(const DISPLAYCONFIG_PATH_INFO &path) const override;
 
-    /** For details @see WinApiLayerInterface::setHdrState */
+    /**
+     * @copydoc WinApiLayerInterface::setHdrState
+     */
     [[nodiscard]] bool setHdrState(const DISPLAYCONFIG_PATH_INFO &path, HdrState state) override;
 
-    /** For details @see WinApiLayerInterface::getDisplayScale */
+    /**
+     * @copydoc WinApiLayerInterface::getDisplayScale
+     */
     [[nodiscard]] std::optional<Rational> getDisplayScale(std::string_view display_name, const DISPLAYCONFIG_SOURCE_MODE &source_mode) const override;
   };
 }  // namespace display_device

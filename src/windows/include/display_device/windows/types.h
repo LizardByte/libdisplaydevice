@@ -24,24 +24,24 @@ namespace display_device {
    * @brief Type of query the OS should perform while searching for display devices.
    */
   enum class QueryType {
-    Active, /**< The device path must be active. */
-    All /**< The device path can be active or inactive. */
+    Active,  ///< The device path must be active.
+    All  ///< The device path can be active or inactive.
   };
 
   /**
    * @brief Contains currently available paths and associated modes.
    */
   struct PathAndModeData {
-    std::vector<DISPLAYCONFIG_PATH_INFO> m_paths {}; /**< Available display paths. */
-    std::vector<DISPLAYCONFIG_MODE_INFO> m_modes {}; /**< Display modes for ACTIVE displays. */
+    std::vector<DISPLAYCONFIG_PATH_INFO> m_paths {};  ///< Available display paths.
+    std::vector<DISPLAYCONFIG_MODE_INFO> m_modes {};  ///< Display modes for ACTIVE displays.
   };
 
   /**
    * @brief Specifies additional constraints for the validated device.
    */
   enum class ValidatedPathType {
-    Active, /**< The device path must be active. */
-    Any /**< The device path can be active or inactive. */
+    Active,  ///< The device path must be active.
+    Any  ///< The device path can be active or inactive.
   };
 
   /**
@@ -50,17 +50,17 @@ namespace display_device {
    * @see WinApiLayerInterface::getDeviceId for how we make the device id.
    */
   struct ValidatedDeviceInfo {
-    std::string m_device_path {}; /**< Unique device path string. */
-    std::string m_device_id {}; /**< A device id (made up by us) that identifies the device. */
+    std::string m_device_path {};  ///< Unique device path string.
+    std::string m_device_id {};  ///< A device id (made up by us) that identifies the device.
   };
 
   /**
    * @brief Contains information about sources with identical adapter ids from matching paths.
    */
   struct PathSourceIndexData {
-    std::map<UINT32, std::size_t> m_source_id_to_path_index {}; /**< Maps source ids to its index in the path list. */
-    LUID m_adapter_id {}; /**< Adapter id shared by all source ids. */
-    std::optional<UINT32> m_active_source {}; /**< Currently active source id. */
+    std::map<UINT32, std::size_t> m_source_id_to_path_index {};  ///< Maps source ids to its index in the path list.
+    LUID m_adapter_id {};  ///< Adapter id shared by all source ids.
+    std::optional<UINT32> m_active_source {};  ///< Currently active source id.
 
     /**
      * @brief Comparator for strict equality.
@@ -99,8 +99,8 @@ namespace display_device {
    * @brief Display's mode (resolution + refresh rate).
    */
   struct DisplayMode {
-    Resolution m_resolution {};
-    Rational m_refresh_rate {};
+    Resolution m_resolution {};  ///< Display resolution.
+    Rational m_refresh_rate {};  ///< Display refresh rate.
 
     /**
      * @brief Comparator for strict equality.
@@ -129,8 +129,8 @@ namespace display_device {
      *        as a base when trying to re-apply settings without reverting settings.
      */
     struct Initial {
-      ActiveTopology m_topology {};
-      StringSet m_primary_devices {};
+      ActiveTopology m_topology {};  ///< Original active topology.
+      StringSet m_primary_devices {};  ///< Original primary device IDs.
 
       /**
        * @brief Comparator for strict equality.
@@ -142,10 +142,10 @@ namespace display_device {
      * @brief Data for tracking the modified changes.
      */
     struct Modified {
-      ActiveTopology m_topology {};
-      DeviceDisplayModeMap m_original_modes {};
-      HdrStateMap m_original_hdr_states {};
-      std::string m_original_primary_device {};
+      ActiveTopology m_topology {};  ///< Modified active topology.
+      DeviceDisplayModeMap m_original_modes {};  ///< Original display modes before modification.
+      HdrStateMap m_original_hdr_states {};  ///< Original HDR states before modification.
+      std::string m_original_primary_device {};  ///< Original primary device before modification.
 
       /**
        * @brief Check if the changed topology has any other modifications.
@@ -166,8 +166,8 @@ namespace display_device {
       friend bool operator==(const Modified &lhs, const Modified &rhs) = default;
     };
 
-    Initial m_initial;
-    Modified m_modified;
+    Initial m_initial;  ///< Initial system state.
+    Modified m_modified;  ///< Modified system state.
 
     /**
      * @brief Comparator for strict equality.

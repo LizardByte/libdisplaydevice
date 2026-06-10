@@ -13,13 +13,19 @@ namespace display_device {
    */
   class NoopAudioContext: public AudioContextInterface {
   public:
-    /** Always returns true and sets m_is_captured to true. */
+    /**
+     * @copydoc AudioContextInterface::capture
+     */
     [[nodiscard]] bool capture() override;
 
-    /** Returns the m_is_captured value. */
+    /**
+     * @copydoc AudioContextInterface::isCaptured
+     */
     [[nodiscard]] bool isCaptured() const override;
 
-    /** Sets m_is_captured to false. */
+    /**
+     * @copydoc AudioContextInterface::release
+     */
     void release() override;
 
   private:

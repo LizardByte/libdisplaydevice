@@ -24,22 +24,19 @@ namespace display_device {
     explicit FileSettingsPersistence(std::filesystem::path filepath);
 
     /**
-     * Store the data in the file specified in constructor.
+     * @copydoc SettingsPersistenceInterface::store
      * @warning The method does not create missing directories!
-     * @see SettingsPersistenceInterface::store for more details.
      */
     [[nodiscard]] bool store(const std::vector<std::uint8_t> &data) override;
 
     /**
-     * Read the data from the file specified in constructor.
+     * @copydoc SettingsPersistenceInterface::load
      * @note If file does not exist, an empty data list will be returned instead of null optional.
-     * @see SettingsPersistenceInterface::load for more details.
      */
     [[nodiscard]] std::optional<std::vector<std::uint8_t>> load() const override;
 
     /**
-     * Remove the file specified in constructor (if it exists).
-     * @see SettingsPersistenceInterface::clear for more details.
+     * @copydoc SettingsPersistenceInterface::clear
      */
     [[nodiscard]] bool clear() override;
 

@@ -23,43 +23,69 @@ namespace display_device {
      */
     explicit WinDisplayDevice(std::shared_ptr<WinApiLayerInterface> w_api);
 
-    /** For details @see WinDisplayDeviceInterface::isApiAccessAvailable */
+    /**
+     * @copydoc WinDisplayDeviceInterface::isApiAccessAvailable
+     */
     [[nodiscard]] bool isApiAccessAvailable() const override;
 
-    /** For details @see WinDisplayDeviceInterface::enumAvailableDevices */
+    /**
+     * @copydoc WinDisplayDeviceInterface::enumAvailableDevices
+     */
     [[nodiscard]] EnumeratedDeviceList enumAvailableDevices() const override;
 
-    /** For details @see WinDisplayDeviceInterface::getDisplayName */
+    /**
+     * @copydoc WinDisplayDeviceInterface::getDisplayName
+     */
     [[nodiscard]] std::string getDisplayName(const std::string &device_id) const override;
 
-    /** For details @see WinDisplayDeviceInterface::getCurrentTopology */
+    /**
+     * @copydoc WinDisplayDeviceInterface::getCurrentTopology
+     */
     [[nodiscard]] ActiveTopology getCurrentTopology() const override;
 
-    /** For details @see WinDisplayDeviceInterface::isTopologyValid */
+    /**
+     * @copydoc WinDisplayDeviceInterface::isTopologyValid
+     */
     [[nodiscard]] bool isTopologyValid(const ActiveTopology &topology) const override;
 
-    /** For details @see WinDisplayDeviceInterface::getCurrentTopology */
+    /**
+     * @copydoc WinDisplayDeviceInterface::isTopologyTheSame
+     */
     [[nodiscard]] bool isTopologyTheSame(const ActiveTopology &lhs, const ActiveTopology &rhs) const override;
 
-    /** For details @see WinDisplayDeviceInterface::setTopology */
+    /**
+     * @copydoc WinDisplayDeviceInterface::setTopology
+     */
     [[nodiscard]] bool setTopology(const ActiveTopology &new_topology) override;
 
-    /** For details @see WinDisplayDeviceInterface::getCurrentDisplayModes */
+    /**
+     * @copydoc WinDisplayDeviceInterface::getCurrentDisplayModes
+     */
     [[nodiscard]] DeviceDisplayModeMap getCurrentDisplayModes(const StringSet &device_ids) const override;
 
-    /** For details @see WinDisplayDeviceInterface::setDisplayModes */
+    /**
+     * @copydoc WinDisplayDeviceInterface::setDisplayModes
+     */
     [[nodiscard]] bool setDisplayModes(const DeviceDisplayModeMap &modes) override;
 
-    /** For details @see WinDisplayDeviceInterface::isPrimary */
+    /**
+     * @copydoc WinDisplayDeviceInterface::isPrimary
+     */
     [[nodiscard]] bool isPrimary(const std::string &device_id) const override;
 
-    /** For details @see WinDisplayDeviceInterface::setAsPrimary */
+    /**
+     * @copydoc WinDisplayDeviceInterface::setAsPrimary
+     */
     [[nodiscard]] bool setAsPrimary(const std::string &device_id) override;
 
-    /** For details @see WinDisplayDeviceInterface::getCurrentHdrStates */
+    /**
+     * @copydoc WinDisplayDeviceInterface::getCurrentHdrStates
+     */
     [[nodiscard]] HdrStateMap getCurrentHdrStates(const StringSet &device_ids) const override;
 
-    /** For details @see WinDisplayDeviceInterface::setHdrStates */
+    /**
+     * @copydoc WinDisplayDeviceInterface::setHdrStates
+     */
     [[nodiscard]] bool setHdrStates(const HdrStateMap &states) override;
 
   private:
