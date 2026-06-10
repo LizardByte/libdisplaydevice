@@ -4,10 +4,10 @@
 #include <gmock/gmock.h>
 
 // local includes
-#include "display_device/windows/win_display_device.h"
+#include "display_device/windows/win_display_device_interface.h"
 
 namespace display_device {
-  class MockWinDisplayDevice: public WinDisplayDeviceInterface {
+  class MockWinDisplayDeviceBase: public WinDisplayDeviceInterface {
   public:
     MOCK_METHOD(bool, isApiAccessAvailable, (), (const, override));
     MOCK_METHOD(EnumeratedDeviceList, enumAvailableDevices, (), (const, override));
@@ -16,6 +16,10 @@ namespace display_device {
     MOCK_METHOD(bool, isTopologyValid, (const ActiveTopology &), (const, override));
     MOCK_METHOD(bool, isTopologyTheSame, (const ActiveTopology &, const ActiveTopology &), (const, override));
     MOCK_METHOD(bool, setTopology, (const ActiveTopology &), (override));
+  };
+
+  class MockWinDisplayDevice: public MockWinDisplayDeviceBase {
+  public:
     MOCK_METHOD(DeviceDisplayModeMap, getCurrentDisplayModes, (const StringSet &), (const, override));
     MOCK_METHOD(bool, setDisplayModes, (const DeviceDisplayModeMap &), (override));
     MOCK_METHOD(bool, isPrimary, (const std::string &), (const, override));

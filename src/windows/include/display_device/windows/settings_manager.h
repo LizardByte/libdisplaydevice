@@ -105,6 +105,33 @@ namespace display_device {
      */
     [[nodiscard]] RevertResult revertModifiedSettings(const ActiveTopology &current_topology, bool &system_settings_touched, bool *switched_topology = nullptr);
 
+    /**
+     * @brief Revert HDR changes tracked in the modified settings state.
+     * @param modified_state Modified state data to revert.
+     * @param guard_fn Reference to the guard function which will be set to restore the current state if needed.
+     * @param system_settings_touched Indicates whether a "write" operation could have been performed on the OS.
+     * @returns Result enum indicating success or failure.
+     */
+    [[nodiscard]] RevertResult revertModifiedHdrStates(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched);
+
+    /**
+     * @brief Revert display mode changes tracked in the modified settings state.
+     * @param modified_state Modified state data to revert.
+     * @param guard_fn Reference to the guard function which will be set to restore the current state if needed.
+     * @param system_settings_touched Indicates whether a "write" operation could have been performed on the OS.
+     * @returns Result enum indicating success or failure.
+     */
+    [[nodiscard]] RevertResult revertModifiedDisplayModes(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched);
+
+    /**
+     * @brief Revert primary device changes tracked in the modified settings state.
+     * @param modified_state Modified state data to revert.
+     * @param guard_fn Reference to the guard function which will be set to restore the current state if needed.
+     * @param system_settings_touched Indicates whether a "write" operation could have been performed on the OS.
+     * @returns Result enum indicating success or failure.
+     */
+    [[nodiscard]] RevertResult revertModifiedPrimaryDevice(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched);
+
     std::shared_ptr<WinDisplayDeviceInterface> m_dd_api;
     std::shared_ptr<AudioContextInterface> m_audio_context_api;
     std::unique_ptr<PersistentState> m_persistence_state;
