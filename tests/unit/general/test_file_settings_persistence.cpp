@@ -1,5 +1,6 @@
 // system includes
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <gmock/gmock.h>
 #include <stdexcept>
@@ -16,7 +17,8 @@ namespace {
   class FileSettingsPersistenceTest: public BaseTest {
   public:
     ~FileSettingsPersistenceTest() override {
-      std::filesystem::remove(m_filepath);
+      std::error_code error_code;
+      std::filesystem::remove_all(m_filepath, error_code);
     }
 
     display_device::FileSettingsPersistence &getImpl(const std::filesystem::path &filepath = "testfile.ext") {
@@ -101,6 +103,13 @@ TEST_F_S(Load, FileRead) {
   EXPECT_EQ(getImpl(filepath).load(), data);
 }
 
+TEST_F_S(Load, FilepathIsDirectory) {
+  const std::filesystem::path filepath {"settings-dir"};
+
+  std::filesystem::create_directory(filepath);
+  EXPECT_EQ(getImpl(filepath).load(), std::nullopt);
+}
+
 TEST_F_S(Clear, NoFileAvailable) {
   EXPECT_TRUE(getImpl().clear());
 }
@@ -115,4 +124,18 @@ TEST_F_S(Clear, FileRemoved) {
   EXPECT_TRUE(std::filesystem::exists(filepath));
   EXPECT_TRUE(getImpl(filepath).clear());
   EXPECT_FALSE(std::filesystem::exists(filepath));
+}
+
+TEST_F_S(Clear, NonEmptyDirectory) {
+  const std::filesystem::path filepath {"settings-dir"};
+
+  std::filesystem::create_directory(filepath);
+  {
+    std::ofstream file {filepath / "child.ext"};
+    file << "some data";
+  }
+
+  EXPECT_TRUE(std::filesystem::exists(filepath));
+  EXPECT_FALSE(getImpl(filepath).clear());
+  EXPECT_TRUE(std::filesystem::exists(filepath));
 }

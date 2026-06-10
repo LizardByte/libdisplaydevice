@@ -32,6 +32,7 @@ namespace display_device {
     /**
      * @copydoc SettingsPersistenceInterface::load
      * @note If file does not exist, an empty data list will be returned instead of null optional.
+     * @note If the path exists but is not a regular file, null optional will be returned.
      */
     [[nodiscard]] std::optional<std::vector<std::uint8_t>> load() const override;
 

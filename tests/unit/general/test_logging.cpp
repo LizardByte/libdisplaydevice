@@ -219,6 +219,16 @@ TEST_S(LogMacroDisablesStreamChain) {
   EXPECT_EQ(some_function_invoked, true);
 }
 
+TEST_S(LogWriterStreamOperatorReturnsSelf) {
+  using level = display_device::Logger::LogLevel;
+
+  display_device::Logger::get().setLogLevel(level::fatal);
+  display_device::LogWriter writer {level::info};
+
+  auto &same_writer {writer << "Hello " << 123};
+  EXPECT_EQ(&same_writer, &writer);
+}
+
 TEST_S(LogWriterDestructorDoesNotPropagateCallbackExceptions) {
   using level = display_device::Logger::LogLevel;
   auto &logger {display_device::Logger::get()};

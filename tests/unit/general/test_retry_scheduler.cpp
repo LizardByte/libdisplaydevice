@@ -333,10 +333,9 @@ TEST_F_S(Execute, NonConst, NullptrCallbackProvided) {
 }
 
 TEST_F_S(Execute, Const, NullptrCallbackProvided) {
-  // Note: this test verifies that non-const method is invoked from const method.
   EXPECT_THAT([this]() {
-    auto &const_impl {m_impl};
-    const_impl.execute(std::function<void(TestIface &)> {});
+    const auto &const_impl {m_impl};
+    const_impl.execute(std::function<void(const TestIface &)> {});
   },
               ThrowsMessage<std::invalid_argument>(HasSubstr("Empty callback function provided in RetryScheduler::execute!")));
 }
