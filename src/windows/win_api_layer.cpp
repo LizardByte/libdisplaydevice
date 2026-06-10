@@ -25,6 +25,7 @@
 
 // local includes
 #include "display_device/logging.h"
+#include "display_device/windows/detail/display_config.h"
 
 // Windows includes after "windows.h"
 #include <SetupAPI.h>
@@ -113,13 +114,13 @@ namespace display_device {
         output << "scanLineOrdering: " << info.targetMode.targetVideoSignalInfo.scanLineOrdering;
         // clang-format on
       } else if (info.infoType == DISPLAYCONFIG_MODE_INFO_TYPE_DESKTOP_IMAGE) {
-        // TODO: One day MinGW will add updated struct definition and the following code can be enabled
+        const auto desktop_image_info {detail::getDesktopImageInfo(info)};
+
         // clang-format off
-        // output << "PathSourceSize: [" << info.desktopImageInfo.PathSourceSize.x << ", " << info.desktopImageInfo.PathSourceSize.y << "]" << std::endl;
-        // output << "DesktopImageRegion: [" << info.desktopImageInfo.DesktopImageRegion.bottom << ", " << info.desktopImageInfo.DesktopImageRegion.left << ", " << info.desktopImageInfo.DesktopImageRegion.right << ", " << info.desktopImageInfo.DesktopImageRegion.top << "]" << std::endl;
-        // output << "DesktopImageClip: [" << info.desktopImageInfo.DesktopImageClip.bottom << ", " << info.desktopImageInfo.DesktopImageClip.left << ", " << info.desktopImageInfo.DesktopImageClip.right << ", " << info.desktopImageInfo.DesktopImageClip.top << "]";
+        output << "PathSourceSize: [" << desktop_image_info.PathSourceSize.x << ", " << desktop_image_info.PathSourceSize.y << "]" << std::endl;
+        output << "DesktopImageRegion: [" << desktop_image_info.DesktopImageRegion.bottom << ", " << desktop_image_info.DesktopImageRegion.left << ", " << desktop_image_info.DesktopImageRegion.right << ", " << desktop_image_info.DesktopImageRegion.top << "]" << std::endl;
+        output << "DesktopImageClip: [" << desktop_image_info.DesktopImageClip.bottom << ", " << desktop_image_info.DesktopImageClip.left << ", " << desktop_image_info.DesktopImageClip.right << ", " << desktop_image_info.DesktopImageClip.top << "]";
         // clang-format on
-        output << "NOT SUPPORTED BY COMPILER YET...";
       } else {
         output << "NOT IMPLEMENTED YET...";
       }

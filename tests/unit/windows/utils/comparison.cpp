@@ -1,6 +1,8 @@
 // local includes
 #include "comparison.h"
 
+#include "display_device/windows/detail/display_config.h"
+
 bool operator==(const LUID &lhs, const LUID &rhs) {  // NOSONAR(cpp:S2807): Windows SDK types cannot declare hidden friend test helpers.
   return lhs.HighPart == rhs.HighPart && lhs.LowPart == rhs.LowPart;
 }
@@ -82,8 +84,7 @@ bool operator==(const DISPLAYCONFIG_MODE_INFO &lhs, const DISPLAYCONFIG_MODE_INF
     } else if (lhs.infoType == DISPLAYCONFIG_MODE_INFO_TYPE_TARGET) {
       return lhs.targetMode == rhs.targetMode;
     } else if (lhs.infoType == DISPLAYCONFIG_MODE_INFO_TYPE_DESKTOP_IMAGE) {
-      // TODO: fix once implemented
-      return false;
+      return display_device::detail::getDesktopImageInfo(lhs) == display_device::detail::getDesktopImageInfo(rhs);
     } else {
       return true;
     }
