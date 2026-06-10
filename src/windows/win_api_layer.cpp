@@ -243,6 +243,65 @@ namespace display_device {
       return !edid.empty();
     }
 
+    enum class MonitorLookupResult {
+      Continue,
+      Finished,
+      Found
+    };
+
+    struct MonitorLookupData {
+      std::wstring m_instance_id;
+      std::vector<std::byte> m_edid;
+    };
+
+    MonitorLookupResult tryGetMonitorLookupData(
+      const WinApiLayerInterface &w_api,
+      HDEVINFO dev_info_handle,
+      const GUID &monitor_guid,
+      DWORD monitor_index,
+      const std::wstring &device_path,
+      MonitorLookupData &lookup_data
+    ) {
+      SP_DEVICE_INTERFACE_DATA dev_interface_data {};
+      dev_interface_data.cbSize = sizeof(dev_interface_data);
+      if (!SetupDiEnumDeviceInterfaces(dev_info_handle, nullptr, &monitor_guid, monitor_index, &dev_interface_data)) {
+        const DWORD error_code {GetLastError()};
+        if (error_code == ERROR_NO_MORE_ITEMS) {
+          return MonitorLookupResult::Finished;
+        }
+
+        DD_LOG(warning) << w_api.getErrorString(static_cast<LONG>(error_code)) << " \"SetupDiEnumDeviceInterfaces\" failed.";
+        return MonitorLookupResult::Continue;
+      }
+
+      std::wstring dev_interface_path;
+      SP_DEVINFO_DATA dev_info_data {};
+      dev_info_data.cbSize = sizeof(dev_info_data);
+      if (!getDeviceInterfaceDetail(w_api, dev_info_handle, dev_interface_data, dev_interface_path, dev_info_data)) {
+        // Error already logged
+        return MonitorLookupResult::Continue;
+      }
+
+      if (!boost::iequals(dev_interface_path, device_path)) {
+        return MonitorLookupResult::Continue;
+      }
+
+      std::wstring instance_id;
+      if (!getDeviceInstanceId(w_api, dev_info_handle, dev_info_data, instance_id)) {
+        // Error already logged
+        return MonitorLookupResult::Finished;
+      }
+
+      std::vector<std::byte> edid;
+      if (!getDeviceEdid(w_api, dev_info_handle, dev_info_data, edid)) {
+        // Error already logged
+        return MonitorLookupResult::Finished;
+      }
+
+      lookup_data = {std::move(instance_id), std::move(edid)};
+      return MonitorLookupResult::Found;
+    }
+
     /**
      * @brief Get instance ID and EDID via SetupAPI.
      * @param w_api Reference to the WinApiLayer.
@@ -261,44 +320,16 @@ namespace display_device {
           })
         };
 
-        SP_DEVICE_INTERFACE_DATA dev_interface_data {};
-        dev_interface_data.cbSize = sizeof(dev_interface_data);
         for (DWORD monitor_index = 0;; ++monitor_index) {
-          if (!SetupDiEnumDeviceInterfaces(dev_info_handle, nullptr, &monitor_guid, monitor_index, &dev_interface_data)) {
-            const DWORD error_code {GetLastError()};
-            if (error_code == ERROR_NO_MORE_ITEMS) {
-              break;
-            }
-
-            DD_LOG(warning) << w_api.getErrorString(static_cast<LONG>(error_code)) << " \"SetupDiEnumDeviceInterfaces\" failed.";
-            continue;
-          }
-
-          std::wstring dev_interface_path;
-          SP_DEVINFO_DATA dev_info_data {};
-          dev_info_data.cbSize = sizeof(dev_info_data);
-          if (!getDeviceInterfaceDetail(w_api, dev_info_handle, dev_interface_data, dev_interface_path, dev_info_data)) {
-            // Error already logged
-            continue;
-          }
-
-          if (!boost::iequals(dev_interface_path, device_path)) {
-            continue;
-          }
-
-          std::wstring instance_id;
-          if (!getDeviceInstanceId(w_api, dev_info_handle, dev_info_data, instance_id)) {
-            // Error already logged
+          MonitorLookupData lookup_data;
+          const auto lookup_result {tryGetMonitorLookupData(w_api, dev_info_handle, monitor_guid, monitor_index, device_path, lookup_data)};
+          if (lookup_result == MonitorLookupResult::Finished) {
             break;
           }
 
-          std::vector<std::byte> edid;
-          if (!getDeviceEdid(w_api, dev_info_handle, dev_info_data, edid)) {
-            // Error already logged
-            break;
+          if (lookup_result == MonitorLookupResult::Found) {
+            return std::make_tuple(std::move(lookup_data.m_instance_id), std::move(lookup_data.m_edid));
           }
-
-          return std::make_tuple(std::move(instance_id), std::move(edid));
         }
       }
 

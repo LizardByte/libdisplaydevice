@@ -219,6 +219,67 @@ namespace display_device::win_utils {
     return nullptr;
   }
 
+  namespace {
+    bool addUniqueDevicePathMapping(const ValidatedDeviceInfo &device_info, StringUnorderedMap<std::string> &paths_to_ids) {
+      const auto prev_device_id_for_path_it {paths_to_ids.find(device_info.m_device_path)};
+      if (prev_device_id_for_path_it != std::end(paths_to_ids)) {
+        if (prev_device_id_for_path_it->second == device_info.m_device_id) {
+          return true;
+        }
+
+        DD_LOG(error) << "Duplicate display device id found: " << device_info.m_device_id << " (device path: " << device_info.m_device_path << ")";
+        return false;
+      }
+
+      for (const auto &[device_path, device_id] : paths_to_ids) {
+        if (device_id != device_info.m_device_id) {
+          continue;
+        }
+
+        DD_LOG(error) << "Device id " << device_info.m_device_id << " is shared between 2 different paths: " << device_path << " and " << device_info.m_device_path;
+        return false;
+      }
+
+      paths_to_ids[device_info.m_device_path] = device_info.m_device_id;
+      return true;
+    }
+
+    bool updatePathSourceData(const ValidatedDeviceInfo &device_info, const DISPLAYCONFIG_PATH_INFO &path, std::size_t index, PathSourceIndexDataMap &path_data) {
+      auto path_data_it {path_data.find(device_info.m_device_id)};
+      if (path_data_it == std::end(path_data)) {
+        path_data[device_info.m_device_id] = {
+          {{path.sourceInfo.id, index}},
+          path.sourceInfo.adapterId,
+          // Since active paths are always in the front, this is the only time we set it
+          isActive(path) ? std::make_optional(path.sourceInfo.id) : std::nullopt
+        };
+        return true;
+      }
+
+      auto &source_data {path_data_it->second};
+      if (source_data.m_adapter_id != path.sourceInfo.adapterId) {
+        // Sanity check, should not be possible since adapter in embedded in the device path
+        DD_LOG(error) << "Device path " << device_info.m_device_path << " has different adapters!";
+        return false;
+      }
+
+      if (isActive(path)) {
+        // Sanity check, should not be possible as all active paths are in the front
+        DD_LOG(error) << "Device path " << device_info.m_device_path << " is active, but not the first entry in the list!";
+        return false;
+      }
+
+      if (source_data.m_source_id_to_path_index.contains(path.sourceInfo.id)) {
+        // Sanity check, should not be possible unless Windows goes bonkers
+        DD_LOG(error) << "Device path " << device_info.m_device_path << " has duplicate source ids!";
+        return false;
+      }
+
+      source_data.m_source_id_to_path_index[path.sourceInfo.id] = index;
+      return true;
+    }
+  }  // namespace
+
   PathSourceIndexDataMap collectSourceDataForMatchingPaths(const WinApiLayerInterface &w_api, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths) {
     PathSourceIndexDataMap path_data;
 
@@ -232,45 +293,8 @@ namespace display_device::win_utils {
         continue;
       }
 
-      if (const auto prev_device_id_for_path_it {paths_to_ids.find(device_info->m_device_path)}; prev_device_id_for_path_it != std::end(paths_to_ids)) {
-        if (prev_device_id_for_path_it->second != device_info->m_device_id) {
-          DD_LOG(error) << "Duplicate display device id found: " << device_info->m_device_id << " (device path: " << device_info->m_device_path << ")";
-          return {};
-        }
-      } else {
-        for (const auto &[device_path, device_id] : paths_to_ids) {
-          if (device_id == device_info->m_device_id) {
-            DD_LOG(error) << "Device id " << device_info->m_device_id << " is shared between 2 different paths: " << device_path << " and " << device_info->m_device_path;
-            return {};
-          }
-        }
-
-        paths_to_ids[device_info->m_device_path] = device_info->m_device_id;
-      }
-
-      if (auto path_data_it {path_data.find(device_info->m_device_id)}; path_data_it != std::end(path_data)) {
-        if (path_data_it->second.m_adapter_id != path.sourceInfo.adapterId) {
-          // Sanity check, should not be possible since adapter in embedded in the device path
-          DD_LOG(error) << "Device path " << device_info->m_device_path << " has different adapters!";
-          return {};
-        } else if (isActive(path)) {
-          // Sanity check, should not be possible as all active paths are in the front
-          DD_LOG(error) << "Device path " << device_info->m_device_path << " is active, but not the first entry in the list!";
-          return {};
-        } else if (path_data_it->second.m_source_id_to_path_index.contains(path.sourceInfo.id)) {
-          // Sanity check, should not be possible unless Windows goes bonkers
-          DD_LOG(error) << "Device path " << device_info->m_device_path << " has duplicate source ids!";
-          return {};
-        }
-
-        path_data_it->second.m_source_id_to_path_index[path.sourceInfo.id] = index;
-      } else {
-        path_data[device_info->m_device_id] = {
-          {{path.sourceInfo.id, index}},
-          path.sourceInfo.adapterId,
-          // Since active paths are always in the front, this is the only time we set it
-          isActive(path) ? std::make_optional(path.sourceInfo.id) : std::nullopt
-        };
+      if (!addUniqueDevicePathMapping(*device_info, paths_to_ids) || !updatePathSourceData(*device_info, path, index, path_data)) {
+        return {};
       }
 
       DD_LOG(verbose) << "Device " << device_info->m_device_id << " (active: " << isActive(path) << ") at index " << index << " added to the source data list.";
@@ -282,99 +306,151 @@ namespace display_device::win_utils {
     return path_data;
   }
 
-  std::vector<DISPLAYCONFIG_PATH_INFO> makePathsForNewTopology(const ActiveTopology &new_topology, const PathSourceIndexDataMap &path_source_data, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths) {
-    std::vector<DISPLAYCONFIG_PATH_INFO> new_paths;
+  namespace {
+    using SourceIdSetByAdapter = StringUnorderedMap<std::unordered_set<UINT32>>;
+    using SourceIdByAdapter = StringUnorderedMap<UINT32>;
 
-    UINT32 group_id {0};
-    StringUnorderedMap<std::unordered_set<UINT32>> used_source_ids_per_adapter;
-    const auto is_source_id_already_used = [&used_source_ids_per_adapter](const LUID &adapter_id, UINT32 source_id) {
-      if (auto entry_it {used_source_ids_per_adapter.find(toString(adapter_id))}; entry_it != std::end(used_source_ids_per_adapter)) {
+    struct SelectedSourcePath {
+      std::size_t m_path_index {};
+      UINT32 m_source_id {};
+      bool m_should_mark_source_used {};
+    };
+
+    bool isSourceIdAlreadyUsed(const LUID &adapter_id, UINT32 source_id, const SourceIdSetByAdapter &used_source_ids_per_adapter) {
+      if (const auto entry_it {used_source_ids_per_adapter.find(toString(adapter_id))}; entry_it != std::end(used_source_ids_per_adapter)) {
         return entry_it->second.contains(source_id);
       }
 
       return false;
-    };
+    }
 
-    for (const auto &group : new_topology) {
-      StringUnorderedMap<UINT32> used_source_ids_per_adapter_per_group;
-      const auto get_already_used_source_id_in_group = [&used_source_ids_per_adapter_per_group](const LUID &adapter_id) -> std::optional<UINT32> {
-        if (auto entry_it {used_source_ids_per_adapter_per_group.find(toString(adapter_id))}; entry_it != std::end(used_source_ids_per_adapter_per_group)) {
-          return entry_it->second;
+    std::optional<UINT32> getUsedSourceIdInGroup(const LUID &adapter_id, const SourceIdByAdapter &used_source_ids_per_adapter_per_group) {
+      const auto entry_it {used_source_ids_per_adapter_per_group.find(toString(adapter_id))};
+      if (entry_it == std::end(used_source_ids_per_adapter_per_group)) {
+        return std::nullopt;
+      }
+
+      return entry_it->second;
+    }
+
+    std::optional<SelectedSourcePath> getPathUsingSourceId(const std::string &device_id, const PathSourceIndexData &source_data, UINT32 source_id) {
+      const auto path_index_it {source_data.m_source_id_to_path_index.find(source_id)};
+      if (path_index_it == std::end(source_data.m_source_id_to_path_index)) {
+        DD_LOG(error) << "Device " << device_id << " does not have a path with a source id " << source_id << "!";
+        return std::nullopt;
+      }
+
+      return SelectedSourcePath {path_index_it->second, source_id, false};
+    }
+
+    std::optional<SelectedSourcePath> getBestUnusedSourcePath(const std::string &device_id, const PathSourceIndexData &source_data, const SourceIdSetByAdapter &used_source_ids_per_adapter) {
+      std::optional<SelectedSourcePath> selected_path;
+      for (const auto [source_id, index] : source_data.m_source_id_to_path_index) {
+        if (isSourceIdAlreadyUsed(source_data.m_adapter_id, source_id, used_source_ids_per_adapter)) {
+          continue;
         }
 
+        if (!selected_path || index < selected_path->m_path_index) {
+          selected_path = SelectedSourcePath {index, source_id, true};
+        }
+      }
+
+      if (selected_path) {
+        return selected_path;
+      }
+
+      // Apparently nvidia GPU can only render 4 different sources at a time (according to Google).
+      // However, it seems to be true only for physical connections as we also have virtual displays.
+      //
+      // Virtual displays have different adapter ids than the physical connection ones, but GPU still
+      // has to render them, so I don't know how this 4 source limitation makes sense then?
+      //
+      // In short, this arbitrary limitation should not affect virtual displays when the GPU is at its limit.
+      DD_LOG(error) << "Device " << device_id << " cannot be enabled as the adapter has no more free source ids (GPU limitation)!";
+      return std::nullopt;
+    }
+
+    std::optional<SelectedSourcePath> selectSourcePath(
+      const std::string &device_id,
+      const PathSourceIndexData &source_data,
+      const SourceIdSetByAdapter &used_source_ids_per_adapter,
+      const SourceIdByAdapter &used_source_ids_per_adapter_per_group
+    ) {
+      const auto already_used_source_id {getUsedSourceIdInGroup(source_data.m_adapter_id, used_source_ids_per_adapter_per_group)};
+      if (already_used_source_id.has_value()) {
+        // Some device in the group is already using the source id, and we belong to the same adapter.
+        // This means we must also use the path with matching source id.
+        return getPathUsingSourceId(device_id, source_data, *already_used_source_id);
+      }
+
+      // Here we want to select a path index that has the lowest index (the "best" of paths), but only
+      // if the source id is still free. Technically we should not need to find the lowest index, but that's
+      // what will match the Windows' behaviour the closest if we need to create new topology in the end.
+      return getBestUnusedSourcePath(device_id, source_data, used_source_ids_per_adapter);
+    }
+
+    void markSourcePathUsed(const LUID &adapter_id, UINT32 source_id, SourceIdSetByAdapter &used_source_ids_per_adapter, SourceIdByAdapter &used_source_ids_per_adapter_per_group) {
+      used_source_ids_per_adapter[toString(adapter_id)].insert(source_id);
+      used_source_ids_per_adapter_per_group[toString(adapter_id)] = source_id;
+    }
+
+    std::optional<DISPLAYCONFIG_PATH_INFO> makePathForNewTopologyDevice(
+      const std::string &device_id,
+      UINT32 group_id,
+      const PathSourceIndexDataMap &path_source_data,
+      const std::vector<DISPLAYCONFIG_PATH_INFO> &paths,
+      SourceIdSetByAdapter &used_source_ids_per_adapter,
+      SourceIdByAdapter &used_source_ids_per_adapter_per_group
+    ) {
+      auto path_source_data_it {path_source_data.find(device_id)};
+      if (path_source_data_it == std::end(path_source_data)) {
+        DD_LOG(error) << "Device " << device_id << " does not exist in the available path source data!";
         return std::nullopt;
-      };
+      }
+
+      const auto &source_data {path_source_data_it->second};
+      const auto selected_path {selectSourcePath(device_id, source_data, used_source_ids_per_adapter, used_source_ids_per_adapter_per_group)};
+      if (!selected_path) {
+        return std::nullopt;
+      }
+
+      if (selected_path->m_path_index >= paths.size()) {
+        DD_LOG(error) << "Selected path index " << selected_path->m_path_index << " is out of range! List size: " << paths.size();
+        return std::nullopt;
+      }
+
+      if (selected_path->m_should_mark_source_used) {
+        markSourcePathUsed(source_data.m_adapter_id, selected_path->m_source_id, used_source_ids_per_adapter, used_source_ids_per_adapter_per_group);
+      }
+
+      auto selected_display_path {paths[selected_path->m_path_index]};
+
+      // All the indexes must be cleared and only the group id specified
+      win_utils::setSourceIndex(selected_display_path, std::nullopt);
+      win_utils::setTargetIndex(selected_display_path, std::nullopt);
+      win_utils::setDesktopIndex(selected_display_path, std::nullopt);
+      win_utils::setCloneGroupId(selected_display_path, group_id);
+      win_utils::setActive(selected_display_path);  // We also need to mark it as active...
+
+      return selected_display_path;
+    }
+  }  // namespace
+
+  std::vector<DISPLAYCONFIG_PATH_INFO> makePathsForNewTopology(const ActiveTopology &new_topology, const PathSourceIndexDataMap &path_source_data, const std::vector<DISPLAYCONFIG_PATH_INFO> &paths) {
+    std::vector<DISPLAYCONFIG_PATH_INFO> new_paths;
+
+    UINT32 group_id {0};
+    SourceIdSetByAdapter used_source_ids_per_adapter;
+    for (const auto &group : new_topology) {
+      SourceIdByAdapter used_source_ids_per_adapter_per_group;
 
       for (const std::string &device_id : group) {
-        auto path_source_data_it {path_source_data.find(device_id)};
-        if (path_source_data_it == std::end(path_source_data)) {
-          DD_LOG(error) << "Device " << device_id << " does not exist in the available path source data!";
+        const auto selected_path {makePathForNewTopologyDevice(device_id, group_id, path_source_data, paths, used_source_ids_per_adapter, used_source_ids_per_adapter_per_group)};
+        if (!selected_path) {
           return {};
         }
 
-        std::size_t selected_path_index {};
-        const auto &source_data {path_source_data_it->second};
-
-        const auto already_used_source_id {get_already_used_source_id_in_group(source_data.m_adapter_id)};
-        if (already_used_source_id.has_value()) {
-          // Some device in the group is already using the source id, and we belong to the same adapter.
-          // This means we must also use the path with matching source id.
-          auto path_index_it {source_data.m_source_id_to_path_index.find(*already_used_source_id)};
-          if (path_index_it == std::end(source_data.m_source_id_to_path_index)) {
-            DD_LOG(error) << "Device " << device_id << " does not have a path with a source id " << *already_used_source_id << "!";
-            return {};
-          }
-
-          selected_path_index = path_index_it->second;
-        } else {
-          // Here we want to select a path index that has the lowest index (the "best" of paths), but only
-          // if the source id is still free. Technically we should not need to find the lowest index, but that's
-          // what will match the Windows' behaviour the closest if we need to create new topology in the end.
-          std::optional<std::size_t> path_index_candidate;
-          UINT32 used_source_id {};
-          for (const auto [source_id, index] : source_data.m_source_id_to_path_index) {
-            if (is_source_id_already_used(source_data.m_adapter_id, source_id)) {
-              continue;
-            }
-
-            if (!path_index_candidate || index < *path_index_candidate) {
-              path_index_candidate = index;
-              used_source_id = source_id;
-            }
-          }
-
-          if (!path_index_candidate.has_value()) {
-            // Apparently nvidia GPU can only render 4 different sources at a time (according to Google).
-            // However, it seems to be true only for physical connections as we also have virtual displays.
-            //
-            // Virtual displays have different adapter ids than the physical connection ones, but GPU still
-            // has to render them, so I don't know how this 4 source limitation makes sense then?
-            //
-            // In short, this arbitrary limitation should not affect virtual displays when the GPU is at its limit.
-            DD_LOG(error) << "Device " << device_id << " cannot be enabled as the adapter has no more free source ids (GPU limitation)!";
-            return {};
-          }
-
-          selected_path_index = *path_index_candidate;
-          used_source_ids_per_adapter[toString(source_data.m_adapter_id)].insert(used_source_id);
-          used_source_ids_per_adapter_per_group[toString(source_data.m_adapter_id)] = used_source_id;
-        }
-
-        if (selected_path_index >= paths.size()) {
-          DD_LOG(error) << "Selected path index " << selected_path_index << " is out of range! List size: " << paths.size();
-          return {};
-        }
-
-        auto selected_path {paths[selected_path_index]};
-
-        // All the indexes must be cleared and only the group id specified
-        win_utils::setSourceIndex(selected_path, std::nullopt);
-        win_utils::setTargetIndex(selected_path, std::nullopt);
-        win_utils::setDesktopIndex(selected_path, std::nullopt);
-        win_utils::setCloneGroupId(selected_path, group_id);
-        win_utils::setActive(selected_path);  // We also need to mark it as active...
-
-        new_paths.push_back(selected_path);
+        new_paths.push_back(*selected_path);
       }
 
       group_id++;

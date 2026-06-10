@@ -99,6 +99,80 @@ namespace display_device {
     return RevertResult::Ok;
   }
 
+  SettingsManager::RevertResult SettingsManager::revertModifiedHdrStates(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched) {
+    if (modified_state.m_original_hdr_states.empty()) {
+      return RevertResult::Ok;
+    }
+
+    const auto current_states {m_dd_api->getCurrentHdrStates(win_utils::flattenTopology(modified_state.m_topology))};
+    if (current_states == modified_state.m_original_hdr_states) {
+      return RevertResult::Ok;
+    }
+
+    system_settings_touched = true;
+
+    DD_LOG(info) << "Trying to change back the HDR states to:\n"
+                 << toJson(modified_state.m_original_hdr_states);
+    if (!m_dd_api->setHdrStates(modified_state.m_original_hdr_states)) {
+      // Error already logged
+      return RevertResult::RevertingHdrStatesFailed;
+    }
+
+    guard_fn = win_utils::hdrStateGuardFn(*m_dd_api, current_states);
+    return RevertResult::Ok;
+  }
+
+  SettingsManager::RevertResult SettingsManager::revertModifiedDisplayModes(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched) {
+    if (modified_state.m_original_modes.empty()) {
+      return RevertResult::Ok;
+    }
+
+    const auto current_modes {m_dd_api->getCurrentDisplayModes(win_utils::flattenTopology(modified_state.m_topology))};
+    if (current_modes == modified_state.m_original_modes) {
+      return RevertResult::Ok;
+    }
+
+    DD_LOG(info) << "Trying to change back the display modes to:\n"
+                 << toJson(modified_state.m_original_modes);
+    if (!m_dd_api->setDisplayModes(modified_state.m_original_modes)) {
+      system_settings_touched = true;
+      // Error already logged
+      return RevertResult::RevertingDisplayModesFailed;
+    }
+
+    // It is possible that the display modes will not actually change even though the "current != new" condition is true.
+    // This is because of some additional internal checks that determine whether the change is actually needed.
+    // Therefore, we should check the current display modes after the fact!
+    if (current_modes != m_dd_api->getCurrentDisplayModes(win_utils::flattenTopology(modified_state.m_topology))) {
+      system_settings_touched = true;
+      guard_fn = win_utils::modeGuardFn(*m_dd_api, current_modes);
+    }
+
+    return RevertResult::Ok;
+  }
+
+  SettingsManager::RevertResult SettingsManager::revertModifiedPrimaryDevice(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched) {
+    if (modified_state.m_original_primary_device.empty()) {
+      return RevertResult::Ok;
+    }
+
+    const auto current_primary_device {win_utils::getPrimaryDevice(*m_dd_api, modified_state.m_topology)};
+    if (current_primary_device == modified_state.m_original_primary_device) {
+      return RevertResult::Ok;
+    }
+
+    system_settings_touched = true;
+
+    DD_LOG(info) << "Trying to change back the original primary device to: " << toJson(modified_state.m_original_primary_device);
+    if (!m_dd_api->setAsPrimary(modified_state.m_original_primary_device)) {
+      // Error already logged
+      return RevertResult::RevertingPrimaryDeviceFailed;
+    }
+
+    guard_fn = win_utils::primaryGuardFn(*m_dd_api, current_primary_device);
+    return RevertResult::Ok;
+  }
+
   SettingsManager::RevertResult SettingsManager::revertModifiedSettings(const ActiveTopology &current_topology, bool &system_settings_touched, bool *switched_topology) {
     const auto &cached_state {m_persistence_state->getState()};
     if (!cached_state || !cached_state->m_modified.hasModifications()) {
@@ -124,60 +198,23 @@ namespace display_device {
 
     DdGuardFn hdr_guard_fn {noopFn};
     boost::scope::scope_exit<DdGuardFn &> hdr_guard {hdr_guard_fn};
-    if (!cached_state->m_modified.m_original_hdr_states.empty()) {
-      const auto current_states {m_dd_api->getCurrentHdrStates(win_utils::flattenTopology(cached_state->m_modified.m_topology))};
-      if (current_states != cached_state->m_modified.m_original_hdr_states) {
-        system_settings_touched = true;
-
-        DD_LOG(info) << "Trying to change back the HDR states to:\n"
-                     << toJson(cached_state->m_modified.m_original_hdr_states);
-        if (!m_dd_api->setHdrStates(cached_state->m_modified.m_original_hdr_states)) {
-          // Error already logged
-          return RevertResult::RevertingHdrStatesFailed;
-        }
-
-        hdr_guard_fn = win_utils::hdrStateGuardFn(*m_dd_api, current_states);
-      }
+    if (const auto result {revertModifiedHdrStates(cached_state->m_modified, hdr_guard_fn, system_settings_touched)}; result != RevertResult::Ok) {
+      // Error already logged
+      return result;
     }
 
     DdGuardFn mode_guard_fn {noopFn};
     boost::scope::scope_exit<DdGuardFn &> mode_guard {mode_guard_fn};
-    if (!cached_state->m_modified.m_original_modes.empty()) {
-      const auto current_modes {m_dd_api->getCurrentDisplayModes(win_utils::flattenTopology(cached_state->m_modified.m_topology))};
-      if (current_modes != cached_state->m_modified.m_original_modes) {
-        DD_LOG(info) << "Trying to change back the display modes to:\n"
-                     << toJson(cached_state->m_modified.m_original_modes);
-        if (!m_dd_api->setDisplayModes(cached_state->m_modified.m_original_modes)) {
-          system_settings_touched = true;
-          // Error already logged
-          return RevertResult::RevertingDisplayModesFailed;
-        }
-
-        // It is possible that the display modes will not actually change even though the "current != new" condition is true.
-        // This is because of some additional internal checks that determine whether the change is actually needed.
-        // Therefore, we should check the current display modes after the fact!
-        if (current_modes != m_dd_api->getCurrentDisplayModes(win_utils::flattenTopology(cached_state->m_modified.m_topology))) {
-          system_settings_touched = true;
-          mode_guard_fn = win_utils::modeGuardFn(*m_dd_api, current_modes);
-        }
-      }
+    if (const auto result {revertModifiedDisplayModes(cached_state->m_modified, mode_guard_fn, system_settings_touched)}; result != RevertResult::Ok) {
+      // Error already logged
+      return result;
     }
 
     DdGuardFn primary_guard_fn {noopFn};
     boost::scope::scope_exit<DdGuardFn &> primary_guard {primary_guard_fn};
-    if (!cached_state->m_modified.m_original_primary_device.empty()) {
-      const auto current_primary_device {win_utils::getPrimaryDevice(*m_dd_api, cached_state->m_modified.m_topology)};
-      if (current_primary_device != cached_state->m_modified.m_original_primary_device) {
-        system_settings_touched = true;
-
-        DD_LOG(info) << "Trying to change back the original primary device to: " << toJson(cached_state->m_modified.m_original_primary_device);
-        if (!m_dd_api->setAsPrimary(cached_state->m_modified.m_original_primary_device)) {
-          // Error already logged
-          return RevertResult::RevertingPrimaryDeviceFailed;
-        }
-
-        primary_guard_fn = win_utils::primaryGuardFn(*m_dd_api, current_primary_device);
-      }
+    if (const auto result {revertModifiedPrimaryDevice(cached_state->m_modified, primary_guard_fn, system_settings_touched)}; result != RevertResult::Ok) {
+      // Error already logged
+      return result;
     }
 
     auto cleared_data {*cached_state};
