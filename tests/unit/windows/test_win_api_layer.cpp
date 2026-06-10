@@ -131,6 +131,10 @@ TEST_F_S(GetDeviceId, InvalidPath) {
   EXPECT_EQ(m_layer.getDeviceId(INVALID_PATH), std::string {});
 }
 
+TEST_F_S(GetEdid, InvalidPath) {
+  EXPECT_TRUE(m_layer.getEdid(INVALID_PATH).empty());
+}
+
 TEST_F_S(GetMonitorDevicePath) {
   const auto all_devices {m_layer.queryDisplayConfig(display_device::QueryType::All)};
   ASSERT_TRUE(all_devices);
@@ -199,6 +203,10 @@ TEST_F_S(GetDisplayName) {
 
 TEST_F_S(GetDisplayName, InvalidPath) {
   EXPECT_EQ(m_layer.getDisplayName(INVALID_PATH), std::string {});
+}
+
+TEST_F_S(SetDisplayConfig, EmptyConfigRejected) {
+  EXPECT_NE(m_layer.setDisplayConfig({}, {}, 0), ERROR_SUCCESS);
 }
 
 TEST_F_S(GetHdrState, InvalidPath) {

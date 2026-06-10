@@ -49,6 +49,9 @@ TEST_F_S(EdidData) {
 
   executeTestCase(display_device::EdidData {}, R"({"manufacturer_id":"","product_code":"","serial_number":0})");
   executeTestCase(item, R"({"manufacturer_id":"LOL","product_code":"ABCD","serial_number":777777})");
+  executeInvalidJsonTestCase<display_device::EdidData>();
+  executeFromJsonFailureTestCase<display_device::EdidData>(R"({})");
+  executeToJsonFailureTestCase(display_device::EdidData {.m_manufacturer_id = "LOL\xC2"});
 }
 
 TEST_F_S(EnumeratedDevice) {
@@ -58,6 +61,10 @@ TEST_F_S(EnumeratedDevice) {
   executeTestCase(display_device::EnumeratedDevice {}, R"({"device_id":"","display_name":"","edid":null,"friendly_name":"","info":null})");
   executeTestCase(item_1, R"({"device_id":"ID_1","display_name":"NAME_2","edid":null,"friendly_name":"FU_NAME_3","info":{"hdr_state":"Enabled","origin_point":{"x":1,"y":2},"primary":false,"refresh_rate":{"type":"double","value":119.9554},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"rational","value":{"denominator":100,"numerator":175}}}})");
   executeTestCase(item_2, R"({"device_id":"ID_2","display_name":"NAME_2","edid":{"manufacturer_id":"","product_code":"","serial_number":0},"friendly_name":"FU_NAME_2","info":{"hdr_state":"Disabled","origin_point":{"x":0,"y":0},"primary":true,"refresh_rate":{"type":"rational","value":{"denominator":10000,"numerator":1199554}},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"double","value":1.75}}})");
+  executeInvalidJsonTestCase<display_device::EnumeratedDevice>();
+  executeFromJsonFailureTestCase<display_device::EnumeratedDevice>(R"({})");
+  executeFromJsonFailureTestCase<display_device::EnumeratedDevice>(R"({"device_id":"","display_name":"","edid":null,"friendly_name":"","info":{"hdr_state":null,"origin_point":{"x":0,"y":0},"primary":false,"refresh_rate":{"type":"unknown","value":0},"resolution":{"height":0,"width":0},"resolution_scale":{"type":"double","value":1.0}}})");
+  executeToJsonFailureTestCase(display_device::EnumeratedDevice {.m_device_id = "ID\xC2"});
 }
 
 TEST_F_S(EnumeratedDeviceList) {
@@ -69,10 +76,14 @@ TEST_F_S(EnumeratedDeviceList) {
   executeTestCase(display_device::EnumeratedDeviceList {item_1, item_2, item_3}, R"([{"device_id":"ID_1","display_name":"NAME_2","edid":null,"friendly_name":"FU_NAME_3","info":{"hdr_state":"Enabled","origin_point":{"x":1,"y":2},"primary":false,"refresh_rate":{"type":"double","value":119.9554},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"rational","value":{"denominator":100,"numerator":175}}}},)"
                                                                                  R"({"device_id":"ID_2","display_name":"NAME_2","edid":{"manufacturer_id":"","product_code":"","serial_number":0},"friendly_name":"FU_NAME_2","info":{"hdr_state":"Disabled","origin_point":{"x":0,"y":0},"primary":true,"refresh_rate":{"type":"rational","value":{"denominator":10000,"numerator":1199554}},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"double","value":1.75}}},)"
                                                                                  R"({"device_id":"","display_name":"","edid":null,"friendly_name":"","info":null}])");
+  executeInvalidJsonTestCase<display_device::EnumeratedDeviceList>();
+  executeFromJsonFailureTestCase<display_device::EnumeratedDeviceList>(R"([{}])");
+  executeToJsonFailureTestCase(display_device::EnumeratedDeviceList {display_device::EnumeratedDevice {.m_device_id = "ID\xC2"}});
 }
 
 TEST_F_S(SingleDisplayConfiguration) {
   using enum display_device::SingleDisplayConfiguration::DevicePreparation;
+  using DevicePreparation = display_device::SingleDisplayConfiguration::DevicePreparation;
 
   display_device::SingleDisplayConfiguration config_1 {"ID_1", VerifyOnly, {{156, 123}}, 85., display_device::HdrState::Enabled};
   display_device::SingleDisplayConfiguration config_2 {"ID_2", EnsureActive, std::nullopt, display_device::Rational {85, 1}, display_device::HdrState::Disabled};
@@ -84,20 +95,33 @@ TEST_F_S(SingleDisplayConfiguration) {
   executeTestCase(config_2, R"({"device_id":"ID_2","device_prep":"EnsureActive","hdr_state":"Disabled","refresh_rate":{"type":"rational","value":{"denominator":1,"numerator":85}},"resolution":null})");
   executeTestCase(config_3, R"({"device_id":"ID_3","device_prep":"EnsureOnlyDisplay","hdr_state":null,"refresh_rate":null,"resolution":{"height":123,"width":156}})");
   executeTestCase(config_4, R"({"device_id":"ID_4","device_prep":"EnsurePrimary","hdr_state":null,"refresh_rate":null,"resolution":null})");
+  executeInvalidJsonTestCase<display_device::SingleDisplayConfiguration>();
+  executeFromJsonFailureTestCase<display_device::SingleDisplayConfiguration>(R"({})");
+  executeFromJsonFailureTestCase<display_device::SingleDisplayConfiguration>(R"({"device_id":"","device_prep":"VerifyOnly","hdr_state":null,"refresh_rate":{"type":"unknown","value":0},"resolution":null})");
+  executeToJsonFailureTestCase(display_device::SingleDisplayConfiguration {.m_device_id = "ID\xC2"});
+  executeToJsonFailureTestCase(display_device::SingleDisplayConfiguration {.m_device_prep = static_cast<DevicePreparation>(-1)});
 }
 
 TEST_F_S(StringSet) {
   executeTestCase(display_device::StringSet {}, R"([])");
   executeTestCase(display_device::StringSet {"ABC", "DEF"}, R"(["ABC","DEF"])");
   executeTestCase(display_device::StringSet {"DEF", "ABC"}, R"(["ABC","DEF"])");
+  executeInvalidJsonTestCase<display_device::StringSet>();
+  executeFromJsonFailureTestCase<display_device::StringSet>(R"({})");
+  executeToJsonFailureTestCase(display_device::StringSet {"ABC\xC2"});
 }
 
 TEST_F_S(String) {
   executeTestCase(std::string {}, R"("")");
   executeTestCase(std::string {"ABC"}, R"("ABC")");
+  executeInvalidJsonTestCase<std::string>();
+  executeFromJsonFailureTestCase<std::string>(R"(123)");
+  executeToJsonFailureTestCase(std::string {"ABC\xC2"});
 }
 
 TEST_F_S(Bool) {
   executeTestCase(true, R"(true)");
   executeTestCase(false, R"(false)");
+  executeInvalidJsonTestCase<bool>();
+  executeFromJsonFailureTestCase<bool>(R"("not-bool")");
 }

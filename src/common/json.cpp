@@ -13,6 +13,8 @@
 // clang-format on
 
 namespace display_device {
+  const std::optional<unsigned int> JSON_COMPACT {std::nullopt};
+
   DD_JSON_DEFINE_CONVERTER(EdidData)
   DD_JSON_DEFINE_CONVERTER(EnumeratedDevice)
   DD_JSON_DEFINE_CONVERTER(EnumeratedDeviceList)

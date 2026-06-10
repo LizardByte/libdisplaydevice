@@ -40,7 +40,8 @@ namespace display_device {
   }
 
   std::optional<std::vector<std::uint8_t>> FileSettingsPersistence::load() const {
-    if (std::error_code error_code; !std::filesystem::exists(m_filepath, error_code)) {
+    std::error_code error_code;
+    if (!std::filesystem::exists(m_filepath, error_code)) {
       if (error_code) {
         DD_LOG(error) << "Failed to load " << m_filepath << "! Error:\n"
                       << "[" << error_code.value() << "] " << error_code.message();
@@ -48,6 +49,17 @@ namespace display_device {
       }
 
       return std::vector<std::uint8_t> {};
+    }
+
+    if (!std::filesystem::is_regular_file(m_filepath, error_code)) {
+      if (error_code) {
+        DD_LOG(error) << "Failed to inspect " << m_filepath << "! Error:\n"
+                      << "[" << error_code.value() << "] " << error_code.message();
+      } else {
+        DD_LOG(error) << "Failed to load " << m_filepath << "! Path is not a regular file.";
+      }
+
+      return std::nullopt;
     }
 
     try {
