@@ -42,6 +42,13 @@ namespace {
   // Test fixture(s) for this file
   class RetrySchedulerTest: public BaseTest {
   public:
+    struct TwoCallScheduleResult {
+      std::optional<std::thread::id> m_first_call_thread_id;
+      std::optional<std::thread::id> m_second_call_thread_id;
+      int m_first_call_delay {-1};
+      int m_second_call_delay {-1};
+    };
+
     int scheduleAndGetAverageDelays(const std::vector<std::chrono::milliseconds> &durations) {
       m_impl.execute([](TestIface &iface) {
         iface.m_durations.clear();
@@ -72,6 +79,34 @@ namespace {
         }
         return sum / iface.m_durations.size();
       });
+    }
+
+    TwoCallScheduleResult scheduleAndWaitForTwoCalls(const std::chrono::milliseconds default_duration, const display_device::SchedulerOptions::Execution execution) {
+      TwoCallScheduleResult result;
+
+      auto prev = std::chrono::high_resolution_clock::now();
+      m_impl.schedule([&result, &prev](auto, auto &stop_token) {
+        const auto now = std::chrono::high_resolution_clock::now();
+        const auto duration = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(now - prev).count());
+        prev = now;
+
+        if (!result.m_first_call_thread_id) {
+          result.m_first_call_delay = duration;
+          result.m_first_call_thread_id = std::this_thread::get_id();
+          return;
+        }
+
+        result.m_second_call_delay = duration;
+        result.m_second_call_thread_id = std::this_thread::get_id();
+        stop_token.requestStop();
+      },
+                      {.m_sleep_durations = {default_duration * 2, default_duration}, .m_execution = execution});
+
+      while (m_impl.isScheduled()) {
+        std::this_thread::sleep_for(1ms);
+      }
+
+      return result;
     }
 
     display_device::RetryScheduler<TestIface> m_impl {std::make_unique<TestIface>()};
@@ -165,127 +200,52 @@ TEST_F_S(Schedule, StoppedImmediately) {
 TEST_F_S(Schedule, Execution, Immediate) {
   const auto default_duration {500ms};
   const auto calling_thread_id {std::this_thread::get_id()};
-  std::optional<std::thread::id> first_call_scheduler_thread_id;
-  std::optional<std::thread::id> second_call_scheduler_thread_id;
+  const auto result {scheduleAndWaitForTwoCalls(default_duration, display_device::SchedulerOptions::Execution::Immediate)};
 
-  int first_call_delay {-1};
-  int second_call_delay {-1};
-  auto prev = std::chrono::high_resolution_clock::now();
-  m_impl.schedule([&first_call_delay, &first_call_scheduler_thread_id, &prev, &second_call_delay, &second_call_scheduler_thread_id](auto, auto &stop_token) {
-    const auto now = std::chrono::high_resolution_clock::now();
-    const auto duration = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(now - prev).count());
-    prev = now;
+  EXPECT_GE(result.m_first_call_delay, roundTo99(0));
+  EXPECT_LT(result.m_first_call_delay, default_duration.count());
+  EXPECT_GE(result.m_second_call_delay, roundTo99(default_duration.count() * 2));
+  EXPECT_LT(result.m_second_call_delay, default_duration.count() * 3);
 
-    if (!first_call_scheduler_thread_id) {
-      first_call_delay = duration;
-      first_call_scheduler_thread_id = std::this_thread::get_id();
-      return;
-    }
+  ASSERT_TRUE(result.m_first_call_thread_id);
+  ASSERT_TRUE(result.m_second_call_thread_id);
 
-    second_call_delay = duration;
-    second_call_scheduler_thread_id = std::this_thread::get_id();
-    stop_token.requestStop();
-  },
-                  {.m_sleep_durations = {default_duration * 2, default_duration}, .m_execution = display_device::SchedulerOptions::Execution::Immediate});
-
-  while (m_impl.isScheduled()) {
-    std::this_thread::sleep_for(1ms);
-  }
-
-  EXPECT_GE(first_call_delay, roundTo99(0));
-  EXPECT_LT(first_call_delay, default_duration.count());
-  EXPECT_GE(second_call_delay, roundTo99(default_duration.count() * 2));
-  EXPECT_LT(second_call_delay, default_duration.count() * 3);
-
-  EXPECT_TRUE(first_call_scheduler_thread_id);
-  EXPECT_TRUE(second_call_scheduler_thread_id);
-
-  EXPECT_EQ(*first_call_scheduler_thread_id, calling_thread_id);
-  EXPECT_NE(*first_call_scheduler_thread_id, *second_call_scheduler_thread_id);
+  EXPECT_EQ(*result.m_first_call_thread_id, calling_thread_id);
+  EXPECT_NE(*result.m_first_call_thread_id, *result.m_second_call_thread_id);
 }
 
 TEST_F_S(Schedule, Execution, ImmediateWithSleep) {
   const auto default_duration {500ms};
   const auto calling_thread_id {std::this_thread::get_id()};
-  std::optional<std::thread::id> first_call_scheduler_thread_id;
-  std::optional<std::thread::id> second_call_scheduler_thread_id;
+  const auto result {scheduleAndWaitForTwoCalls(default_duration, display_device::SchedulerOptions::Execution::ImmediateWithSleep)};
 
-  int first_call_delay {-1};
-  int second_call_delay {-1};
-  auto prev = std::chrono::high_resolution_clock::now();
-  m_impl.schedule([&first_call_delay, &first_call_scheduler_thread_id, &prev, &second_call_delay, &second_call_scheduler_thread_id](auto, auto &stop_token) {
-    const auto now = std::chrono::high_resolution_clock::now();
-    const auto duration = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(now - prev).count());
-    prev = now;
+  EXPECT_GE(result.m_first_call_delay, roundTo99(default_duration.count() * 2));
+  EXPECT_LT(result.m_first_call_delay, default_duration.count() * 3);
+  EXPECT_GE(result.m_second_call_delay, roundTo99(default_duration.count()));
+  EXPECT_LT(result.m_second_call_delay, default_duration.count() * 2);
 
-    if (!first_call_scheduler_thread_id) {
-      first_call_delay = duration;
-      first_call_scheduler_thread_id = std::this_thread::get_id();
-      return;
-    }
+  ASSERT_TRUE(result.m_first_call_thread_id);
+  ASSERT_TRUE(result.m_second_call_thread_id);
 
-    second_call_delay = duration;
-    second_call_scheduler_thread_id = std::this_thread::get_id();
-    stop_token.requestStop();
-  },
-                  {.m_sleep_durations = {default_duration * 2, default_duration}, .m_execution = display_device::SchedulerOptions::Execution::ImmediateWithSleep});
-
-  while (m_impl.isScheduled()) {
-    std::this_thread::sleep_for(1ms);
-  }
-
-  EXPECT_GE(first_call_delay, roundTo99(default_duration.count() * 2));
-  EXPECT_LT(first_call_delay, default_duration.count() * 3);
-  EXPECT_GE(second_call_delay, roundTo99(default_duration.count()));
-  EXPECT_LT(second_call_delay, default_duration.count() * 2);
-
-  EXPECT_TRUE(first_call_scheduler_thread_id);
-  EXPECT_TRUE(second_call_scheduler_thread_id);
-
-  EXPECT_EQ(*first_call_scheduler_thread_id, calling_thread_id);
-  EXPECT_NE(*first_call_scheduler_thread_id, *second_call_scheduler_thread_id);
+  EXPECT_EQ(*result.m_first_call_thread_id, calling_thread_id);
+  EXPECT_NE(*result.m_first_call_thread_id, *result.m_second_call_thread_id);
 }
 
 TEST_F_S(Schedule, Execution, ScheduledOnly) {
   const auto default_duration {500ms};
   const auto calling_thread_id {std::this_thread::get_id()};
-  std::optional<std::thread::id> first_call_scheduler_thread_id;
-  std::optional<std::thread::id> second_call_scheduler_thread_id;
+  const auto result {scheduleAndWaitForTwoCalls(default_duration, display_device::SchedulerOptions::Execution::ScheduledOnly)};
 
-  int first_call_delay {-1};
-  int second_call_delay {-1};
-  auto prev = std::chrono::high_resolution_clock::now();
-  m_impl.schedule([&first_call_delay, &first_call_scheduler_thread_id, &prev, &second_call_delay, &second_call_scheduler_thread_id](auto, auto &stop_token) {
-    const auto now = std::chrono::high_resolution_clock::now();
-    const auto duration = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(now - prev).count());
-    prev = now;
+  EXPECT_GE(result.m_first_call_delay, roundTo99(default_duration.count() * 2));
+  EXPECT_LT(result.m_first_call_delay, default_duration.count() * 3);
+  EXPECT_GE(result.m_second_call_delay, roundTo99(default_duration.count()));
+  EXPECT_LT(result.m_second_call_delay, default_duration.count() * 2);
 
-    if (!first_call_scheduler_thread_id) {
-      first_call_delay = duration;
-      first_call_scheduler_thread_id = std::this_thread::get_id();
-      return;
-    }
+  ASSERT_TRUE(result.m_first_call_thread_id);
+  ASSERT_TRUE(result.m_second_call_thread_id);
 
-    second_call_delay = duration;
-    second_call_scheduler_thread_id = std::this_thread::get_id();
-    stop_token.requestStop();
-  },
-                  {.m_sleep_durations = {default_duration * 2, default_duration}, .m_execution = display_device::SchedulerOptions::Execution::ScheduledOnly});
-
-  while (m_impl.isScheduled()) {
-    std::this_thread::sleep_for(1ms);
-  }
-
-  EXPECT_GE(first_call_delay, roundTo99(default_duration.count() * 2));
-  EXPECT_LT(first_call_delay, default_duration.count() * 3);
-  EXPECT_GE(second_call_delay, roundTo99(default_duration.count()));
-  EXPECT_LT(second_call_delay, default_duration.count() * 2);
-
-  EXPECT_TRUE(first_call_scheduler_thread_id);
-  EXPECT_TRUE(second_call_scheduler_thread_id);
-
-  EXPECT_NE(*first_call_scheduler_thread_id, calling_thread_id);
-  EXPECT_EQ(*first_call_scheduler_thread_id, *second_call_scheduler_thread_id);
+  EXPECT_NE(*result.m_first_call_thread_id, calling_thread_id);
+  EXPECT_EQ(*result.m_first_call_thread_id, *result.m_second_call_thread_id);
 }
 
 TEST_F_S(Schedule, ExceptionThrown, DuringImmediateCall) {

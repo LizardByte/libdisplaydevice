@@ -1,6 +1,3 @@
-// system includes
-#include <format>
-
 // local includes
 #include "display_device/windows/settings_utils.h"
 #include "display_device/windows/win_api_layer.h"
@@ -9,6 +6,7 @@
 #include "fixtures/fixtures.h"
 #include "utils/comparison.h"
 #include "utils/guards.h"
+#include "utils/helpers.h"
 #include "utils/mock_win_api_layer.h"
 
 namespace {
@@ -37,20 +35,7 @@ namespace {
         .WillOnce(Return(ut_consts::PAM_3_ACTIVE))
         .RetiresOnSaturation();
 
-      for (int i = 1; i <= 3; ++i) {
-        EXPECT_CALL(*m_layer, getMonitorDevicePath(_))
-          .Times(1)
-          .WillOnce(Return(std::format("Path{}", i)))
-          .RetiresOnSaturation();
-        EXPECT_CALL(*m_layer, getDeviceId(_))
-          .Times(1)
-          .WillOnce(Return(std::format("DeviceId{}", i)))
-          .RetiresOnSaturation();
-        EXPECT_CALL(*m_layer, getDisplayName(_))
-          .Times(1)
-          .WillOnce(Return(std::format("DisplayName{}", i)))
-          .RetiresOnSaturation();
-      }
+      expectPathMetadataLookups(m_layer, 3);
     }
 
     static std::vector<DISPLAYCONFIG_PATH_INFO> getExpectedPathToBeSet() {

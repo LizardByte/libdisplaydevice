@@ -231,6 +231,28 @@ namespace {
         .RetiresOnSaturation();
     }
 
+    void expectedFallbackTopologyEvaluationCalls(InSequence & /* To ensure that sequence is created outside this scope */, const bool full_topology_valid, const display_device::ActiveTopology &comparison_topology, const bool is_same) {
+      EXPECT_CALL(*m_dd_api, enumAvailableDevices())
+        .Times(1)
+        .WillOnce(Return(CURRENT_DEVICES))
+        .RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, isTopologyValid(FULL_EXTENDED_TOPOLOGY))
+        .Times(1)
+        .WillOnce(Return(full_topology_valid))
+        .RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, comparison_topology))
+        .Times(1)
+        .WillOnce(Return(is_same))
+        .RetiresOnSaturation();
+    }
+
+    void expectedFallbackSetTopologyCall(InSequence & /* To ensure that sequence is created outside this scope */, const bool success) {
+      EXPECT_CALL(*m_dd_api, setTopology(FULL_EXTENDED_TOPOLOGY))
+        .Times(1)
+        .WillOnce(Return(success))
+        .RetiresOnSaturation();
+    }
+
     void expectedHdrWorkaroundCalls(InSequence & /* To ensure that sequence is created outside this scope */) const {
       // Using the "failure" path, to keep it simple
       EXPECT_CALL(*m_dd_api, getCurrentTopology())
@@ -443,18 +465,7 @@ TEST_F_S_MOCKED(TopologyGuard, CurrentTopologyUsedAsFallback) {
     .Times(1)
     .WillOnce(Return(false))
     .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, enumAvailableDevices())
-    .Times(1)
-    .WillOnce(Return(CURRENT_DEVICES))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, isTopologyValid(FULL_EXTENDED_TOPOLOGY))
-    .Times(1)
-    .WillOnce(Return(false))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, CURRENT_TOPOLOGY))
-    .Times(1)
-    .WillOnce(Return(true))
-    .RetiresOnSaturation();
+  expectedFallbackTopologyEvaluationCalls(sequence, false, CURRENT_TOPOLOGY, true);
   expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::TopologyIsInvalid);
@@ -467,18 +478,7 @@ TEST_F_S_MOCKED(TopologyGuard, SystemSettingsUntouched) {
     .Times(1)
     .WillOnce(Return(false))
     .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, enumAvailableDevices())
-    .Times(1)
-    .WillOnce(Return(CURRENT_DEVICES))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, isTopologyValid(FULL_EXTENDED_TOPOLOGY))
-    .Times(1)
-    .WillOnce(Return(false))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, CURRENT_TOPOLOGY))
-    .Times(1)
-    .WillOnce(Return(true))
-    .RetiresOnSaturation();
+  expectedFallbackTopologyEvaluationCalls(sequence, false, CURRENT_TOPOLOGY, true);
 
   EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::TopologyIsInvalid);
 }
@@ -490,22 +490,8 @@ TEST_F_S_MOCKED(TopologyGuard, FailedToSetTopology) {
     .Times(1)
     .WillOnce(Return(false))
     .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, enumAvailableDevices())
-    .Times(1)
-    .WillOnce(Return(CURRENT_DEVICES))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, isTopologyValid(FULL_EXTENDED_TOPOLOGY))
-    .Times(1)
-    .WillOnce(Return(true))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, FULL_EXTENDED_TOPOLOGY))
-    .Times(1)
-    .WillOnce(Return(false))
-    .RetiresOnSaturation();
-  EXPECT_CALL(*m_dd_api, setTopology(FULL_EXTENDED_TOPOLOGY))
-    .Times(1)
-    .WillOnce(Return(false))
-    .RetiresOnSaturation();
+  expectedFallbackTopologyEvaluationCalls(sequence, true, FULL_EXTENDED_TOPOLOGY, false);
+  expectedFallbackSetTopologyCall(sequence, false);
   expectedHdrWorkaroundCalls(sequence);
 
   EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::TopologyIsInvalid);
