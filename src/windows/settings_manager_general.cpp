@@ -48,6 +48,10 @@ namespace display_device {
     return m_dd_api->getDisplayName(device_id);
   }
 
+  const std::shared_ptr<AudioContextInterface> &SettingsManager::getAudioContextApi() const {
+    return m_audio_context_api;
+  }
+
   bool SettingsManager::resetPersistence() {
     DD_LOG(info) << "Trying to reset persistent display device settings.";
     if (const auto &cached_state {m_persistence_state->getState()}; !cached_state) {

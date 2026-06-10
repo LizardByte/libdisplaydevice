@@ -13,7 +13,7 @@ namespace {
 #define TEST_F_S(...) DD_MAKE_TEST(TEST_F, WinApiLayer, __VA_ARGS__)
 
   // Additional convenience global const(s)
-  DISPLAYCONFIG_PATH_INFO INVALID_PATH {
+  const DISPLAYCONFIG_PATH_INFO INVALID_PATH {
     []() {
       DISPLAYCONFIG_PATH_INFO path;
 

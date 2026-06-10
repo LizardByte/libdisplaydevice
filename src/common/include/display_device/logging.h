@@ -106,7 +106,7 @@ namespace display_device {
      */
     explicit Logger();
 
-    LogLevel m_enabled_log_level; /**< The currently enabled log level. */
+    LogLevel m_enabled_log_level {LogLevel::info}; /**< The currently enabled log level. */
     Callback m_custom_callback; /**< Custom callback to pass log data to. */
   };
 

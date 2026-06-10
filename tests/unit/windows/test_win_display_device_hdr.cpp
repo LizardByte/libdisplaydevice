@@ -85,10 +85,11 @@ TEST_F_S(GetSetHdrStates) {
 
   auto flipped_states {hdr_states};
   for (auto &[key, state] : flipped_states) {
-    state = state ? (*state == display_device::HdrState::Disabled ?
-                       display_device::HdrState::Enabled :
-                       display_device::HdrState::Disabled) :
-                    state;
+    if (state) {
+      state = *state == display_device::HdrState::Disabled ?
+                display_device::HdrState::Enabled :
+                display_device::HdrState::Disabled;
+    }
   }
 
   const auto hdr_state_guard {makeHdrStateGuard(m_win_dd)};

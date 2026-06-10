@@ -13,7 +13,7 @@
 #include "test_utils.h"
 
 // Undefine the original TEST macro
-#undef TEST
+#undef TEST  // NOSONAR(cpp:S959): The test suite intentionally wraps TEST to use BaseTest.
 
 // Redefine TEST to use our BaseTest class, to automatically use our BaseTest fixture
 #define TEST(test_case_name, test_name) \
@@ -88,9 +88,12 @@ protected:
    */
   [[nodiscard]] virtual std::optional<display_device::Logger::LogLevel> getDefaultLogLevel() const;
 
-  std::stringstream m_cout_buffer; /**< Stores the cout in case the output is suppressed. */
+  [[nodiscard]] std::stringstream &coutBuffer() {
+    return m_cout_buffer;
+  }
 
 private:
+  std::stringstream m_cout_buffer; /**< Stores the cout in case the output is suppressed. */
   std::streambuf *m_sbuf {nullptr}; /**< Stores the handle to the original cout stream. */
   bool m_test_skipped_at_setup {false}; /**< Indicates whether the SetUp method was skipped. */
 };

@@ -42,6 +42,38 @@ namespace {
   // Test fixture(s) for this file
   class RetrySchedulerTest: public BaseTest {
   public:
+    int scheduleAndGetAverageDelays(const std::vector<std::chrono::milliseconds> &durations) {
+      m_impl.execute([](TestIface &iface) {
+        iface.m_durations.clear();
+      });
+
+      std::optional<std::chrono::high_resolution_clock::time_point> prev;
+      m_impl.schedule([&durations, &prev](TestIface &iface, auto &stop_token) {
+        auto now = std::chrono::high_resolution_clock::now();
+        if (prev) {
+          iface.m_durations.push_back(static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(now - *prev).count()));
+          if (iface.m_durations.size() == durations.size()) {
+            stop_token.requestStop();
+          }
+        }
+
+        prev = now;
+      },
+                      {.m_sleep_durations = durations});
+
+      while (m_impl.isScheduled()) {
+        std::this_thread::sleep_for(1ms);
+      }
+
+      return m_impl.execute([](const TestIface &iface) {
+        int sum {0};
+        for (const auto timing : iface.m_durations) {
+          sum += timing;
+        }
+        return sum / iface.m_durations.size();
+      });
+    }
+
     display_device::RetryScheduler<TestIface> m_impl {std::make_unique<TestIface>()};
   };
 
@@ -85,41 +117,9 @@ TEST_F_S(Schedule, SchedulingDurations) {
   // Note: in this test we care that the delay is not less than the requested one, but we
   //       do not really have an upper ceiling...
 
-  const auto schedule_and_get_average_delays {[this](const std::vector<std::chrono::milliseconds> &durations) {
-    m_impl.execute([](TestIface &iface) {
-      iface.m_durations.clear();
-    });
-
-    std::optional<std::chrono::high_resolution_clock::time_point> prev;
-    m_impl.schedule([&durations, &prev](TestIface &iface, auto &stop_token) {
-      auto now = std::chrono::high_resolution_clock::now();
-      if (prev) {
-        iface.m_durations.push_back(static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(now - *prev).count()));
-        if (iface.m_durations.size() == durations.size()) {
-          stop_token.requestStop();
-        }
-      }
-
-      prev = now;
-    },
-                    {.m_sleep_durations = durations});
-
-    while (m_impl.isScheduled()) {
-      std::this_thread::sleep_for(1ms);
-    }
-
-    return m_impl.execute([](const TestIface &iface) {
-      int sum {0};
-      for (const auto timing : iface.m_durations) {
-        sum += timing;
-      }
-      return sum / iface.m_durations.size();
-    });
-  }};
-
-  EXPECT_GE(schedule_and_get_average_delays({10ms, 10ms, 10ms, 10ms, 10ms, 10ms, 10ms, 10ms, 10ms, 10ms}), 10);
-  EXPECT_GE(schedule_and_get_average_delays({50ms, 50ms, 50ms, 50ms, 50ms, 50ms, 50ms, 50ms, 50ms, 50ms}), 50);
-  EXPECT_GE(schedule_and_get_average_delays({10ms, 20ms, 30ms, 40ms, 50ms, 10ms, 50ms, 10ms, 50ms, 10ms}), 28);
+  EXPECT_GE(scheduleAndGetAverageDelays({10ms, 10ms, 10ms, 10ms, 10ms, 10ms, 10ms, 10ms, 10ms, 10ms}), 10);
+  EXPECT_GE(scheduleAndGetAverageDelays({50ms, 50ms, 50ms, 50ms, 50ms, 50ms, 50ms, 50ms, 50ms, 50ms}), 50);
+  EXPECT_GE(scheduleAndGetAverageDelays({10ms, 20ms, 30ms, 40ms, 50ms, 10ms, 50ms, 10ms, 50ms, 10ms}), 28);
 }
 
 TEST_F_S(Schedule, SchedulerInteruptAndReplacement) {
@@ -638,7 +638,7 @@ TEST_F_S(Stop) {
 TEST_F_S(ThreadCleanupInDestructor) {
   int counter {0};
   {
-    display_device::RetryScheduler<TestIface> scheduler {std::make_unique<TestIface>()};
+    display_device::RetryScheduler scheduler {std::make_unique<TestIface>()};
 
     scheduler.schedule([&counter](auto, auto &) {
       counter++;
