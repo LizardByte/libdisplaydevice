@@ -160,7 +160,7 @@ namespace display_device::win_utils {
   [[nodiscard]] const DISPLAYCONFIG_SOURCE_MODE *getSourceMode(const std::optional<UINT32> &index, const std::vector<DISPLAYCONFIG_MODE_INFO> &modes);
 
   /**
-   * @see getSourceMode (const version) for the description.
+   * @copydoc getSourceMode(const std::optional<UINT32>&, const std::vector<DISPLAYCONFIG_MODE_INFO>&)
    */
   [[nodiscard]] DISPLAYCONFIG_SOURCE_MODE *getSourceMode(const std::optional<UINT32> &index, std::vector<DISPLAYCONFIG_MODE_INFO> &modes);
 

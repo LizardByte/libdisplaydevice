@@ -25,8 +25,16 @@ namespace display_device {
    * @brief Transparent hash for string-keyed unordered containers.
    */
   struct StringHash {
+    /**
+     * @brief Enables heterogeneous lookup for compatible string key types.
+     */
     using is_transparent = void;
 
+    /**
+     * @brief Hash a string view.
+     * @param value Value to hash.
+     * @returns Hash value.
+     */
     [[nodiscard]] std::size_t operator()(const std::string_view value) const noexcept {
       return std::hash<std::string_view> {}(value);
     }
@@ -66,8 +74,8 @@ namespace display_device {
    * @brief Display's resolution.
    */
   struct Resolution {
-    unsigned int m_width {};
-    unsigned int m_height {};
+    unsigned int m_width {};  ///< Width in pixels.
+    unsigned int m_height {};  ///< Height in pixels.
 
     /**
      * @brief Comparator for strict equality.
@@ -81,8 +89,8 @@ namespace display_device {
    * @brief An arbitrary point object.
    */
   struct Point {
-    int m_x {};
-    int m_y {};
+    int m_x {};  ///< Horizontal coordinate.
+    int m_y {};  ///< Vertical coordinate.
 
     /**
      * @brief Comparator for strict equality.
@@ -94,8 +102,8 @@ namespace display_device {
    * @brief Floating point stored in a "numerator/denominator" form.
    */
   struct Rational {
-    unsigned int m_numerator {};
-    unsigned int m_denominator {};
+    unsigned int m_numerator {};  ///< Numerator.
+    unsigned int m_denominator {};  ///< Denominator.
 
     /**
      * @brief Comparator for strict equality.
@@ -109,10 +117,22 @@ namespace display_device {
   using FloatingPoint = std::variant<double, Rational>;
 
   namespace detail {
+    /**
+     * @brief Fuzzy comparison for floating-point values.
+     * @param lhs First value to compare.
+     * @param rhs Second value to compare.
+     * @returns True if the values are close enough to be treated as equal.
+     */
     inline bool fuzzyCompare(const double lhs, const double rhs) {
       return std::abs(lhs - rhs) * 1000000000000. <= std::min(std::abs(lhs), std::abs(rhs));
     }
 
+    /**
+     * @brief Fuzzy comparison for floating-point variant values.
+     * @param lhs First value to compare.
+     * @param rhs Second value to compare.
+     * @returns True if the values are close enough to be treated as equal.
+     */
     inline bool fuzzyCompare(const FloatingPoint &lhs, const FloatingPoint &rhs) {
       if (lhs.index() == rhs.index()) {
         if (std::holds_alternative<double>(lhs)) {
@@ -128,9 +148,9 @@ namespace display_device {
    * @brief Parsed EDID data.
    */
   struct EdidData {
-    std::string m_manufacturer_id {};
-    std::string m_product_code {};
-    std::uint32_t m_serial_number {};
+    std::string m_manufacturer_id {};  ///< Three-letter manufacturer ID.
+    std::string m_product_code {};  ///< Product code.
+    std::uint32_t m_serial_number {};  ///< Serial number.
 
     /**
      * @brief Parse EDID data.
@@ -153,12 +173,12 @@ namespace display_device {
      * @brief Available information for the active display only.
      */
     struct Info {
-      Resolution m_resolution {}; /**< Resolution of an active device. */
-      FloatingPoint m_resolution_scale {}; /**< Resolution scaling of an active device. */
-      FloatingPoint m_refresh_rate {}; /**< Refresh rate of an active device. */
-      bool m_primary {}; /**< Indicates whether the device is a primary display. */
-      Point m_origin_point {}; /**< A starting point of the display. */
-      std::optional<HdrState> m_hdr_state {}; /**< HDR of an active device. */
+      Resolution m_resolution {};  ///< Resolution of an active device.
+      FloatingPoint m_resolution_scale {};  ///< Resolution scaling of an active device.
+      FloatingPoint m_refresh_rate {};  ///< Refresh rate of an active device.
+      bool m_primary {};  ///< Indicates whether the device is a primary display.
+      Point m_origin_point {};  ///< A starting point of the display.
+      std::optional<HdrState> m_hdr_state {};  ///< HDR of an active device.
 
       /**
        * @brief Comparator for strict equality.
@@ -170,11 +190,11 @@ namespace display_device {
       }
     };
 
-    std::string m_device_id {}; /**< A unique device ID used by this API to identify the device. */
-    std::string m_display_name {}; /**< A logical name representing given by the OS for a display. */
-    std::string m_friendly_name {}; /**< A human-readable name for the device. */
-    std::optional<EdidData> m_edid {}; /**< Some basic parsed EDID data. */
-    std::optional<Info> m_info {}; /**< Additional information about an active display device. */
+    std::string m_device_id {};  ///< A unique device ID used by this API to identify the device.
+    std::string m_display_name {};  ///< A logical name representing given by the OS for a display.
+    std::string m_friendly_name {};  ///< A human-readable name for the device.
+    std::optional<EdidData> m_edid {};  ///< Some basic parsed EDID data.
+    std::optional<Info> m_info {};  ///< Additional information about an active display device.
 
     /**
      * @brief Comparator for strict equality.
@@ -198,17 +218,17 @@ namespace display_device {
      * @brief Enum detailing how to prepare the display device.
      */
     enum class DevicePreparation {
-      VerifyOnly, /**< User has to make sure the display device is active, we will only verify. */
-      EnsureActive, /**< Activate the device if needed. */
-      EnsurePrimary, /**< Activate the device if needed and make it a primary display. */
-      EnsureOnlyDisplay /**< Deactivate other displays and turn on the specified one only. */
+      VerifyOnly,  ///< User has to make sure the display device is active, we will only verify.
+      EnsureActive,  ///< Activate the device if needed.
+      EnsurePrimary,  ///< Activate the device if needed and make it a primary display.
+      EnsureOnlyDisplay  ///< Deactivate other displays and turn on the specified one only.
     };
 
-    std::string m_device_id {}; /**< Device to perform configuration for (can be empty if primary device should be used). */
-    DevicePreparation m_device_prep {}; /**< Instruction on how to prepare device. */
-    std::optional<Resolution> m_resolution {}; /**< Resolution to configure. */
-    std::optional<FloatingPoint> m_refresh_rate {}; /**< Refresh rate to configure. */
-    std::optional<HdrState> m_hdr_state {}; /**< HDR state to configure (if supported by the display). */
+    std::string m_device_id {};  ///< Device to perform configuration for (can be empty if primary device should be used).
+    DevicePreparation m_device_prep {};  ///< Instruction on how to prepare device.
+    std::optional<Resolution> m_resolution {};  ///< Resolution to configure.
+    std::optional<FloatingPoint> m_refresh_rate {};  ///< Refresh rate to configure.
+    std::optional<HdrState> m_hdr_state {};  ///< HDR state to configure (if supported by the display).
 
     /**
      * @brief Comparator for strict equality.

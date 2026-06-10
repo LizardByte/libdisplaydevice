@@ -33,21 +33,35 @@ namespace display_device {
       WinWorkarounds workarounds
     );
 
-    /** For details @see SettingsManagerInterface::enumAvailableDevices */
+    /**
+     * @copydoc SettingsManagerInterface::enumAvailableDevices
+     */
     [[nodiscard]] EnumeratedDeviceList enumAvailableDevices() const override;
 
-    /** For details @see SettingsManagerInterface::getDisplayName */
+    /**
+     * @copydoc SettingsManagerInterface::getDisplayName
+     */
     [[nodiscard]] std::string getDisplayName(const std::string &device_id) const override;
 
-    /** For details @see SettingsManagerInterface::applySettings */
+    /**
+     * @copydoc SettingsManagerInterface::applySettings
+     */
     [[nodiscard]] ApplyResult applySettings(const SingleDisplayConfiguration &config) override;
 
-    /** For details @see SettingsManagerInterface::revertSettings */
+    /**
+     * @copydoc SettingsManagerInterface::revertSettings
+     */
     [[nodiscard]] RevertResult revertSettings() override;
 
-    /** For details @see SettingsManagerInterface::resetPersistence */
+    /**
+     * @copydoc SettingsManagerInterface::resetPersistence
+     */
     [[nodiscard]] bool resetPersistence() override;
 
+    /**
+     * @brief Get the audio context API.
+     * @returns Audio context API.
+     */
     [[nodiscard]] const std::shared_ptr<AudioContextInterface> &getAudioContextApi() const;
 
   protected:

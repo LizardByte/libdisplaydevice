@@ -37,6 +37,10 @@ namespace display_device {
      */
     [[nodiscard]] const std::optional<SingleDisplayConfigState> &getState() const;
 
+    /**
+     * @brief Get the settings persistence API.
+     * @returns Settings persistence API.
+     */
     [[nodiscard]] const std::shared_ptr<SettingsPersistenceInterface> &getSettingsPersistenceApi() const;
 
   private:
