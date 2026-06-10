@@ -48,6 +48,8 @@ namespace display_device {
     /** For details @see SettingsManagerInterface::resetPersistence */
     [[nodiscard]] bool resetPersistence() override;
 
+    [[nodiscard]] const std::shared_ptr<AudioContextInterface> &getAudioContextApi() const;
+
   protected:
     /**
      * @brief Preps the topology so that the further settings could be applied.
@@ -132,6 +134,7 @@ namespace display_device {
      */
     [[nodiscard]] RevertResult revertModifiedPrimaryDevice(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched);
 
+  private:
     std::shared_ptr<WinDisplayDeviceInterface> m_dd_api;
     std::shared_ptr<AudioContextInterface> m_audio_context_api;
     std::unique_ptr<PersistentState> m_persistence_state;

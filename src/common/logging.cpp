@@ -11,10 +11,12 @@
 
 // system includes
 #include <chrono>
+#include <ctime>
 #include <exception>
-#include <iomanip>
+#include <format>
 #include <iostream>
 #include <mutex>
+#include <sstream>
 
 namespace display_device {
   namespace {
@@ -77,9 +79,16 @@ namespace display_device {
         const auto localtime {threadSafeLocaltime(time)};
         const auto now_decimal_part {now_ms - now_s};
 
-        const auto old_flags {stream.flags()};  // Save formatting flags so that they can be restored...
-        stream << std::put_time(&localtime, "[%Y-%m-%d %H:%M:%S.") << std::setfill('0') << std::setw(3) << now_decimal_part.count() << "] ";
-        stream.flags(old_flags);
+        stream << std::format(
+          "[{:04}-{:02}-{:02} {:02}:{:02}:{:02}.{:03}] ",
+          localtime.tm_year + 1900,
+          localtime.tm_mon + 1,
+          localtime.tm_mday,
+          localtime.tm_hour,
+          localtime.tm_min,
+          localtime.tm_sec,
+          now_decimal_part.count()
+        );
       }
 
       // Log level
@@ -115,9 +124,7 @@ namespace display_device {
     std::cout << stream.rdbuf() << std::endl;
   }
 
-  Logger::Logger():
-      m_enabled_log_level {LogLevel::info} {
-  }
+  Logger::Logger() = default;
 
   LogWriter::LogWriter(const Logger::LogLevel log_level):
       m_log_level {log_level} {}

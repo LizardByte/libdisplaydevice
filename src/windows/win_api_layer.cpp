@@ -6,29 +6,61 @@
 #include "display_device/windows/win_api_layer.h"
 
 // system includes
+#include <bit>
 #include <boost/algorithm/string.hpp>
 #include <boost/scope/scope_exit.hpp>
 #include <boost/uuid/name_generator_sha1.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
-#include <iomanip>
+#include <format>
+#include <memory>
+#include <span>
+#include <sstream>
 #include <string_view>
+#include <tuple>
+#include <vector>
 
 // local includes
 #include "display_device/logging.h"
 
 // Windows includes after "windows.h"
-#include <SetupApi.h>
+#include <SetupAPI.h>
 
 namespace display_device {
   namespace {
+    template<class T>
+    std::string toEightDigitHex(const T value) {
+      return std::format("{:08X}", static_cast<std::uint32_t>(value));
+    }
+
+    void appendBytes(std::vector<std::byte> &target, const std::span<const std::byte> bytes) {
+      target.insert(std::end(target), std::begin(bytes), std::end(bytes));
+    }
+
+    std::string dumpByteData(const std::span<const std::byte> data) {
+      if (data.empty()) {
+        return {};
+      }
+
+      std::ostringstream output;
+      output << "[";
+      for (std::size_t i = 0; i < data.size(); ++i) {
+        output << std::format("0x{:02X}", std::to_integer<unsigned int>(data[i]));
+        if (i + 1 < data.size()) {
+          output << " ";
+        }
+      }
+      output << "]";
+
+      return output.str();
+    }
+
     /** @brief Dumps the result of @see queryDisplayConfig into a string */
     std::string dumpPath(const DISPLAYCONFIG_PATH_INFO &info) {
       std::ostringstream output;
-      std::ios state(nullptr);
-      state.copyfmt(output);
 
       // clang-format off
       output << "sourceInfo:" << std::endl;
@@ -37,23 +69,21 @@ namespace display_device {
       output << "        cloneGroupId: " << info.sourceInfo.cloneGroupId << std::endl;
       output << "        sourceModeInfoIdx: " << info.sourceInfo.sourceModeInfoIdx << std::endl;
       output << "        modeInfoIdx: " << info.sourceInfo.modeInfoIdx << std::endl;
-      output << "    statusFlags: 0x" << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << info.sourceInfo.statusFlags << std::endl;
-      output.copyfmt(state);
+      output << "    statusFlags: 0x" << toEightDigitHex(info.sourceInfo.statusFlags) << std::endl;
       output << "targetInfo:" << std::endl;
       output << "    adapterId: [" << info.targetInfo.adapterId.HighPart << ", " << info.targetInfo.adapterId.LowPart << "]" << std::endl;
       output << "    id: " << info.targetInfo.id << std::endl;
       output << "        desktopModeInfoIdx: " << info.targetInfo.desktopModeInfoIdx << std::endl;
       output << "        targetModeInfoIdx: " << info.targetInfo.targetModeInfoIdx << std::endl;
       output << "        modeInfoIdx: " << info.targetInfo.modeInfoIdx << std::endl;
-      output << "    outputTechnology:  0x" << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << info.targetInfo.outputTechnology << std::endl;
-      output << "    rotation: 0x" << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << info.targetInfo.rotation << std::endl;
-      output << "    scaling: 0x" << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << info.targetInfo.scaling << std::endl;
-      output.copyfmt(state);
+      output << "    outputTechnology:  0x" << toEightDigitHex(info.targetInfo.outputTechnology) << std::endl;
+      output << "    rotation: 0x" << toEightDigitHex(info.targetInfo.rotation) << std::endl;
+      output << "    scaling: 0x" << toEightDigitHex(info.targetInfo.scaling) << std::endl;
       output << "    refreshRate: " << info.targetInfo.refreshRate.Numerator << "/" << info.targetInfo.refreshRate.Denominator << std::endl;
-      output << "    scanLineOrdering: 0x" << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << info.targetInfo.scanLineOrdering << std::endl;
-      output << "    targetAvailable: 0x" << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << info.targetInfo.targetAvailable << std::endl;
-      output << "    statusFlags: 0x" << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << info.targetInfo.statusFlags << std::endl;
-      output << "flags: 0x" << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << info.flags;
+      output << "    scanLineOrdering: 0x" << toEightDigitHex(info.targetInfo.scanLineOrdering) << std::endl;
+      output << "    targetAvailable: 0x" << toEightDigitHex(info.targetInfo.targetAvailable) << std::endl;
+      output << "    statusFlags: 0x" << toEightDigitHex(info.targetInfo.statusFlags) << std::endl;
+      output << "flags: 0x" << toEightDigitHex(info.flags);
       // clang-format on
 
       return output.str();
@@ -163,11 +193,10 @@ namespace display_device {
         return false;
       }
 
-      std::vector<std::uint8_t> buffer;
-      buffer.resize(required_size_in_bytes);
+      auto buffer {std::make_unique<std::byte[]>(required_size_in_bytes)};
 
       // This part is just EVIL!
-      auto detail_data {reinterpret_cast<SP_DEVICE_INTERFACE_DETAIL_DATA_W *>(buffer.data())};
+      auto detail_data {static_cast<SP_DEVICE_INTERFACE_DETAIL_DATA_W *>(static_cast<void *>(buffer.get()))};
       detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_W);
 
       if (!SetupDiGetDeviceInterfaceDetailW(dev_info_handle, &dev_interface_data, detail_data, required_size_in_bytes, nullptr, &dev_info_data)) {
@@ -234,7 +263,7 @@ namespace display_device {
 
       edid.resize(required_size_in_bytes);
 
-      status = RegQueryValueExW(reg_key, L"EDID", nullptr, nullptr, reinterpret_cast<LPBYTE>(edid.data()), &required_size_in_bytes);
+      status = RegQueryValueExW(reg_key, L"EDID", nullptr, nullptr, static_cast<LPBYTE>(static_cast<void *>(edid.data())), &required_size_in_bytes);
       if (status != ERROR_SUCCESS) {
         DD_LOG(error) << w_api.getErrorString(status) << " \"RegQueryValueExW\" failed when getting data.";
         return false;
@@ -370,6 +399,34 @@ namespace display_device {
       return output;
     }
 
+    void appendStableDeviceIdData(const WinApiLayerInterface &w_api, std::vector<std::byte> &device_id_data, std::tuple<std::wstring, std::vector<std::byte>> instance_id_and_edid) {
+      auto [instance_id, edid] = std::move(instance_id_and_edid);
+
+      // We are going to discard the unstable parts of the instance ID and merge the stable parts with the edid buffer (if available)
+      auto unstable_part_index = instance_id.find_first_of(L'&', 0);
+      if (unstable_part_index != std::wstring::npos) {
+        unstable_part_index = instance_id.find_first_of(L'&', unstable_part_index + 1);
+      }
+
+      if (unstable_part_index == std::wstring::npos) {
+        DD_LOG(error) << "Failed to split off the stable part from instance id string " << toUtf8(w_api, instance_id);
+        return;
+      }
+
+      auto semi_stable_part_index = instance_id.find_first_of(L'&', unstable_part_index + 1);
+      if (semi_stable_part_index == std::wstring::npos) {
+        DD_LOG(error) << "Failed to split off the semi-stable part from instance id string " << toUtf8(w_api, instance_id);
+        return;
+      }
+
+      device_id_data.swap(edid);
+      const std::span<const wchar_t> instance_id_chars {instance_id.data(), instance_id.size()};
+      appendBytes(device_id_data, std::as_bytes(instance_id_chars.first(unstable_part_index)));
+      appendBytes(device_id_data, std::as_bytes(instance_id_chars.subspan(semi_stable_part_index)));
+
+      DD_LOG(verbose) << "Creating device id from EDID + instance ID: " << dumpByteData(device_id_data);
+    }
+
     /**
      * @brief Check if the Windows 11 version is equal to 24H2 update or later.
      * @param w_api Reference to the WinApiLayer.
@@ -491,55 +548,14 @@ namespace display_device {
       //
       // The instance ID also seems to be a part of the registry key (in case some other info is needed in the future):
       //     HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\DISPLAY\ACI27EC\5&4fd2de4&5&UID4352
-      [this, &device_id_data, &instance_id_and_edid]() {
-        auto [instance_id, edid] = *instance_id_and_edid;
-
-        // We are going to discard the unstable parts of the instance ID and merge the stable parts with the edid buffer (if available)
-        auto unstable_part_index = instance_id.find_first_of(L'&', 0);
-        if (unstable_part_index != std::wstring::npos) {
-          unstable_part_index = instance_id.find_first_of(L'&', unstable_part_index + 1);
-        }
-
-        if (unstable_part_index == std::wstring::npos) {
-          DD_LOG(error) << "Failed to split off the stable part from instance id string " << toUtf8(*this, instance_id);
-          return;
-        }
-
-        auto semi_stable_part_index = instance_id.find_first_of(L'&', unstable_part_index + 1);
-        if (semi_stable_part_index == std::wstring::npos) {
-          DD_LOG(error) << "Failed to split off the semi-stable part from instance id string " << toUtf8(*this, instance_id);
-          return;
-        }
-
-        device_id_data.swap(edid);
-        device_id_data.insert(std::end(device_id_data), reinterpret_cast<const std::byte *>(instance_id.data()), reinterpret_cast<const std::byte *>(instance_id.data() + unstable_part_index));
-        device_id_data.insert(std::end(device_id_data), reinterpret_cast<const std::byte *>(instance_id.data() + semi_stable_part_index), reinterpret_cast<const std::byte *>(instance_id.data() + instance_id.size()));
-
-        static const auto dump_device_id_data {[](const auto &data) -> std::string {
-          if (data.empty()) {
-            return {};
-          }
-
-          std::ostringstream output;
-          output << "[";
-          for (std::size_t i = 0; i < data.size(); ++i) {
-            output << "0x" << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << static_cast<int>(data[i]);
-            if (i + 1 < data.size()) {
-              output << " ";
-            }
-          }
-          output << "]";
-
-          return output.str();
-        }};
-        DD_LOG(verbose) << "Creating device id from EDID + instance ID: " << dump_device_id_data(device_id_data);
-      }();
+      appendStableDeviceIdData(*this, device_id_data, std::move(*instance_id_and_edid));
     }
 
     if (device_id_data.empty()) {
       // Using the device path as a fallback, which is always unique, but not as stable as the preferred one
       DD_LOG(verbose) << "Creating device id from path " << toUtf8(*this, device_path);
-      device_id_data.insert(std::end(device_id_data), reinterpret_cast<const std::byte *>(device_path.data()), reinterpret_cast<const std::byte *>(device_path.data() + device_path.size()));
+      const std::span<const wchar_t> device_path_chars {device_path.data(), device_path.size()};
+      appendBytes(device_id_data, std::as_bytes(device_path_chars));
     }
 
     static constexpr boost::uuids::uuid ns_id {};  // null namespace = no salt
@@ -621,7 +637,11 @@ namespace display_device {
         return std::nullopt;
       }
 
-      return color_info.highDynamicRangeSupported ? std::make_optional(color_info.highDynamicRangeUserEnabled ? HdrState::Enabled : HdrState::Disabled) : std::nullopt;
+      if (!color_info.highDynamicRangeSupported) {
+        return std::nullopt;
+      }
+
+      return color_info.highDynamicRangeUserEnabled ? HdrState::Enabled : HdrState::Disabled;
     }
 
     DISPLAYCONFIG_GET_ADVANCED_COLOR_INFO color_info = {};
@@ -636,7 +656,11 @@ namespace display_device {
       return std::nullopt;
     }
 
-    return color_info.advancedColorSupported ? std::make_optional(color_info.advancedColorEnabled ? HdrState::Enabled : HdrState::Disabled) : std::nullopt;
+    if (!color_info.advancedColorSupported) {
+      return std::nullopt;
+    }
+
+    return color_info.advancedColorEnabled ? HdrState::Enabled : HdrState::Disabled;
   }
 
   bool WinApiLayer::setHdrState(const DISPLAYCONFIG_PATH_INFO &path, HdrState state) {
@@ -680,12 +704,14 @@ namespace display_device {
       std::optional<int> m_width;
     };
 
+    static_assert(sizeof(LPARAM) == sizeof(EnumData *));
+
     EnumData enum_data {display_name, std::nullopt};
     EnumDisplayMonitors(
       nullptr,
       nullptr,
       [](HMONITOR monitor, HDC, LPRECT, LPARAM user_data) {
-        auto *data = reinterpret_cast<EnumData *>(user_data);
+        auto *data = std::bit_cast<EnumData *>(user_data);
         if (data == nullptr) {
           // Sanity check
           DD_LOG(error) << "EnumData is a nullptr!";
@@ -699,7 +725,7 @@ namespace display_device {
 
         return TRUE;
       },
-      reinterpret_cast<LPARAM>(&enum_data)
+      std::bit_cast<LPARAM>(&enum_data)
     );
 
     if (!enum_data.m_width.has_value()) {

@@ -108,9 +108,9 @@ TEST_S(DefaultLogger) {
   auto &logger {display_device::Logger::get()};
 
   const auto write_and_get_cout {[this, &logger](level level, std::string value) {
-    m_cout_buffer.str(std::string {});  // reset the buffer
+    coutBuffer().str(std::string {});  // reset the buffer
     logger.write(level, std::move(value));
-    return m_cout_buffer.str();
+    return coutBuffer().str();
   }};
 
   logger.setLogLevel(level::verbose);
@@ -137,42 +137,42 @@ TEST_S(CustomCallback) {
 
   logger.write(level::verbose, "Hello World!");
   EXPECT_EQ(output, "0 Hello World!");
-  EXPECT_TRUE(m_cout_buffer.str().empty());
+  EXPECT_TRUE(coutBuffer().str().empty());
 
   logger.write(level::debug, "Hello World!");
   EXPECT_EQ(output, "1 Hello World!");
-  EXPECT_TRUE(m_cout_buffer.str().empty());
+  EXPECT_TRUE(coutBuffer().str().empty());
 
   logger.write(level::info, "Hello World!");
   EXPECT_EQ(output, "2 Hello World!");
-  EXPECT_TRUE(m_cout_buffer.str().empty());
+  EXPECT_TRUE(coutBuffer().str().empty());
 
   logger.write(level::warning, "Hello World!");
   EXPECT_EQ(output, "3 Hello World!");
-  EXPECT_TRUE(m_cout_buffer.str().empty());
+  EXPECT_TRUE(coutBuffer().str().empty());
 
   logger.write(level::error, "Hello World!");
   EXPECT_EQ(output, "4 Hello World!");
-  EXPECT_TRUE(m_cout_buffer.str().empty());
+  EXPECT_TRUE(coutBuffer().str().empty());
 
   logger.write(level::fatal, "Hello World!");
   EXPECT_EQ(output, "5 Hello World!");
-  EXPECT_TRUE(m_cout_buffer.str().empty());
+  EXPECT_TRUE(coutBuffer().str().empty());
 }
 
 TEST_S(WriteMethodRespectsLogLevel, DefaultLogger) {
   using enum display_device::Logger::LogLevel;
   auto &logger {display_device::Logger::get()};
 
-  EXPECT_TRUE(m_cout_buffer.str().empty());
+  EXPECT_TRUE(coutBuffer().str().empty());
 
   logger.setLogLevel(error);
   logger.write(info, "Hello World!");
-  EXPECT_TRUE(m_cout_buffer.str().empty());
+  EXPECT_TRUE(coutBuffer().str().empty());
 
   logger.setLogLevel(info);
   logger.write(info, "Hello World!");
-  EXPECT_FALSE(m_cout_buffer.str().empty());
+  EXPECT_FALSE(coutBuffer().str().empty());
 }
 
 TEST_S(WriteMethodRespectsLogLevel, CustomCallback) {

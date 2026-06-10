@@ -7,7 +7,10 @@
 
 // system includes
 #include <format>
+#include <optional>
+#include <type_traits>
 #include <unordered_set>
+#include <vector>
 
 // local includes
 #include "display_device/logging.h"
@@ -26,6 +29,9 @@ namespace {
     return lhs.HighPart != rhs.HighPart || lhs.LowPart != rhs.LowPart;
   }
 
+  template<class ModesT>
+  using source_mode_ptr_t = std::conditional_t<std::is_const_v<std::remove_reference_t<ModesT>>, const DISPLAYCONFIG_SOURCE_MODE *, DISPLAYCONFIG_SOURCE_MODE *>;
+
   /**
    * @brief Stringify adapter id.
    * @param id Id to stringify.
@@ -36,6 +42,26 @@ namespace {
    */
   std::string toString(const LUID &id) {
     return std::format("{}{}", id.HighPart, id.LowPart);
+  }
+
+  template<class ModesT>
+  source_mode_ptr_t<ModesT> getSourceModeImpl(const std::optional<UINT32> &index, ModesT &modes) {
+    if (!index.has_value()) {
+      return nullptr;
+    }
+
+    if (*index >= modes.size()) {
+      DD_LOG(error) << "Source index " << *index << " is out of range " << modes.size();
+      return nullptr;
+    }
+
+    auto &mode {modes[*index]};
+    if (mode.infoType != DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE) {
+      DD_LOG(error) << "Mode at index " << *index << " is not source mode!";
+      return nullptr;
+    }
+
+    return &mode.sourceMode;
   }
 
   /**
@@ -155,26 +181,11 @@ namespace display_device::win_utils {
   }
 
   const DISPLAYCONFIG_SOURCE_MODE *getSourceMode(const std::optional<UINT32> &index, const std::vector<DISPLAYCONFIG_MODE_INFO> &modes) {
-    if (!index.has_value()) {
-      return nullptr;
-    }
-
-    if (*index >= modes.size()) {
-      DD_LOG(error) << "Source index " << *index << " is out of range " << modes.size();
-      return nullptr;
-    }
-
-    const auto &mode {modes[*index]};
-    if (mode.infoType != DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE) {
-      DD_LOG(error) << "Mode at index " << *index << " is not source mode!";
-      return nullptr;
-    }
-
-    return &mode.sourceMode;
+    return getSourceModeImpl(index, modes);
   }
 
   DISPLAYCONFIG_SOURCE_MODE *getSourceMode(const std::optional<UINT32> &index, std::vector<DISPLAYCONFIG_MODE_INFO> &modes) {
-    return const_cast<DISPLAYCONFIG_SOURCE_MODE *>(getSourceMode(index, const_cast<const std::vector<DISPLAYCONFIG_MODE_INFO> &>(modes)));
+    return getSourceModeImpl(index, modes);
   }
 
   std::optional<ValidatedDeviceInfo> getDeviceInfoForValidPath(const WinApiLayerInterface &w_api, const DISPLAYCONFIG_PATH_INFO &path, const ValidatedPathType type) {

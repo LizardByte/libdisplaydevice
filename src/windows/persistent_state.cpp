@@ -82,4 +82,8 @@ namespace display_device {
   const std::optional<SingleDisplayConfigState> &PersistentState::getState() const {
     return m_cached_state;
   }
+
+  const std::shared_ptr<SettingsPersistenceInterface> &PersistentState::getSettingsPersistenceApi() const {
+    return m_settings_persistence_api;
+  }
 }  // namespace display_device

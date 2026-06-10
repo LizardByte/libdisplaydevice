@@ -7,8 +7,7 @@
 
 // system includes
 #include <array>
-#include <iomanip>
-#include <sstream>
+#include <format>
 
 // local includes
 #include "display_device/logging.h"
@@ -95,9 +94,7 @@ namespace display_device {
       prod_num |= static_cast<int>(data[10]) << 0;
       prod_num |= static_cast<int>(data[11]) << 8;
 
-      std::stringstream stream;
-      stream << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << prod_num;
-      edid.m_product_code = stream.str();
+      edid.m_product_code = std::format("{:04X}", prod_num);
     }
 
     // ---- Serial number

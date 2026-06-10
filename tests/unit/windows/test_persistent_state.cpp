@@ -25,8 +25,6 @@ namespace {
     }
 
     std::shared_ptr<StrictMock<display_device::MockSettingsPersistence>> m_settings_persistence_api {std::make_shared<StrictMock<display_device::MockSettingsPersistence>>()};
-
-  private:
     std::unique_ptr<display_device::PersistentState> m_impl;
   };
 
@@ -35,14 +33,8 @@ namespace {
 }  // namespace
 
 TEST_F_S_MOCKED(NoopSettingsPersistence) {
-  class NakedPersistentState: public display_device::PersistentState {
-  public:
-    using PersistentState::m_settings_persistence_api;
-    using PersistentState::PersistentState;
-  };
-
-  const NakedPersistentState persistent_state {nullptr};
-  EXPECT_TRUE(std::dynamic_pointer_cast<display_device::NoopSettingsPersistence>(persistent_state.m_settings_persistence_api) != nullptr);
+  const display_device::PersistentState persistent_state {nullptr};
+  EXPECT_TRUE(std::dynamic_pointer_cast<display_device::NoopSettingsPersistence>(persistent_state.getSettingsPersistenceApi()) != nullptr);
 }
 
 TEST_F_S_MOCKED(FailedToLoadPersitence) {

@@ -10,8 +10,12 @@
 #include <exception>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <stdexcept>
 #include <thread>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 // local includes
 #include "logging.h"
@@ -156,38 +160,7 @@ namespace display_device {
     explicit RetryScheduler(std::unique_ptr<T> iface):
         m_iface {iface ? std::move(iface) : throw std::invalid_argument {"Nullptr interface provided in RetryScheduler!"}},
         m_thread {[this]() {
-          std::unique_lock lock {m_mutex};
-          while (m_keep_alive) {
-            m_syncing_thread = false;
-            if (auto duration {takeNextDuration(m_sleep_durations)}; duration > std::chrono::milliseconds::zero()) {
-              // We're going to sleep until manually woken up or the time elapses.
-              m_sleep_cv.wait_for(lock, duration, [this]() {
-                return m_syncing_thread;
-              });
-            } else {
-              // We're going to sleep until manually woken up.
-              m_sleep_cv.wait(lock, [this]() {
-                return m_syncing_thread;
-              });
-            }
-
-            if (m_syncing_thread) {
-              // Thread was waken up to sync sleep time or to be stopped.
-              continue;
-            }
-
-            try {
-              SchedulerStopToken scheduler_stop_token {[this]() {
-                clearThreadLoopUnlocked();
-              }};
-              m_retry_function(*m_iface, scheduler_stop_token);
-              continue;
-            } catch (const std::exception &error) {  // NOSONAR(cpp:S1181): Scheduler callback boundary must catch standard callback failures.
-              detail::logSchedulerException(error, "Exception thrown in the RetryScheduler thread. Stopping scheduler.");
-            }
-
-            clearThreadLoopUnlocked();
-          }
+          runThreadLoop();
         }} {
     }
 
@@ -201,7 +174,9 @@ namespace display_device {
         syncThreadUnlocked();
       }
 
-      m_thread.join();
+      if (m_thread.joinable()) {
+        m_thread.join();
+      }
     }
 
     /**
@@ -345,11 +320,10 @@ namespace display_device {
      * });
      * @examples_end
      */
-    static auto executeImpl(auto &self, auto &&exec_fn)
-      requires detail::ExecuteCallbackLike<T, decltype(exec_fn)>
-    {
-      using FunctionT = decltype(exec_fn);
-      constexpr bool IsConst = std::is_const_v<std::remove_reference_t<decltype(self)>>;
+    template<class SelfT, class FunctionT>
+      requires detail::ExecuteCallbackLike<T, FunctionT>
+    static auto executeImpl(SelfT &self, FunctionT &&exec_fn) {
+      constexpr bool IsConst = std::is_const_v<std::remove_reference_t<SelfT>>;
 
       if constexpr (detail::OptionalFunction<FunctionT>) {
         if (!exec_fn) {
@@ -360,15 +334,65 @@ namespace display_device {
       std::lock_guard lock {self.m_mutex};
       detail::auto_const_t<std::decay_t<T>, IsConst> &iface_ref {*self.m_iface};
       if constexpr (detail::ExecuteWithStopToken<T, FunctionT>) {
-        detail::auto_const_t<SchedulerStopToken, IsConst> stop_token {[&self]() {
-          if constexpr (!IsConst) {
-            self.stopUnlocked();
-          }
-        }};
+        detail::auto_const_t<SchedulerStopToken, IsConst> stop_token {makeStopCallback(self)};
         return std::forward<FunctionT>(exec_fn)(iface_ref, stop_token);
       } else {
         return std::forward<FunctionT>(exec_fn)(iface_ref);
       }
+    }
+
+    template<class SelfT>
+    static auto makeStopCallback(SelfT &self) {
+      constexpr bool IsConst = std::is_const_v<std::remove_reference_t<SelfT>>;
+      if constexpr (IsConst) {
+        return []() {
+          // Const execute calls cannot stop the scheduler.
+        };
+      } else {
+        return [&self]() {
+          self.stopUnlocked();
+        };
+      }
+    }
+
+    void runThreadLoop() {
+      std::unique_lock lock {m_mutex};
+      while (m_keep_alive) {
+        m_syncing_thread = false;
+        waitForNextRetry(lock);
+
+        if (m_syncing_thread) {
+          // Thread was waken up to sync sleep time or to be stopped.
+          continue;
+        }
+
+        try {
+          SchedulerStopToken scheduler_stop_token {[this]() {
+            clearThreadLoopUnlocked();
+          }};
+          m_retry_function(*m_iface, scheduler_stop_token);
+          continue;
+        } catch (const std::exception &error) {  // NOSONAR(cpp:S1181): Scheduler callback boundary must catch standard callback failures.
+          detail::logSchedulerException(error, "Exception thrown in the RetryScheduler thread. Stopping scheduler.");
+        }
+
+        clearThreadLoopUnlocked();
+      }
+    }
+
+    void waitForNextRetry(std::unique_lock<std::mutex> &lock) {
+      if (const auto duration {takeNextDuration(m_sleep_durations)}; duration > std::chrono::milliseconds::zero()) {
+        // We're going to sleep until manually woken up or the time elapses.
+        m_sleep_cv.wait_for(lock, duration, [this]() {
+          return m_syncing_thread;
+        });
+        return;
+      }
+
+      // We're going to sleep until manually woken up.
+      m_sleep_cv.wait(lock, [this]() {
+        return m_syncing_thread;
+      });
     }
 
     /**
@@ -407,6 +431,6 @@ namespace display_device {
     bool m_keep_alive {true}; /**< When set to false, scheduler thread will exit. */
 
     // Always the last in the list so that all the members are already initialized!
-    std::thread m_thread; /**< A scheduler thread. */
+    std::thread m_thread; /**< A scheduler thread. */  // NOSONAR(cpp:S6168): std::jthread is unavailable on the macOS libc++ used by CI.
   };
 }  // namespace display_device

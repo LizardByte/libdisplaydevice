@@ -75,7 +75,7 @@ namespace display_device {
     // Shift the source mode origin points accordingly, so that the provided
     // device moves to (0, 0) position and others to their new positions.
     std::set<UINT32> modified_modes;
-    for (auto &path : display_data->m_paths) {
+    for (const auto &path : display_data->m_paths) {
       const auto current_id {m_w_api->getDeviceId(path)};
       const auto source_index {win_utils::getSourceIndex(path, display_data->m_modes)};
       auto source_mode {win_utils::getSourceMode(source_index, display_data->m_modes)};

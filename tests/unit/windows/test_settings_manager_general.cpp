@@ -34,8 +34,6 @@ namespace {
     std::shared_ptr<StrictMock<display_device::MockWinDisplayDevice>> m_dd_api {std::make_shared<StrictMock<display_device::MockWinDisplayDevice>>()};
     std::shared_ptr<StrictMock<display_device::MockSettingsPersistence>> m_settings_persistence_api {std::make_shared<StrictMock<display_device::MockSettingsPersistence>>()};
     std::shared_ptr<StrictMock<display_device::MockAudioContext>> m_audio_context_api {std::make_shared<StrictMock<display_device::MockAudioContext>>()};
-
-  private:
     std::unique_ptr<display_device::SettingsManager> m_impl;
   };
 
@@ -51,14 +49,8 @@ TEST_F_S_MOCKED(NullptrDisplayDeviceApiProvided) {
 }
 
 TEST_F_S_MOCKED(NoopAudioContext) {
-  class NakedSettingsManager: public display_device::SettingsManager {
-  public:
-    using SettingsManager::m_audio_context_api;
-    using SettingsManager::SettingsManager;
-  };
-
-  const NakedSettingsManager settings_manager {m_dd_api, nullptr, std::make_unique<display_device::PersistentState>(nullptr), {}};
-  EXPECT_TRUE(std::dynamic_pointer_cast<display_device::NoopAudioContext>(settings_manager.m_audio_context_api) != nullptr);
+  const display_device::SettingsManager settings_manager {m_dd_api, nullptr, std::make_unique<display_device::PersistentState>(nullptr), {}};
+  EXPECT_TRUE(std::dynamic_pointer_cast<display_device::NoopAudioContext>(settings_manager.getAudioContextApi()) != nullptr);
 }
 
 TEST_F_S_MOCKED(NullptrPersistentStateProvided) {

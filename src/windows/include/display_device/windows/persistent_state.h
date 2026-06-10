@@ -37,10 +37,10 @@ namespace display_device {
      */
     [[nodiscard]] const std::optional<SingleDisplayConfigState> &getState() const;
 
-  protected:
-    std::shared_ptr<SettingsPersistenceInterface> m_settings_persistence_api;
+    [[nodiscard]] const std::shared_ptr<SettingsPersistenceInterface> &getSettingsPersistenceApi() const;
 
   private:
+    std::shared_ptr<SettingsPersistenceInterface> m_settings_persistence_api;
     std::optional<SingleDisplayConfigState> m_cached_state;
   };
 }  // namespace display_device

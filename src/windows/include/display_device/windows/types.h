@@ -8,7 +8,7 @@
 #ifndef NOMINMAX
   #define NOMINMAX
 #endif
-#include <windows.h>
+#include <Windows.h>
 
 // system includes
 #include <chrono>

@@ -88,46 +88,44 @@ namespace {
       return modes;
     }()
   };
-  const std::vector<DISPLAYCONFIG_PATH_INFO> PATHS_WITH_SOURCE_IDS {
-    []() {
-      // Contains the following:
-      //    - 4 paths for the same adapter (1 active and 3 inactive)
-      //        Note: source ids are out of order which is OK
-      //    - 1 active path for a different adapter
-      //    - 2 inactive path for yet another different adapter
-      std::vector<DISPLAYCONFIG_PATH_INFO> paths;
 
-      paths.push_back(AVAILABLE_AND_ACTIVE_PATH);
-      paths.back().sourceInfo.adapterId = {1, 1};
-      paths.back().sourceInfo.id = 1;
+  std::vector<DISPLAYCONFIG_PATH_INFO> makePathsWithSourceIds() {
+    // Contains 4 paths for the same adapter, 1 active path for a different adapter,
+    // and 2 inactive paths for yet another adapter.
+    std::vector<DISPLAYCONFIG_PATH_INFO> paths;
 
-      paths.push_back(AVAILABLE_AND_ACTIVE_PATH);
-      paths.back().sourceInfo.adapterId = {2, 2};
-      paths.back().sourceInfo.id = 0;
+    paths.push_back(AVAILABLE_AND_ACTIVE_PATH);
+    paths.back().sourceInfo.adapterId = {1, 1};
+    paths.back().sourceInfo.id = 1;
 
-      paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
-      paths.back().sourceInfo.adapterId = {1, 1};
-      paths.back().sourceInfo.id = 0;
+    paths.push_back(AVAILABLE_AND_ACTIVE_PATH);
+    paths.back().sourceInfo.adapterId = {2, 2};
+    paths.back().sourceInfo.id = 0;
 
-      paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
-      paths.back().sourceInfo.adapterId = {3, 3};
-      paths.back().sourceInfo.id = 4;
+    paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
+    paths.back().sourceInfo.adapterId = {1, 1};
+    paths.back().sourceInfo.id = 0;
 
-      paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
-      paths.back().sourceInfo.adapterId = {2, 2};
-      paths.back().sourceInfo.id = 1;
+    paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
+    paths.back().sourceInfo.adapterId = {3, 3};
+    paths.back().sourceInfo.id = 4;
 
-      paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
-      paths.back().sourceInfo.adapterId = {1, 1};
-      paths.back().sourceInfo.id = 0;
+    paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
+    paths.back().sourceInfo.adapterId = {2, 2};
+    paths.back().sourceInfo.id = 1;
 
-      paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
-      paths.back().sourceInfo.adapterId = {1, 1};
-      paths.back().sourceInfo.id = 1;
+    paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
+    paths.back().sourceInfo.adapterId = {1, 1};
+    paths.back().sourceInfo.id = 0;
 
-      return paths;
-    }()
-  };
+    paths.push_back(AVAILABLE_AND_INACTIVE_PATH);
+    paths.back().sourceInfo.adapterId = {1, 1};
+    paths.back().sourceInfo.id = 1;
+
+    return paths;
+  }
+
+  const std::vector<DISPLAYCONFIG_PATH_INFO> PATHS_WITH_SOURCE_IDS {makePathsWithSourceIds()};
   const display_device::PathSourceIndexDataMap EXPECTED_SOURCE_INDEX_DATA {
     // Contains the expected data if generated from PATHS_WITH_SOURCE_IDS and some
     // sensibly chosen device paths and device ids.
