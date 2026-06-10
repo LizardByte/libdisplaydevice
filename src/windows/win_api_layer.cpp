@@ -262,16 +262,18 @@ namespace display_device {
       const std::wstring &device_path,
       MonitorLookupData &lookup_data
     ) {
+      using enum MonitorLookupResult;
+
       SP_DEVICE_INTERFACE_DATA dev_interface_data {};
       dev_interface_data.cbSize = sizeof(dev_interface_data);
       if (!SetupDiEnumDeviceInterfaces(dev_info_handle, nullptr, &monitor_guid, monitor_index, &dev_interface_data)) {
         const DWORD error_code {GetLastError()};
         if (error_code == ERROR_NO_MORE_ITEMS) {
-          return MonitorLookupResult::Finished;
+          return Finished;
         }
 
         DD_LOG(warning) << w_api.getErrorString(static_cast<LONG>(error_code)) << " \"SetupDiEnumDeviceInterfaces\" failed.";
-        return MonitorLookupResult::Continue;
+        return Continue;
       }
 
       std::wstring dev_interface_path;
@@ -279,27 +281,27 @@ namespace display_device {
       dev_info_data.cbSize = sizeof(dev_info_data);
       if (!getDeviceInterfaceDetail(w_api, dev_info_handle, dev_interface_data, dev_interface_path, dev_info_data)) {
         // Error already logged
-        return MonitorLookupResult::Continue;
+        return Continue;
       }
 
       if (!boost::iequals(dev_interface_path, device_path)) {
-        return MonitorLookupResult::Continue;
+        return Continue;
       }
 
       std::wstring instance_id;
       if (!getDeviceInstanceId(w_api, dev_info_handle, dev_info_data, instance_id)) {
         // Error already logged
-        return MonitorLookupResult::Finished;
+        return Finished;
       }
 
       std::vector<std::byte> edid;
       if (!getDeviceEdid(w_api, dev_info_handle, dev_info_data, edid)) {
         // Error already logged
-        return MonitorLookupResult::Finished;
+        return Finished;
       }
 
       lookup_data = {std::move(instance_id), std::move(edid)};
-      return MonitorLookupResult::Found;
+      return Found;
     }
 
     /**
@@ -309,6 +311,8 @@ namespace display_device {
      * @return A tuple of instance ID and EDID, or empty optional if not device was found or error has occurred.
      */
     std::optional<std::tuple<std::wstring, std::vector<std::byte>>> getInstanceIdAndEdid(const WinApiLayerInterface &w_api, const std::wstring &device_path) {
+      using enum MonitorLookupResult;
+
       static const GUID monitor_guid {0xe6f07b5f, 0xee97, 0x4a90, {0xb0, 0x76, 0x33, 0xf5, 0x7b, 0xf4, 0xea, 0xa7}};
 
       if (HDEVINFO dev_info_handle {SetupDiGetClassDevsW(&monitor_guid, nullptr, nullptr, DIGCF_DEVICEINTERFACE)}; dev_info_handle) {
@@ -323,11 +327,11 @@ namespace display_device {
         for (DWORD monitor_index = 0;; ++monitor_index) {
           MonitorLookupData lookup_data;
           const auto lookup_result {tryGetMonitorLookupData(w_api, dev_info_handle, monitor_guid, monitor_index, device_path, lookup_data)};
-          if (lookup_result == MonitorLookupResult::Finished) {
+          if (lookup_result == Finished) {
             break;
           }
 
-          if (lookup_result == MonitorLookupResult::Found) {
+          if (lookup_result == Found) {
             return std::make_tuple(std::move(lookup_data.m_instance_id), std::move(lookup_data.m_edid));
           }
         }

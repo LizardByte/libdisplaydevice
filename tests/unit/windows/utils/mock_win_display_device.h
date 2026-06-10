@@ -7,14 +7,14 @@
 #include "display_device/windows/win_display_device_interface.h"
 
 namespace display_device {
-  class MockWinDisplayDeviceAccess: public virtual WinDisplayDeviceInterface {
+  class MockWinDisplayDeviceAccess: public WinDisplayDeviceInterface {
   public:
     MOCK_METHOD(bool, isApiAccessAvailable, (), (const, override));
     MOCK_METHOD(EnumeratedDeviceList, enumAvailableDevices, (), (const, override));
     MOCK_METHOD(std::string, getDisplayName, (const std::string &), (const, override));
   };
 
-  class MockWinDisplayDeviceTopology: public virtual WinDisplayDeviceInterface {
+  class MockWinDisplayDeviceTopology: public MockWinDisplayDeviceAccess {
   public:
     MOCK_METHOD(ActiveTopology, getCurrentTopology, (), (const, override));
     MOCK_METHOD(bool, isTopologyValid, (const ActiveTopology &), (const, override));
@@ -22,30 +22,25 @@ namespace display_device {
     MOCK_METHOD(bool, setTopology, (const ActiveTopology &), (override));
   };
 
-  class MockWinDisplayDeviceModes: public virtual WinDisplayDeviceInterface {
+  class MockWinDisplayDeviceModes: public MockWinDisplayDeviceTopology {
   public:
     MOCK_METHOD(DeviceDisplayModeMap, getCurrentDisplayModes, (const StringSet &), (const, override));
     MOCK_METHOD(bool, setDisplayModes, (const DeviceDisplayModeMap &), (override));
   };
 
-  class MockWinDisplayDevicePrimary: public virtual WinDisplayDeviceInterface {
+  class MockWinDisplayDevicePrimary: public MockWinDisplayDeviceModes {
   public:
     MOCK_METHOD(bool, isPrimary, (const std::string &), (const, override));
     MOCK_METHOD(bool, setAsPrimary, (const std::string &), (override));
   };
 
-  class MockWinDisplayDeviceHdr: public virtual WinDisplayDeviceInterface {
+  class MockWinDisplayDeviceHdr: public MockWinDisplayDevicePrimary {
   public:
     MOCK_METHOD(HdrStateMap, getCurrentHdrStates, (const StringSet &), (const, override));
     MOCK_METHOD(bool, setHdrStates, (const HdrStateMap &), (override));
   };
 
-  class MockWinDisplayDevice:
-      public MockWinDisplayDeviceAccess,
-      public MockWinDisplayDeviceTopology,
-      public MockWinDisplayDeviceModes,
-      public MockWinDisplayDevicePrimary,
-      public MockWinDisplayDeviceHdr {};
+  class MockWinDisplayDevice: public MockWinDisplayDeviceHdr {};
 }  // namespace display_device
 
 /**

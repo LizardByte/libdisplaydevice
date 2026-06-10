@@ -100,13 +100,15 @@ namespace display_device {
   }
 
   SettingsManager::RevertResult SettingsManager::revertModifiedHdrStates(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched) {
+    using enum RevertResult;
+
     if (modified_state.m_original_hdr_states.empty()) {
-      return RevertResult::Ok;
+      return Ok;
     }
 
     const auto current_states {m_dd_api->getCurrentHdrStates(win_utils::flattenTopology(modified_state.m_topology))};
     if (current_states == modified_state.m_original_hdr_states) {
-      return RevertResult::Ok;
+      return Ok;
     }
 
     system_settings_touched = true;
@@ -115,21 +117,23 @@ namespace display_device {
                  << toJson(modified_state.m_original_hdr_states);
     if (!m_dd_api->setHdrStates(modified_state.m_original_hdr_states)) {
       // Error already logged
-      return RevertResult::RevertingHdrStatesFailed;
+      return RevertingHdrStatesFailed;
     }
 
     guard_fn = win_utils::hdrStateGuardFn(*m_dd_api, current_states);
-    return RevertResult::Ok;
+    return Ok;
   }
 
   SettingsManager::RevertResult SettingsManager::revertModifiedDisplayModes(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched) {
+    using enum RevertResult;
+
     if (modified_state.m_original_modes.empty()) {
-      return RevertResult::Ok;
+      return Ok;
     }
 
     const auto current_modes {m_dd_api->getCurrentDisplayModes(win_utils::flattenTopology(modified_state.m_topology))};
     if (current_modes == modified_state.m_original_modes) {
-      return RevertResult::Ok;
+      return Ok;
     }
 
     DD_LOG(info) << "Trying to change back the display modes to:\n"
@@ -137,7 +141,7 @@ namespace display_device {
     if (!m_dd_api->setDisplayModes(modified_state.m_original_modes)) {
       system_settings_touched = true;
       // Error already logged
-      return RevertResult::RevertingDisplayModesFailed;
+      return RevertingDisplayModesFailed;
     }
 
     // It is possible that the display modes will not actually change even though the "current != new" condition is true.
@@ -148,17 +152,19 @@ namespace display_device {
       guard_fn = win_utils::modeGuardFn(*m_dd_api, current_modes);
     }
 
-    return RevertResult::Ok;
+    return Ok;
   }
 
   SettingsManager::RevertResult SettingsManager::revertModifiedPrimaryDevice(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched) {
+    using enum RevertResult;
+
     if (modified_state.m_original_primary_device.empty()) {
-      return RevertResult::Ok;
+      return Ok;
     }
 
     const auto current_primary_device {win_utils::getPrimaryDevice(*m_dd_api, modified_state.m_topology)};
     if (current_primary_device == modified_state.m_original_primary_device) {
-      return RevertResult::Ok;
+      return Ok;
     }
 
     system_settings_touched = true;
@@ -166,11 +172,11 @@ namespace display_device {
     DD_LOG(info) << "Trying to change back the original primary device to: " << toJson(modified_state.m_original_primary_device);
     if (!m_dd_api->setAsPrimary(modified_state.m_original_primary_device)) {
       // Error already logged
-      return RevertResult::RevertingPrimaryDeviceFailed;
+      return RevertingPrimaryDeviceFailed;
     }
 
     guard_fn = win_utils::primaryGuardFn(*m_dd_api, current_primary_device);
-    return RevertResult::Ok;
+    return Ok;
   }
 
   SettingsManager::RevertResult SettingsManager::revertModifiedSettings(const ActiveTopology &current_topology, bool &system_settings_touched, bool *switched_topology) {

@@ -221,8 +221,7 @@ namespace display_device::win_utils {
 
   namespace {
     bool addUniqueDevicePathMapping(const ValidatedDeviceInfo &device_info, StringUnorderedMap<std::string> &paths_to_ids) {
-      const auto prev_device_id_for_path_it {paths_to_ids.find(device_info.m_device_path)};
-      if (prev_device_id_for_path_it != std::end(paths_to_ids)) {
+      if (const auto prev_device_id_for_path_it {paths_to_ids.find(device_info.m_device_path)}; prev_device_id_for_path_it != std::end(paths_to_ids)) {
         if (prev_device_id_for_path_it->second == device_info.m_device_id) {
           return true;
         }
@@ -376,8 +375,7 @@ namespace display_device::win_utils {
       const SourceIdSetByAdapter &used_source_ids_per_adapter,
       const SourceIdByAdapter &used_source_ids_per_adapter_per_group
     ) {
-      const auto already_used_source_id {getUsedSourceIdInGroup(source_data.m_adapter_id, used_source_ids_per_adapter_per_group)};
-      if (already_used_source_id.has_value()) {
+      if (const auto already_used_source_id {getUsedSourceIdInGroup(source_data.m_adapter_id, used_source_ids_per_adapter_per_group)}; already_used_source_id.has_value()) {
         // Some device in the group is already using the source id, and we belong to the same adapter.
         // This means we must also use the path with matching source id.
         return getPathUsingSourceId(device_id, source_data, *already_used_source_id);
