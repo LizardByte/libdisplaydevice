@@ -39,6 +39,27 @@ namespace display_device {
     [[nodiscard]] virtual MacDisplayIdList getDisplayIds(MacQueryType type) const = 0;
 
     /**
+     * @brief Tell macOS that the user is active and displays should wake.
+     * @param reason Short human-readable reason for the wake assertion.
+     * @returns Power assertion id to release later, or empty optional on failure.
+     */
+    [[nodiscard]] virtual std::optional<MacPowerAssertionId> declareUserActivity(const std::string &reason) = 0;
+
+    /**
+     * @brief Create a power assertion that prevents user-idle display sleep.
+     * @param reason Short human-readable reason for the assertion.
+     * @returns Power assertion id to release later, or empty optional on failure.
+     */
+    [[nodiscard]] virtual std::optional<MacPowerAssertionId> createDisplaySleepAssertion(const std::string &reason) = 0;
+
+    /**
+     * @brief Release a macOS power assertion.
+     * @param assertion_id Assertion id returned by declareUserActivity or createDisplaySleepAssertion.
+     * @returns True if the assertion was released, false otherwise.
+     */
+    [[nodiscard]] virtual bool releasePowerAssertion(MacPowerAssertionId assertion_id) = 0;
+
+    /**
      * @brief Get the library device id for a display.
      * @param display_id Display to query.
      * @returns Stable best-effort device id, or empty string if unavailable.

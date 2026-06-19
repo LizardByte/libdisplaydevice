@@ -15,6 +15,7 @@
 #include <IOKit/graphics/IOGraphicsLib.h>
 #include <IOKit/graphics/IOGraphicsTypes.h>
 #include <IOKit/IOKitLib.h>
+#include <IOKit/pwr_mgt/IOPMLib.h>
 #include <iomanip>
 #include <limits>
 #include <numeric>
@@ -219,6 +220,15 @@ namespace display_device {
 
       result.resize(std::strlen(result.c_str()));
       return result;
+    }
+
+    /**
+     * @brief Convert a standard string to a CoreFoundation string.
+     * @param value String to convert.
+     * @return Converted string, or null on failure.
+     */
+    [[nodiscard]] CfPtr<CFStringRef> toCfString(const std::string &value) {
+      return CfPtr<CFStringRef> {CFStringCreateWithCString(kCFAllocatorDefault, value.c_str(), kCFStringEncodingUTF8)};
     }
 
     /**
@@ -511,6 +521,50 @@ namespace display_device {
 
     displays.resize(display_count);
     return displays;
+  }
+
+  std::optional<MacPowerAssertionId> MacApiLayer::declareUserActivity(const std::string &reason) {
+    const auto assertion_reason {toCfString(reason.empty() ? "libdisplaydevice display detection" : reason)};
+    if (!assertion_reason) {
+      DD_LOG(error) << "Failed to create macOS display wake assertion reason.";
+      return std::nullopt;
+    }
+
+    IOPMAssertionID assertion_id {};
+    const auto result {IOPMAssertionDeclareUserActivity(assertion_reason.get(), kIOPMUserActiveRemote, &assertion_id)};
+    if (result != kIOReturnSuccess) {
+      DD_LOG(error) << "Failed to declare macOS user activity for display wake: " << result;
+      return std::nullopt;
+    }
+
+    return assertion_id;
+  }
+
+  std::optional<MacPowerAssertionId> MacApiLayer::createDisplaySleepAssertion(const std::string &reason) {
+    const auto assertion_reason {toCfString(reason.empty() ? "libdisplaydevice display capture" : reason)};
+    if (!assertion_reason) {
+      DD_LOG(error) << "Failed to create macOS display sleep assertion reason.";
+      return std::nullopt;
+    }
+
+    IOPMAssertionID assertion_id {};
+    const auto result {IOPMAssertionCreateWithName(kIOPMAssertPreventUserIdleDisplaySleep, kIOPMAssertionLevelOn, assertion_reason.get(), &assertion_id)};
+    if (result != kIOReturnSuccess) {
+      DD_LOG(error) << "Failed to create macOS display sleep assertion: " << result;
+      return std::nullopt;
+    }
+
+    return assertion_id;
+  }
+
+  bool MacApiLayer::releasePowerAssertion(const MacPowerAssertionId assertion_id) {
+    const auto result {IOPMAssertionRelease(assertion_id)};
+    if (result != kIOReturnSuccess) {
+      DD_LOG(error) << "Failed to release macOS power assertion " << assertion_id << ": " << result;
+      return false;
+    }
+
+    return true;
   }
 
   std::string MacApiLayer::getDeviceId(const MacDisplayId display_id) const {

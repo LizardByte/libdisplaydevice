@@ -328,9 +328,9 @@ Build a real macOS platform target with mocked-out behavior, proving the reposit
 
 ### Acceptance Criteria
 
-- `cmake -G Ninja -B cmake-build-macos -S .` configures on macOS.
-- `ninja -C cmake-build-macos` builds.
-- `cmake-build-macos/tests/test_libdisplaydevice` runs.
+- `cmake -G Ninja -B cmake-build-macos-tests -S .` configures on macOS.
+- `cmake --build cmake-build-macos-tests` builds.
+- `SKIP_SYSTEM_TESTS=1 ./cmake-build-macos-tests/tests/test_libdisplaydevice` runs the normal non-mutating suite.
 - Doxygen succeeds with all new declarations documented.
 
 ## Phase 1: Read-Only macOS Support
@@ -477,7 +477,7 @@ Unit tests:
 
 Live tests:
 
-- Opt-in by environment variable, for example `DD_ENABLE_DISPLAY_MUTATION_TESTS=1`.
+- Run as system tests; routine verification uses `SKIP_SYSTEM_TESTS=1` to skip them.
 - Skip if only one mode is available.
 - Change to another safe mode, verify, then revert.
 - Never run display mutation tests by default in CI.
@@ -607,11 +607,35 @@ Possible shared tests:
 - `EnsureOnlyDisplay` is not equivalent to macOS mirroring and is unsupported unless already true.
 - Display mutation tests are opt-in.
 
-## Phase 5: Sunshine Consumer Integration
+## Phase 5: Display Power Management Surface
+
+### Objective
+
+Add a small cross-platform API for display wake and display-sleep prevention. This is separate from display settings: waking a sleeping display and preventing it from sleeping during capture is not the same thing as topology activation, primary display selection, or mode mutation.
+
+### Implementation Tasks
+
+- Add a new public RAII-style API for display capture preparation.
+- Support a short wake-for-detection operation before consumers enumerate/select a capture target.
+- Support a keep-awake guard whose destructor releases the platform assertion.
+- On macOS, implement wake with `IOPMAssertionDeclareUserActivity` and keep-awake with `IOPMAssertionCreateWithName(kIOPMAssertPreventUserIdleDisplaySleep, ...)`.
+- On Windows, implement wake and keep-awake with `SetThreadExecutionState`, replacing the equivalent Sunshine capture-backend behavior during integration.
+- Keep this API independent from `SettingsManagerInterface::applySettings`; `DevicePreparation::EnsureActive` should continue to mean topology/display-configuration activation, not display power state.
+- Add Doxygen documentation that clarifies failure behavior and lifetime ownership.
+
+### Testing
+
+- Unit-test guard lifetime and release behavior using platform API mocks.
+- Unit-test wake retry/timeout behavior without requiring real display sleep.
+- Keep real display-sleep tests manual or system-only; normal CI should not try to put a physical monitor to sleep.
+
+## Phase 6: Sunshine Consumer Integration
 
 ### Objective
 
 Wire the accepted macOS library backend into Sunshine once the library work is ready to consume. This is intentionally separate from the library phases because it lives in a different repository/process and may depend on upstream PR acceptance.
+
+This phase should also move Sunshine's existing display wake / keep-awake behavior onto library-owned power-management APIs. Sunshine already handles this explicitly on Windows in its capture backend, so the integration should avoid leaving Windows on one path and macOS on another.
 
 ### Implementation Tasks
 
@@ -620,6 +644,7 @@ Wire the accepted macOS library backend into Sunshine once the library work is r
 - Keep Sunshine's existing macOS capture/input code consuming the numeric CoreGraphics display id returned by `map_output_name`.
 - Handle existing Sunshine macOS configs that stored raw numeric CoreGraphics ids at the Sunshine boundary, either by migration to stable `device_id` or by a narrow pass-through fallback.
 - Force, hide, or reject `dd_hdr_option=auto` on macOS until HDR mutation support exists, because the library intentionally fails requested HDR changes.
+- Replace Sunshine's platform-local display wake / keep-awake code with the new library API on both macOS and Windows.
 - Update Sunshine documentation and UI copy so macOS advertises `verify_only` plus resolution/refresh matching and revert, not topology preparation.
 
 ## Suggested Release Milestones
@@ -646,12 +671,14 @@ This is the first practical release because it provides a useful workflow while 
 
 Includes:
 
-- Phase 5, when the downstream Sunshine integration is ready.
+- Phase 5, when the display power API is accepted.
+- Phase 6, when the downstream Sunshine integration is ready.
 
 User-visible support:
 
 - Sunshine can use built-in macOS active-display resolution/refresh matching without an external `displayplacer` command.
 - Existing Sunshine macOS raw-display-id configs are handled by Sunshine migration/fallback logic, not by expanding the library contract.
+- Sunshine uses the library display-power API to wake and keep displays awake on both macOS and Windows.
 
 ### macOS v2
 
@@ -666,22 +693,15 @@ User-visible support:
 - Supported mirroring/topology changes.
 - Revert across topology/main/mode combinations.
 
-## Important Design Decisions To Make Before Coding
+## Resolved Design Defaults
 
-1. Should macOS `DisplayMode` and `ActiveTopology` be moved to `common` immediately, or only after macOS mode/topology code exists?
-2. Should `applySettings` fail immediately when `m_hdr_state` is supplied, or ignore it when every target reports unsupported HDR?
-3. Should `setDisplayModes` choose the closest refresh rate when exact/fuzzy refresh is unavailable, or fail?
-4. Should the first mutating implementation use `kCGConfigureForAppOnly` or `kCGConfigureForSession`?
-5. Should live display mutation tests be part of the normal test binary but skipped by default, or built behind a separate CMake option?
-
-## Recommended Defaults
-
-- Move shared types only after phase 2 proves macOS uses them cleanly.
+- Move shared types only after macOS needs them cleanly across multiple implemented features.
 - Fail when `m_hdr_state` is supplied.
 - Fail when no acceptable refresh match exists.
 - Use `kCGConfigureForSession` for explicit apply/revert behavior, not permanent settings.
 - Use stable best-effort `m_device_id` values for configuration. Use the platform capture selector for `m_display_name` and put human names in `m_friendly_name`.
-- Include live mutation tests in the test binary, but skip them unless an environment variable opts in.
+- Keep live/system mutation tests in the normal test binary, but run routine verification with `SKIP_SYSTEM_TESTS=1`.
+- Keep display power management separate from settings application; do not model display sleep as `DevicePreparation::EnsureActive`.
 
 ## Risks
 
@@ -714,19 +734,15 @@ Display mutation tests can interrupt real workflows. Keep them opt-in and aggres
 On macOS:
 
 ```bash
-cmake -G Ninja -B cmake-build-macos -S .
-ninja -C cmake-build-macos
-./cmake-build-macos/tests/test_libdisplaydevice
-```
-
-Opt-in display mutation tests should require an explicit environment variable, for example:
-
-```bash
-DD_ENABLE_DISPLAY_MUTATION_TESTS=1 ./cmake-build-macos/tests/test_libdisplaydevice
+cmake -G Ninja -B cmake-build-macos-tests -S .
+cmake --build cmake-build-macos-tests
+SKIP_SYSTEM_TESTS=1 ./cmake-build-macos-tests/tests/test_libdisplaydevice
+SKIP_SYSTEM_TESTS=1 ctest --test-dir cmake-build-macos-tests --output-on-failure
 ```
 
 Documentation should also be built because the project treats missing Doxygen documentation as a build failure:
 
 ```bash
-ninja -C cmake-build-macos docs
+cmake -S . -B cmake-build-macos-docs -G Ninja -DBUILD_DOCS=ON -DBUILD_TESTS=OFF
+cmake --build cmake-build-macos-docs
 ```

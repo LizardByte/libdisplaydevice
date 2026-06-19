@@ -29,6 +29,21 @@ namespace display_device {
     [[nodiscard]] MacDisplayIdList getDisplayIds(MacQueryType type) const override;
 
     /**
+     * @copydoc MacApiLayerInterface::declareUserActivity
+     */
+    [[nodiscard]] std::optional<MacPowerAssertionId> declareUserActivity(const std::string &reason) override;
+
+    /**
+     * @copydoc MacApiLayerInterface::createDisplaySleepAssertion
+     */
+    [[nodiscard]] std::optional<MacPowerAssertionId> createDisplaySleepAssertion(const std::string &reason) override;
+
+    /**
+     * @copydoc MacApiLayerInterface::releasePowerAssertion
+     */
+    [[nodiscard]] bool releasePowerAssertion(MacPowerAssertionId assertion_id) override;
+
+    /**
      * @copydoc MacApiLayerInterface::getDeviceId
      */
     [[nodiscard]] std::string getDeviceId(MacDisplayId display_id) const override;

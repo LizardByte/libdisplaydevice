@@ -11,6 +11,9 @@ namespace display_device {
   public:
     MOCK_METHOD(std::string, getErrorString, (LONG), (const, override));
     MOCK_METHOD(std::optional<PathAndModeData>, queryDisplayConfig, (QueryType), (const, override));
+    MOCK_METHOD(bool, wakeDisplay, (std::chrono::milliseconds), (override));
+    MOCK_METHOD(bool, keepDisplayAwake, (), (override));
+    MOCK_METHOD(bool, restorePowerRequest, (), (override));
     MOCK_METHOD(std::string, getDeviceId, (const DISPLAYCONFIG_PATH_INFO &), (const, override));
     MOCK_METHOD(std::vector<std::byte>, getEdid, (const DISPLAYCONFIG_PATH_INFO &), (const, override));
     MOCK_METHOD(std::string, getMonitorDevicePath, (const DISPLAYCONFIG_PATH_INFO &), (const, override));

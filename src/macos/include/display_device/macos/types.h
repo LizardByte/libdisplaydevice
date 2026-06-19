@@ -29,6 +29,15 @@ namespace display_device {
   using MacDisplayId = std::uint32_t;
 
   /**
+   * @brief macOS power assertion identifier.
+   *
+   * IOKit exposes power assertion identifiers as 32-bit values. The platform
+   * layer keeps this type independent from IOKit headers so public headers
+   * remain easy to parse on non-Apple hosts.
+   */
+  using MacPowerAssertionId = std::uint32_t;
+
+  /**
    * @brief A list of CoreGraphics display identifiers.
    */
   using MacDisplayIdList = std::vector<MacDisplayId>;
