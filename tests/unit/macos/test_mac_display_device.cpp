@@ -95,10 +95,10 @@ TEST_F_S(EnumAvailableDevices) {
 
   EXPECT_CALL(*m_layer, getDisplayName(1))
     .Times(1)
-    .WillOnce(Return("DisplayName1"));
+    .WillOnce(Return("1"));
   EXPECT_CALL(*m_layer, getDisplayName(2))
     .Times(1)
-    .WillOnce(Return("DisplayName2"));
+    .WillOnce(Return("2"));
 
   EXPECT_CALL(*m_layer, getFriendlyName(1))
     .Times(1)
@@ -136,7 +136,7 @@ TEST_F_S(EnumAvailableDevices) {
 
   const display_device::EnumeratedDeviceList expected_list {
     {"DeviceId1",
-     "DisplayName1",
+     "1",
      "FriendlyName1",
      ut_consts::DEFAULT_EDID_DATA,
      display_device::EnumeratedDevice::Info {
@@ -148,8 +148,8 @@ TEST_F_S(EnumAvailableDevices) {
        std::nullopt
      }},
     {"DeviceId2",
-     "DisplayName2",
-     "DisplayName2",
+     "2",
+     "2",
      std::nullopt,
      std::nullopt}
   };
@@ -168,9 +168,20 @@ TEST_F_S(GetDisplayName) {
     .WillOnce(Return("DeviceId2"));
   EXPECT_CALL(*m_layer, getDisplayName(2))
     .Times(1)
-    .WillOnce(Return("DisplayName2"));
+    .WillOnce(Return("2"));
 
-  EXPECT_EQ(m_mac_dd.getDisplayName("DeviceId2"), "DisplayName2");
+  EXPECT_EQ(m_mac_dd.getDisplayName("DeviceId2"), "2");
+}
+
+TEST_F_S(GetDisplayNameUnknownDevice) {
+  EXPECT_CALL(*m_layer, getDisplayIds(display_device::MacQueryType::Online))
+    .Times(1)
+    .WillOnce(Return(display_device::MacDisplayIdList {1}));
+  EXPECT_CALL(*m_layer, getDeviceId(1))
+    .Times(1)
+    .WillOnce(Return("DeviceId1"));
+
+  EXPECT_EQ(m_mac_dd.getDisplayName("DeviceId2"), "");
 }
 
 TEST_F_S(TopologyRead) {

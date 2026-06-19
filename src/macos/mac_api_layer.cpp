@@ -19,6 +19,7 @@
 #include <limits>
 #include <numeric>
 #include <sstream>
+#include <string>
 
 // local includes
 #include "display_device/logging.h"
@@ -567,9 +568,7 @@ namespace display_device {
   }
 
   std::string MacApiLayer::getDisplayName(const MacDisplayId display_id) const {
-    std::ostringstream name;
-    name << "macos-display-" << display_id;
-    return name.str();
+    return std::to_string(display_id);
   }
 
   std::string MacApiLayer::getFriendlyName(const MacDisplayId display_id) const {

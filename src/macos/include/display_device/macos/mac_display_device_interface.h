@@ -31,9 +31,9 @@ namespace display_device {
     [[nodiscard]] virtual EnumeratedDeviceList enumAvailableDevices() const = 0;
 
     /**
-     * @brief Get display name associated with the device.
+     * @brief Get the macOS capture selector associated with the device.
      * @param device_id A device to get display name for.
-     * @returns A display name for the device, or an empty string if not found.
+     * @returns Decimal CoreGraphics display id string, or an empty string if not found.
      */
     [[nodiscard]] virtual std::string getDisplayName(const std::string &device_id) const = 0;
 

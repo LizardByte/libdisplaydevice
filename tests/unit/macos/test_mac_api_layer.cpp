@@ -1,6 +1,7 @@
 // system includes
 #include <algorithm>
 #include <gmock/gmock.h>
+#include <string>
 
 // local includes
 #include "display_device/macos/mac_api_layer.h"
@@ -43,7 +44,7 @@ TEST_F_S(QueryActiveDisplay) {
 
   const auto display_id {active_displays.front()};
   EXPECT_FALSE(m_layer.getDeviceId(display_id).empty());
-  EXPECT_FALSE(m_layer.getDisplayName(display_id).empty());
+  EXPECT_EQ(m_layer.getDisplayName(display_id), std::to_string(display_id));
   EXPECT_TRUE(m_layer.isActive(display_id));
   EXPECT_TRUE(m_layer.isOnline(display_id));
 

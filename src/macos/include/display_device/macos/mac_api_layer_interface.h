@@ -60,9 +60,9 @@ namespace display_device {
     [[nodiscard]] virtual MacDisplayModeList getDisplayModes(MacDisplayId display_id) const = 0;
 
     /**
-     * @brief Get a logical display name.
+     * @brief Get the macOS capture selector for a display.
      * @param display_id Display to query.
-     * @returns Logical display name or empty string if unavailable.
+     * @returns Decimal CoreGraphics display id string, or empty string if unavailable.
      */
     [[nodiscard]] virtual std::string getDisplayName(MacDisplayId display_id) const = 0;
 

@@ -16,6 +16,11 @@
 namespace display_device {
   /**
    * @brief Default macOS implementation for the SettingsManagerInterface.
+   *
+   * macOS v1a supports `SingleDisplayConfiguration::DevicePreparation::VerifyOnly`
+   * with active-display resolution and refresh-rate changes. HDR writes and topology
+   * preparation modes such as `EnsureActive`, `EnsurePrimary`, and
+   * `EnsureOnlyDisplay` fail explicitly.
    */
   class MacSettingsManager: public SettingsManagerInterface {
   public:
