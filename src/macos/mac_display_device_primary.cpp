@@ -7,8 +7,8 @@
 
 namespace display_device {
   bool MacDisplayDevice::isPrimary(const std::string &device_id) const {
-    static_cast<void>(device_id);
-    return false;
+    const auto display_id {getDisplayId(device_id, MacQueryType::Active)};
+    return display_id && m_m_api->isMainDisplay(*display_id);
   }
 
   bool MacDisplayDevice::setAsPrimary(const std::string &device_id) {

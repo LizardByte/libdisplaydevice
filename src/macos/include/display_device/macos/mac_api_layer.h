@@ -29,6 +29,11 @@ namespace display_device {
     [[nodiscard]] MacDisplayIdList getDisplayIds(MacQueryType type) const override;
 
     /**
+     * @copydoc MacApiLayerInterface::getDeviceId
+     */
+    [[nodiscard]] std::string getDeviceId(MacDisplayId display_id) const override;
+
+    /**
      * @copydoc MacApiLayerInterface::getCurrentDisplayMode
      */
     [[nodiscard]] std::optional<MacDisplayMode> getCurrentDisplayMode(MacDisplayId display_id) const override;
@@ -77,6 +82,11 @@ namespace display_device {
      * @copydoc MacApiLayerInterface::isOnline
      */
     [[nodiscard]] bool isOnline(MacDisplayId display_id) const override;
+
+    /**
+     * @copydoc MacApiLayerInterface::getMirrorMaster
+     */
+    [[nodiscard]] MacDisplayId getMirrorMaster(MacDisplayId display_id) const override;
 
     /**
      * @copydoc MacApiLayerInterface::setDisplayMode

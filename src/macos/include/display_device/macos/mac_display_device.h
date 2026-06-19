@@ -89,6 +89,14 @@ namespace display_device {
     [[nodiscard]] bool setHdrStates(const MacHdrStateMap &states) override;
 
   private:
+    /**
+     * @brief Resolve a library device id to a CoreGraphics display id.
+     * @param device_id Device id to resolve.
+     * @param query_type Display list type to search.
+     * @return Display id, or empty optional if not found.
+     */
+    [[nodiscard]] std::optional<MacDisplayId> getDisplayId(const std::string &device_id, MacQueryType query_type) const;
+
     std::shared_ptr<MacApiLayerInterface> m_m_api;
   };
 }  // namespace display_device

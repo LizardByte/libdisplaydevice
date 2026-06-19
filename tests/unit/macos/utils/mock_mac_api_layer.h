@@ -12,6 +12,7 @@ namespace display_device {
     MOCK_METHOD(bool, isApiAccessAvailable, (), (const, override));
     MOCK_METHOD(std::string, getErrorString, (MacApiError), (const, override));
     MOCK_METHOD(MacDisplayIdList, getDisplayIds, (MacQueryType), (const, override));
+    MOCK_METHOD(std::string, getDeviceId, (MacDisplayId), (const, override));
     MOCK_METHOD(std::optional<MacDisplayMode>, getCurrentDisplayMode, (MacDisplayId), (const, override));
     MOCK_METHOD(MacDisplayModeList, getDisplayModes, (MacDisplayId), (const, override));
     MOCK_METHOD(std::string, getDisplayName, (MacDisplayId), (const, override));
@@ -22,6 +23,7 @@ namespace display_device {
     MOCK_METHOD(bool, isMainDisplay, (MacDisplayId), (const, override));
     MOCK_METHOD(bool, isActive, (MacDisplayId), (const, override));
     MOCK_METHOD(bool, isOnline, (MacDisplayId), (const, override));
+    MOCK_METHOD(MacDisplayId, getMirrorMaster, (MacDisplayId), (const, override));
     MOCK_METHOD(bool, setDisplayMode, (MacDisplayId, const MacDisplayMode &), (override));
     MOCK_METHOD(bool, setOriginPoint, (MacDisplayId, const Point &), (override));
     MOCK_METHOD(bool, setMirror, (MacDisplayId, MacDisplayId), (override));

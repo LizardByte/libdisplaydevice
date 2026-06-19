@@ -39,6 +39,13 @@ namespace display_device {
     [[nodiscard]] virtual MacDisplayIdList getDisplayIds(MacQueryType type) const = 0;
 
     /**
+     * @brief Get the library device id for a display.
+     * @param display_id Display to query.
+     * @returns Stable best-effort device id, or empty string if unavailable.
+     */
+    [[nodiscard]] virtual std::string getDeviceId(MacDisplayId display_id) const = 0;
+
+    /**
      * @brief Get the current display mode.
      * @param display_id Display to query.
      * @returns Current display mode, or empty optional if unavailable.
@@ -107,6 +114,13 @@ namespace display_device {
      * @returns True if the display is online, false otherwise.
      */
     [[nodiscard]] virtual bool isOnline(MacDisplayId display_id) const = 0;
+
+    /**
+     * @brief Get the display mirrored by the specified display.
+     * @param display_id Display to query.
+     * @returns Master display id, or zero if the display is not a secondary mirror.
+     */
+    [[nodiscard]] virtual MacDisplayId getMirrorMaster(MacDisplayId display_id) const = 0;
 
     /**
      * @brief Set the display mode for a display.
