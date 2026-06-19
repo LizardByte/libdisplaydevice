@@ -43,9 +43,15 @@ namespace display_device {
     /**
      * @brief Ask the platform to wake a display before detection or capture.
      *
+     * A successful result means the platform accepted the wake request and any
+     * platform-specific detection that this implementation can perform has
+     * passed. Some platforms cannot verify that the requested capture selector
+     * is awake, so callers should still retry their own capture-target
+     * enumeration after this method succeeds.
+     *
      * @param display_name Platform capture selector returned by SettingsManagerInterface::getDisplayName.
-     * @param timeout Maximum time to wait for the display to become detectable.
-     * @returns True if the platform wake operation succeeded and the display is considered detectable, false otherwise.
+     * @param timeout Maximum time to wait before the caller retries capture-target detection.
+     * @returns True if the wake request succeeded and platform-specific detection passed, false otherwise.
      */
     [[nodiscard]] virtual bool wakeDisplay(const std::string &display_name, std::chrono::milliseconds timeout) = 0;
 
