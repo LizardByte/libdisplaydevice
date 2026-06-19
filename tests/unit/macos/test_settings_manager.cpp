@@ -13,8 +13,27 @@
 namespace {
   // Convenience keywords for GMock
   using ::testing::HasSubstr;
+  using ::testing::InSequence;
   using ::testing::Return;
   using ::testing::StrictMock;
+
+  const display_device::MacActiveTopology DEFAULT_TOPOLOGY {
+    {"DeviceId1"},
+    {"DeviceId2"}
+  };
+  const display_device::EnumeratedDeviceList DEFAULT_DEVICES {
+    {.m_device_id = "DeviceId1", .m_info = display_device::EnumeratedDevice::Info {.m_primary = true}},
+    {.m_device_id = "DeviceId2", .m_info = display_device::EnumeratedDevice::Info {.m_primary = false}},
+    {.m_device_id = "DeviceId3"},
+  };
+  const display_device::MacDeviceDisplayModeMap DEFAULT_MODES {
+    {"DeviceId1", {{1920, 1080}, {60, 1}}},
+    {"DeviceId2", {{2560, 1440}, {120, 1}}},
+  };
+  const display_device::MacDeviceDisplayModeMap CHANGED_MODES {
+    {"DeviceId1", {{1280, 720}, {60, 1}}},
+    {"DeviceId2", {{2560, 1440}, {120, 1}}},
+  };
 
   std::optional<std::vector<std::uint8_t>> serializeState(const std::optional<display_device::MacSingleDisplayConfigState> &state) {
     if (state) {
@@ -41,6 +60,32 @@ namespace {
         {{"DeviceId2", {{1920, 1080}, {60, 1}}}},
         {{"DeviceId2", {std::nullopt}}},
         {"DeviceId1"},
+      }}
+    };
+  }
+
+  display_device::MacSingleDisplayConfigState makeModeState() {
+    return {
+      {DEFAULT_TOPOLOGY,
+       {"DeviceId1"}},
+      {display_device::MacSingleDisplayConfigState::Modified {
+        DEFAULT_TOPOLOGY,
+        DEFAULT_MODES,
+        {},
+        {},
+      }}
+    };
+  }
+
+  display_device::MacSingleDisplayConfigState makeAppliedModeState() {
+    return {
+      {DEFAULT_TOPOLOGY,
+       {"DeviceId1"}},
+      {display_device::MacSingleDisplayConfigState::Modified {
+        DEFAULT_TOPOLOGY,
+        DEFAULT_MODES,
+        {},
+        {},
       }}
     };
   }
@@ -193,17 +238,41 @@ TEST_F_S(ApplySettings, HdrUnsupported) {
   );
 }
 
-TEST_F_S(ApplySettings, DisplayModeUnsupported) {
+TEST_F_S(ApplySettings, DisplayModeSuccess) {
+  const auto expected_state {makeAppliedModeState()};
+
   EXPECT_CALL(*m_settings_persistence_api, load())
     .Times(1)
     .WillOnce(Return(serializeNoState()));
+  InSequence sequence;
   EXPECT_CALL(*m_dd_api, isApiAccessAvailable())
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, getCurrentTopology())
+    .Times(1)
+    .WillOnce(Return(DEFAULT_TOPOLOGY));
+  EXPECT_CALL(*m_dd_api, isTopologyValid(DEFAULT_TOPOLOGY))
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, enumAvailableDevices())
+    .Times(1)
+    .WillOnce(Return(DEFAULT_DEVICES));
+  EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(display_device::StringSet {"DeviceId1", "DeviceId2"}))
+    .Times(1)
+    .WillOnce(Return(DEFAULT_MODES));
+  EXPECT_CALL(*m_dd_api, setDisplayModes(CHANGED_MODES))
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(display_device::StringSet {"DeviceId1", "DeviceId2"}))
+    .Times(1)
+    .WillOnce(Return(CHANGED_MODES));
+  EXPECT_CALL(*m_settings_persistence_api, store(*serializeState(expected_state)))
     .Times(1)
     .WillOnce(Return(true));
 
   EXPECT_EQ(
-    getImpl().applySettings({.m_resolution = display_device::Resolution {1920, 1080}}),
-    display_device::MacSettingsManager::ApplyResult::DisplayModePrepFailed
+    getImpl().applySettings({.m_resolution = display_device::Resolution {1280, 720}}),
+    display_device::MacSettingsManager::ApplyResult::Ok
   );
 }
 
@@ -215,7 +284,140 @@ TEST_F_S(ApplySettings, DevicePrepUnsupported) {
     .Times(1)
     .WillOnce(Return(true));
 
-  EXPECT_EQ(getImpl().applySettings({}), display_device::MacSettingsManager::ApplyResult::DevicePrepFailed);
+  EXPECT_EQ(
+    getImpl().applySettings({.m_device_prep = display_device::SingleDisplayConfiguration::DevicePreparation::EnsureActive}),
+    display_device::MacSettingsManager::ApplyResult::DevicePrepFailed
+  );
+}
+
+TEST_F_S(ApplySettings, VerifyOnlyNoChanges) {
+  const display_device::MacSingleDisplayConfigState expected_state {
+    {DEFAULT_TOPOLOGY,
+     {"DeviceId1"}},
+    {display_device::MacSingleDisplayConfigState::Modified {
+      DEFAULT_TOPOLOGY,
+      {},
+      {},
+      {},
+    }}
+  };
+
+  EXPECT_CALL(*m_settings_persistence_api, load())
+    .Times(1)
+    .WillOnce(Return(serializeNoState()));
+  InSequence sequence;
+  EXPECT_CALL(*m_dd_api, isApiAccessAvailable())
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, getCurrentTopology())
+    .Times(1)
+    .WillOnce(Return(DEFAULT_TOPOLOGY));
+  EXPECT_CALL(*m_dd_api, isTopologyValid(DEFAULT_TOPOLOGY))
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, enumAvailableDevices())
+    .Times(1)
+    .WillOnce(Return(DEFAULT_DEVICES));
+  EXPECT_CALL(*m_settings_persistence_api, store(*serializeState(expected_state)))
+    .Times(1)
+    .WillOnce(Return(true));
+
+  EXPECT_EQ(getImpl().applySettings({}), display_device::MacSettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S(ApplySettings, InactiveDevice) {
+  EXPECT_CALL(*m_settings_persistence_api, load())
+    .Times(1)
+    .WillOnce(Return(serializeNoState()));
+  InSequence sequence;
+  EXPECT_CALL(*m_dd_api, isApiAccessAvailable())
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, getCurrentTopology())
+    .Times(1)
+    .WillOnce(Return(DEFAULT_TOPOLOGY));
+  EXPECT_CALL(*m_dd_api, isTopologyValid(DEFAULT_TOPOLOGY))
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, enumAvailableDevices())
+    .Times(1)
+    .WillOnce(Return(DEFAULT_DEVICES));
+
+  EXPECT_EQ(
+    getImpl().applySettings({.m_device_id = "DeviceId3"}),
+    display_device::MacSettingsManager::ApplyResult::DevicePrepFailed
+  );
+}
+
+TEST_F_S(ApplySettings, DisplayModeApplyFailed) {
+  EXPECT_CALL(*m_settings_persistence_api, load())
+    .Times(1)
+    .WillOnce(Return(serializeNoState()));
+  InSequence sequence;
+  EXPECT_CALL(*m_dd_api, isApiAccessAvailable())
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, getCurrentTopology())
+    .Times(1)
+    .WillOnce(Return(DEFAULT_TOPOLOGY));
+  EXPECT_CALL(*m_dd_api, isTopologyValid(DEFAULT_TOPOLOGY))
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, enumAvailableDevices())
+    .Times(1)
+    .WillOnce(Return(DEFAULT_DEVICES));
+  EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(display_device::StringSet {"DeviceId1", "DeviceId2"}))
+    .Times(1)
+    .WillOnce(Return(DEFAULT_MODES));
+  EXPECT_CALL(*m_dd_api, setDisplayModes(CHANGED_MODES))
+    .Times(1)
+    .WillOnce(Return(false));
+
+  EXPECT_EQ(
+    getImpl().applySettings({.m_resolution = display_device::Resolution {1280, 720}}),
+    display_device::MacSettingsManager::ApplyResult::DisplayModePrepFailed
+  );
+}
+
+TEST_F_S(ApplySettings, PersistenceFailureRollsBackModes) {
+  const auto expected_state {makeAppliedModeState()};
+
+  EXPECT_CALL(*m_settings_persistence_api, load())
+    .Times(1)
+    .WillOnce(Return(serializeNoState()));
+  InSequence sequence;
+  EXPECT_CALL(*m_dd_api, isApiAccessAvailable())
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, getCurrentTopology())
+    .Times(1)
+    .WillOnce(Return(DEFAULT_TOPOLOGY));
+  EXPECT_CALL(*m_dd_api, isTopologyValid(DEFAULT_TOPOLOGY))
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, enumAvailableDevices())
+    .Times(1)
+    .WillOnce(Return(DEFAULT_DEVICES));
+  EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(display_device::StringSet {"DeviceId1", "DeviceId2"}))
+    .Times(1)
+    .WillOnce(Return(DEFAULT_MODES));
+  EXPECT_CALL(*m_dd_api, setDisplayModes(CHANGED_MODES))
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(display_device::StringSet {"DeviceId1", "DeviceId2"}))
+    .Times(1)
+    .WillOnce(Return(CHANGED_MODES));
+  EXPECT_CALL(*m_settings_persistence_api, store(*serializeState(expected_state)))
+    .Times(1)
+    .WillOnce(Return(false));
+  EXPECT_CALL(*m_dd_api, setDisplayModes(DEFAULT_MODES))
+    .Times(1)
+    .WillOnce(Return(true));
+
+  EXPECT_EQ(
+    getImpl().applySettings({.m_resolution = display_device::Resolution {1280, 720}}),
+    display_device::MacSettingsManager::ApplyResult::PersistenceSaveFailed
+  );
 }
 
 TEST_F_S(RevertSettings, NoPersistence) {
@@ -237,13 +439,105 @@ TEST_F_S(RevertSettings, ApiTemporarilyUnavailable) {
   EXPECT_EQ(getImpl().revertSettings(), display_device::MacSettingsManager::RevertResult::ApiTemporarilyUnavailable);
 }
 
-TEST_F_S(RevertSettings, TopologyUnsupported) {
+TEST_F_S(RevertSettings, ModeOnly) {
+  const display_device::MacDeviceDisplayModeMap current_modes {
+    {"DeviceId1", {{1280, 720}, {60, 1}}},
+    {"DeviceId2", {{2560, 1440}, {120, 1}}},
+  };
+
   EXPECT_CALL(*m_settings_persistence_api, load())
     .Times(1)
-    .WillOnce(Return(serializeState(makeState())));
+    .WillOnce(Return(serializeState(makeModeState())));
+  InSequence sequence;
   EXPECT_CALL(*m_dd_api, isApiAccessAvailable())
     .Times(1)
     .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, getCurrentTopology())
+    .Times(1)
+    .WillOnce(Return(DEFAULT_TOPOLOGY));
+  EXPECT_CALL(*m_dd_api, isTopologyValid(DEFAULT_TOPOLOGY))
+    .Times(2)
+    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*m_dd_api, isTopologyTheSame(DEFAULT_TOPOLOGY, DEFAULT_TOPOLOGY))
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(display_device::StringSet {"DeviceId1", "DeviceId2"}))
+    .Times(1)
+    .WillOnce(Return(current_modes));
+  EXPECT_CALL(*m_dd_api, setDisplayModes(DEFAULT_MODES))
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_settings_persistence_api, clear())
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_audio_context_api, isCaptured())
+    .Times(1)
+    .WillOnce(Return(false));
+
+  EXPECT_EQ(getImpl().revertSettings(), display_device::MacSettingsManager::RevertResult::Ok);
+}
+
+TEST_F_S(RevertSettings, PersistenceFailureRollsBackModes) {
+  const display_device::MacDeviceDisplayModeMap current_modes {
+    {"DeviceId1", {{1280, 720}, {60, 1}}},
+    {"DeviceId2", {{2560, 1440}, {120, 1}}},
+  };
+
+  EXPECT_CALL(*m_settings_persistence_api, load())
+    .Times(1)
+    .WillOnce(Return(serializeState(makeModeState())));
+  InSequence sequence;
+  EXPECT_CALL(*m_dd_api, isApiAccessAvailable())
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, getCurrentTopology())
+    .Times(1)
+    .WillOnce(Return(DEFAULT_TOPOLOGY));
+  EXPECT_CALL(*m_dd_api, isTopologyValid(DEFAULT_TOPOLOGY))
+    .Times(2)
+    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*m_dd_api, isTopologyTheSame(DEFAULT_TOPOLOGY, DEFAULT_TOPOLOGY))
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(display_device::StringSet {"DeviceId1", "DeviceId2"}))
+    .Times(1)
+    .WillOnce(Return(current_modes));
+  EXPECT_CALL(*m_dd_api, setDisplayModes(DEFAULT_MODES))
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_settings_persistence_api, clear())
+    .Times(1)
+    .WillOnce(Return(false));
+  EXPECT_CALL(*m_dd_api, setDisplayModes(current_modes))
+    .Times(1)
+    .WillOnce(Return(true));
+
+  EXPECT_EQ(getImpl().revertSettings(), display_device::MacSettingsManager::RevertResult::PersistenceSaveFailed);
+}
+
+TEST_F_S(RevertSettings, TopologyUnsupported) {
+  auto state {makeModeState()};
+  state.m_modified.m_topology = {{"DeviceId2"}};
+
+  EXPECT_CALL(*m_settings_persistence_api, load())
+    .Times(1)
+    .WillOnce(Return(serializeState(state)));
+  InSequence sequence;
+  EXPECT_CALL(*m_dd_api, isApiAccessAvailable())
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, getCurrentTopology())
+    .Times(1)
+    .WillOnce(Return(DEFAULT_TOPOLOGY));
+  EXPECT_CALL(*m_dd_api, isTopologyValid(DEFAULT_TOPOLOGY))
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, isTopologyValid(state.m_modified.m_topology))
+    .Times(1)
+    .WillOnce(Return(true));
+  EXPECT_CALL(*m_dd_api, isTopologyTheSame(DEFAULT_TOPOLOGY, state.m_modified.m_topology))
+    .Times(1)
+    .WillOnce(Return(false));
 
   EXPECT_EQ(getImpl().revertSettings(), display_device::MacSettingsManager::RevertResult::SwitchingTopologyFailed);
 }

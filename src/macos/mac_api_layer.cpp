@@ -20,6 +20,10 @@
 #include <numeric>
 #include <sstream>
 
+// local includes
+#include "display_device/logging.h"
+#include "display_device/macos/mac_api_utils.h"
+
 namespace display_device {
   namespace {
     /**
@@ -640,9 +644,39 @@ namespace display_device {
   }
 
   bool MacApiLayer::setDisplayMode(const MacDisplayId display_id, const MacDisplayMode &mode) {
-    static_cast<void>(display_id);
-    static_cast<void>(mode);
-    return false;
+    CfPtr<CFArrayRef> modes_ref {CGDisplayCopyAllDisplayModes(display_id, nullptr)};
+    if (!modes_ref) {
+      DD_LOG(error) << "Failed to get available macOS display modes for " << display_id << "!";
+      return false;
+    }
+
+    CGDisplayModeRef matching_mode {nullptr};
+    const auto mode_count {CFArrayGetCount(modes_ref.get())};
+    for (CFIndex index = 0; index < mode_count; ++index) {
+      const auto candidate {static_cast<CGDisplayModeRef>(const_cast<void *>(CFArrayGetValueAtIndex(modes_ref.get(), index)))};
+      if (!candidate || !CGDisplayModeIsUsableForDesktopGUI(candidate)) {
+        continue;
+      }
+
+      const auto converted_mode {toDisplayMode(candidate)};
+      if (converted_mode && mac_utils::fuzzyCompareModes(*converted_mode, mode)) {
+        matching_mode = candidate;
+        break;
+      }
+    }
+
+    if (!matching_mode) {
+      DD_LOG(error) << "Failed to find a matching macOS display mode for " << display_id << "!";
+      return false;
+    }
+
+    const auto result {CGDisplaySetDisplayMode(display_id, matching_mode, nullptr)};
+    if (result != kCGErrorSuccess) {
+      DD_LOG(error) << getErrorString(result) << " failed to set macOS display mode for " << display_id << "!";
+      return false;
+    }
+
+    return true;
   }
 
   bool MacApiLayer::setOriginPoint(const MacDisplayId display_id, const Point &origin) {

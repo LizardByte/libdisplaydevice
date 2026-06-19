@@ -10,3 +10,18 @@ TEST_S(IsSuccess) {
   EXPECT_FALSE(display_device::mac_utils::isSuccess(1));
   EXPECT_FALSE(display_device::mac_utils::isSuccess(-1));
 }
+
+TEST_S(FuzzyCompareRefreshRates) {
+  EXPECT_TRUE(display_device::mac_utils::fuzzyCompareRefreshRates({60, 1}, {5985, 100}));
+  EXPECT_TRUE(display_device::mac_utils::fuzzyCompareRefreshRates({60, 1}, {5920, 100}));
+  EXPECT_FALSE(display_device::mac_utils::fuzzyCompareRefreshRates({60, 1}, {5900, 100}));
+  EXPECT_FALSE(display_device::mac_utils::fuzzyCompareRefreshRates({60, 0}, {5985, 100}));
+  EXPECT_FALSE(display_device::mac_utils::fuzzyCompareRefreshRates({60, 1}, {5985, 0}));
+}
+
+TEST_S(FuzzyCompareModes) {
+  EXPECT_TRUE(display_device::mac_utils::fuzzyCompareModes({{1920, 1080}, {60, 1}}, {{1920, 1080}, {5985, 100}}));
+  EXPECT_FALSE(display_device::mac_utils::fuzzyCompareModes({{1280, 1080}, {60, 1}}, {{1920, 1080}, {60, 1}}));
+  EXPECT_FALSE(display_device::mac_utils::fuzzyCompareModes({{1920, 720}, {60, 1}}, {{1920, 1080}, {60, 1}}));
+  EXPECT_FALSE(display_device::mac_utils::fuzzyCompareModes({{1920, 1080}, {60, 1}}, {{1920, 1080}, {50, 1}}));
+}
