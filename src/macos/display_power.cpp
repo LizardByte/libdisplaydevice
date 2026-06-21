@@ -94,7 +94,7 @@ namespace display_device {
     }
 
     const auto assertion_id {m_m_api->declareUserActivity(std::string {DISPLAY_DETECTION_REASON})};
-    if (!assertion_id) {
+    if (!assertion_id.has_value()) {
       return false;
     }
 
@@ -119,7 +119,7 @@ namespace display_device {
 
   std::unique_ptr<DisplayPowerGuardInterface> MacDisplayPower::keepDisplayAwake(const std::string &reason) {
     const auto assertion_id {m_m_api->createDisplaySleepAssertion(reason)};
-    if (!assertion_id) {
+    if (!assertion_id.has_value()) {
       return nullptr;
     }
 
@@ -128,7 +128,7 @@ namespace display_device {
 
   bool MacDisplayPower::hasRequiredActiveDisplay(const std::string &display_name) const {
     const auto active_displays {m_m_api->getDisplayIds(MacQueryType::Active)};
-    if (const auto display_id {parseDisplayId(display_name)}) {
+    if (const auto display_id {parseDisplayId(display_name)}; display_id.has_value()) {
       return std::ranges::find(active_displays, *display_id) != std::end(active_displays);
     }
 

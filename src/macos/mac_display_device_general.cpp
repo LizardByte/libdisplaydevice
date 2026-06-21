@@ -65,7 +65,7 @@ namespace display_device {
 
   std::string MacDisplayDevice::getDisplayName(const std::string &device_id) const {
     const auto display_id {getDisplayId(device_id, MacQueryType::Online)};
-    if (!display_id) {
+    if (!display_id.has_value()) {
       return {};
     }
 

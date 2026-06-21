@@ -36,7 +36,7 @@ namespace display_device {
     MacDeviceDisplayModeMap current_modes;
     for (const auto &device_id : device_ids) {
       const auto display_id {getDisplayId(device_id, MacQueryType::Active)};
-      if (!display_id) {
+      if (!display_id.has_value()) {
         DD_LOG(error) << "Failed to find active macOS display for " << device_id << "!";
         return {};
       }
@@ -68,7 +68,7 @@ namespace display_device {
       }
 
       const auto display_id {getDisplayId(device_id, MacQueryType::Active)};
-      if (!display_id) {
+      if (!display_id.has_value()) {
         DD_LOG(error) << "Failed to find active macOS display for " << device_id << "!";
         return false;
       }

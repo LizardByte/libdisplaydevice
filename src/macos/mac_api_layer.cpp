@@ -337,7 +337,7 @@ namespace display_device {
       int score {0};
 
       const auto check_number = [&score](const std::optional<std::uint32_t> &value, const std::uint32_t expected, const int weight) {
-        if (!value) {
+        if (!value.has_value()) {
           return true;
         }
 
