@@ -63,6 +63,11 @@ namespace display_device {
           m_m_api {std::move(m_api)},
           m_assertion_id {assertion_id} {}
 
+      MacPowerAssertionGuard(const MacPowerAssertionGuard &) = delete;  ///< Copy constructor.
+      MacPowerAssertionGuard &operator=(const MacPowerAssertionGuard &) = delete;  ///< Copy assignment operator.
+      MacPowerAssertionGuard(MacPowerAssertionGuard &&) = delete;  ///< Move constructor.
+      MacPowerAssertionGuard &operator=(MacPowerAssertionGuard &&) = delete;  ///< Move assignment operator.
+
       /**
        * @brief Destructor.
        */

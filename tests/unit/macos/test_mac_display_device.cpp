@@ -49,6 +49,11 @@ namespace {
         m_mac_dd {mac_dd},
         m_modes {std::move(modes)} {}
 
+    MacModeGuard(const MacModeGuard &) = delete;  ///< Copy constructor.
+    MacModeGuard &operator=(const MacModeGuard &) = delete;  ///< Copy assignment operator.
+    MacModeGuard(MacModeGuard &&) = delete;  ///< Move constructor.
+    MacModeGuard &operator=(MacModeGuard &&) = delete;  ///< Move assignment operator.
+
     /**
      * @brief Destructor.
      */

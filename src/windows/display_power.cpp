@@ -23,6 +23,11 @@ namespace display_device {
       explicit WinDisplayPowerGuard(std::shared_ptr<WinApiLayerInterface> w_api):
           m_w_api {std::move(w_api)} {}
 
+      WinDisplayPowerGuard(const WinDisplayPowerGuard &) = delete;  ///< Copy constructor.
+      WinDisplayPowerGuard &operator=(const WinDisplayPowerGuard &) = delete;  ///< Copy assignment operator.
+      WinDisplayPowerGuard(WinDisplayPowerGuard &&) = delete;  ///< Move constructor.
+      WinDisplayPowerGuard &operator=(WinDisplayPowerGuard &&) = delete;  ///< Move assignment operator.
+
       /**
        * @brief Destructor.
        */
