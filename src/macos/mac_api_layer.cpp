@@ -11,7 +11,6 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreGraphics/CoreGraphics.h>
 #include <cstdint>
-#include <cstring>
 #include <IOKit/graphics/IOGraphicsLib.h>
 #include <IOKit/graphics/IOGraphicsTypes.h>
 #include <IOKit/IOKitLib.h>
@@ -212,13 +211,25 @@ namespace display_device {
       }
 
       const auto length {CFStringGetLength(value)};
-      const auto max_size {CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8) + 1};
-      std::string result(static_cast<std::size_t>(max_size), '\0');
-      if (!CFStringGetCString(value, result.data(), max_size, kCFStringEncodingUTF8)) {
+      CFIndex byte_count {0};
+      const auto converted_length {CFStringGetBytes(value, CFRangeMake(0, length), kCFStringEncodingUTF8, 0, false, nullptr, 0, &byte_count)};
+      if (converted_length != length || byte_count < 0) {
         return {};
       }
 
-      result.resize(std::strlen(result.c_str()));
+      std::string result(static_cast<std::size_t>(byte_count), '\0');
+      if (byte_count == 0) {
+        return result;
+      }
+
+      CFIndex written_byte_count {0};
+      const auto written_length {
+        CFStringGetBytes(value, CFRangeMake(0, length), kCFStringEncodingUTF8, 0, false, reinterpret_cast<UInt8 *>(result.data()), byte_count, &written_byte_count)
+      };
+      if (written_length != length || written_byte_count != byte_count) {
+        return {};
+      }
+
       return result;
     }
 
