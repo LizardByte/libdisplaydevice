@@ -16,11 +16,53 @@ namespace {
   using ::testing::HasSubstr;
   using ::testing::InSequence;
   using ::testing::Return;
+  using ::testing::Sequence;
   using ::testing::StrictMock;
+
+  const display_device::MacDisplayMode CURRENT_MODE {{1920, 1080}, {60, 1}};
+  const display_device::MacDisplayMode REQUESTED_MODE {{1280, 720}, {60, 1}};
 
   // Test fixture(s) for this file
   class MacDisplayDeviceMocked: public BaseTest {
   public:
+    void expectActiveDeviceLookup(Sequence &sequence, const std::string &device_id = "DeviceId1") {
+      EXPECT_CALL(*m_layer, getDisplayIds(display_device::MacQueryType::Active))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(Return(display_device::MacDisplayIdList {1}));
+      EXPECT_CALL(*m_layer, getDeviceId(1))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(Return(device_id));
+    }
+
+    void expectCurrentMode(Sequence &sequence, const display_device::MacDisplayMode &mode) {
+      EXPECT_CALL(*m_layer, getCurrentDisplayMode(1))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(Return(mode));
+    }
+
+    void expectAvailableModes(Sequence &sequence, const display_device::MacDisplayModeList &modes) {
+      EXPECT_CALL(*m_layer, getDisplayModes(1))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(Return(modes));
+    }
+
+    void expectSetMode(Sequence &sequence, const display_device::MacDisplayMode &mode, const bool result) {
+      EXPECT_CALL(*m_layer, setDisplayMode(1, mode))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(Return(result));
+    }
+
+    void expectModePreparation(Sequence &sequence, const display_device::MacDisplayMode &current_mode = CURRENT_MODE, display_device::MacDisplayModeList available_modes = {REQUESTED_MODE}) {
+      expectActiveDeviceLookup(sequence);
+      expectCurrentMode(sequence, current_mode);
+      expectAvailableModes(sequence, available_modes);
+    }
+
     std::shared_ptr<StrictMock<display_device::MockMacApiLayer>> m_layer {std::make_shared<StrictMock<display_device::MockMacApiLayer>>()};
     display_device::MacDisplayDevice m_mac_dd {m_layer};
   };
@@ -269,133 +311,54 @@ TEST_F_S(SetDisplayModes, EmptyModes) {
 }
 
 TEST_F_S(SetDisplayModes, InactiveDisplay) {
-  EXPECT_CALL(*m_layer, getDisplayIds(display_device::MacQueryType::Active))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayIdList {1}));
-  EXPECT_CALL(*m_layer, getDeviceId(1))
-    .Times(1)
-    .WillOnce(Return("DeviceId2"));
+  Sequence sequence;
+  expectActiveDeviceLookup(sequence, "DeviceId2");
 
   EXPECT_FALSE(m_mac_dd.setDisplayModes({{"DeviceId1", {{1920, 1080}, {60, 1}}}}));
 }
 
 TEST_F_S(SetDisplayModes, UnavailableMode) {
-  EXPECT_CALL(*m_layer, getDisplayIds(display_device::MacQueryType::Active))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayIdList {1}));
-  EXPECT_CALL(*m_layer, getDeviceId(1))
-    .Times(1)
-    .WillOnce(Return("DeviceId1"));
-  EXPECT_CALL(*m_layer, getCurrentDisplayMode(1))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayMode {{1920, 1080}, {60, 1}}));
-  EXPECT_CALL(*m_layer, getDisplayModes(1))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayModeList {{{1280, 720}, {60, 1}}}));
+  Sequence sequence;
+  expectModePreparation(sequence);
 
   EXPECT_FALSE(m_mac_dd.setDisplayModes({{"DeviceId1", {{1024, 768}, {60, 1}}}}));
 }
 
 TEST_F_S(SetDisplayModes, AlreadyCurrent) {
-  EXPECT_CALL(*m_layer, getDisplayIds(display_device::MacQueryType::Active))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayIdList {1}));
-  EXPECT_CALL(*m_layer, getDeviceId(1))
-    .Times(1)
-    .WillOnce(Return("DeviceId1"));
-  EXPECT_CALL(*m_layer, getCurrentDisplayMode(1))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayMode {{1920, 1080}, {60, 1}}));
+  Sequence sequence;
+  expectActiveDeviceLookup(sequence);
+  expectCurrentMode(sequence, CURRENT_MODE);
 
   EXPECT_TRUE(m_mac_dd.setDisplayModes({{"DeviceId1", {{1920, 1080}, {5985, 100}}}}));
 }
 
 TEST_F_S(SetDisplayModes, Success) {
-  InSequence sequence;
-
-  EXPECT_CALL(*m_layer, getDisplayIds(display_device::MacQueryType::Active))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayIdList {1}));
-  EXPECT_CALL(*m_layer, getDeviceId(1))
-    .Times(1)
-    .WillOnce(Return("DeviceId1"));
-  EXPECT_CALL(*m_layer, getCurrentDisplayMode(1))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayMode {{1920, 1080}, {60, 1}}));
-  EXPECT_CALL(*m_layer, getDisplayModes(1))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayModeList {{{1280, 720}, {60, 1}}}));
-  EXPECT_CALL(*m_layer, setDisplayMode(1, display_device::MacDisplayMode {{1280, 720}, {60, 1}}))
-    .Times(1)
-    .WillOnce(Return(true));
-  EXPECT_CALL(*m_layer, getCurrentDisplayMode(1))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayMode {{1280, 720}, {60, 1}}));
+  Sequence sequence;
+  expectModePreparation(sequence);
+  expectSetMode(sequence, REQUESTED_MODE, true);
+  expectCurrentMode(sequence, REQUESTED_MODE);
 
   EXPECT_TRUE(m_mac_dd.setDisplayModes({{"DeviceId1", {{1280, 720}, {60, 1}}}}));
 }
 
 TEST_F_S(SetDisplayModes, ApplyFailed) {
-  InSequence sequence;
-
-  EXPECT_CALL(*m_layer, getDisplayIds(display_device::MacQueryType::Active))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayIdList {1}));
-  EXPECT_CALL(*m_layer, getDeviceId(1))
-    .Times(1)
-    .WillOnce(Return("DeviceId1"));
-  EXPECT_CALL(*m_layer, getCurrentDisplayMode(1))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayMode {{1920, 1080}, {60, 1}}));
-  EXPECT_CALL(*m_layer, getDisplayModes(1))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayModeList {{{1280, 720}, {60, 1}}}));
-  EXPECT_CALL(*m_layer, setDisplayMode(1, display_device::MacDisplayMode {{1280, 720}, {60, 1}}))
-    .Times(1)
-    .WillOnce(Return(false));
+  Sequence sequence;
+  expectModePreparation(sequence);
+  expectSetMode(sequence, REQUESTED_MODE, false);
 
   EXPECT_FALSE(m_mac_dd.setDisplayModes({{"DeviceId1", {{1280, 720}, {60, 1}}}}));
 }
 
 TEST_F_S(SetDisplayModes, VerificationFailedRollsBack) {
-  InSequence sequence;
+  constexpr display_device::MacDisplayMode wrong_mode {{1024, 768}, {60, 1}};
 
-  EXPECT_CALL(*m_layer, getDisplayIds(display_device::MacQueryType::Active))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayIdList {1}));
-  EXPECT_CALL(*m_layer, getDeviceId(1))
-    .Times(1)
-    .WillOnce(Return("DeviceId1"));
-  EXPECT_CALL(*m_layer, getCurrentDisplayMode(1))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayMode {{1920, 1080}, {60, 1}}));
-  EXPECT_CALL(*m_layer, getDisplayModes(1))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayModeList {{{1280, 720}, {60, 1}}, {{1920, 1080}, {60, 1}}}));
-  EXPECT_CALL(*m_layer, setDisplayMode(1, display_device::MacDisplayMode {{1280, 720}, {60, 1}}))
-    .Times(1)
-    .WillOnce(Return(true));
-  EXPECT_CALL(*m_layer, getCurrentDisplayMode(1))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayMode {{1024, 768}, {60, 1}}));
-  EXPECT_CALL(*m_layer, getDisplayIds(display_device::MacQueryType::Active))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayIdList {1}));
-  EXPECT_CALL(*m_layer, getDeviceId(1))
-    .Times(1)
-    .WillOnce(Return("DeviceId1"));
-  EXPECT_CALL(*m_layer, getCurrentDisplayMode(1))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayMode {{1024, 768}, {60, 1}}));
-  EXPECT_CALL(*m_layer, getDisplayModes(1))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayModeList {{{1920, 1080}, {60, 1}}}));
-  EXPECT_CALL(*m_layer, setDisplayMode(1, display_device::MacDisplayMode {{1920, 1080}, {60, 1}}))
-    .Times(1)
-    .WillOnce(Return(true));
-  EXPECT_CALL(*m_layer, getCurrentDisplayMode(1))
-    .Times(1)
-    .WillOnce(Return(display_device::MacDisplayMode {{1920, 1080}, {60, 1}}));
+  Sequence sequence;
+  expectModePreparation(sequence, CURRENT_MODE, {REQUESTED_MODE, CURRENT_MODE});
+  expectSetMode(sequence, REQUESTED_MODE, true);
+  expectCurrentMode(sequence, wrong_mode);
+  expectModePreparation(sequence, wrong_mode, {CURRENT_MODE});
+  expectSetMode(sequence, CURRENT_MODE, true);
+  expectCurrentMode(sequence, CURRENT_MODE);
 
   EXPECT_FALSE(m_mac_dd.setDisplayModes({{"DeviceId1", {{1280, 720}, {60, 1}}}}));
 }
