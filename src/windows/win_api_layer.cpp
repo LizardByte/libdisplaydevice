@@ -6,6 +6,7 @@
 #include "display_device/windows/win_api_layer.h"
 
 // system includes
+#include <algorithm>
 #include <bit>
 #include <boost/algorithm/string.hpp>
 #include <boost/scope/scope_exit.hpp>
@@ -16,6 +17,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <limits>
 #include <memory>
 #include <span>
 #include <sstream>
@@ -525,6 +527,38 @@ namespace display_device {
     DD_LOG(verbose) << "Result of " << (type == QueryType::Active ? "ACTIVE" : "ALL") << " display config query:\n"
                     << dumpPathsAndModes(paths, modes) << "\n";
     return PathAndModeData {paths, modes};
+  }
+
+  bool WinApiLayer::wakeDisplay(const std::chrono::milliseconds timeout) {
+    if (const auto result {SetThreadExecutionState(ES_DISPLAY_REQUIRED)}; result == 0) {
+      DD_LOG(error) << getErrorString(static_cast<LONG>(GetLastError())) << " failed to wake display.";
+      return false;
+    }
+
+    if (timeout.count() > 0) {
+      const auto wait_time {std::min<std::chrono::milliseconds::rep>(timeout.count(), std::numeric_limits<DWORD>::max())};
+      Sleep(static_cast<DWORD>(wait_time));
+    }
+
+    return true;
+  }
+
+  bool WinApiLayer::keepDisplayAwake() {
+    if (const auto result {SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED)}; result == 0) {
+      DD_LOG(error) << getErrorString(static_cast<LONG>(GetLastError())) << " failed to request display keep-awake.";
+      return false;
+    }
+
+    return true;
+  }
+
+  bool WinApiLayer::restorePowerRequest() {
+    if (const auto result {SetThreadExecutionState(ES_CONTINUOUS)}; result == 0) {
+      DD_LOG(error) << getErrorString(static_cast<LONG>(GetLastError())) << " failed to restore display power request.";
+      return false;
+    }
+
+    return true;
   }
 
   std::string WinApiLayer::getDeviceId(const DISPLAYCONFIG_PATH_INFO &path) const {

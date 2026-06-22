@@ -27,6 +27,21 @@ namespace display_device {
     [[nodiscard]] std::optional<PathAndModeData> queryDisplayConfig(QueryType type) const override;
 
     /**
+     * @copydoc WinApiLayerInterface::wakeDisplay
+     */
+    [[nodiscard]] bool wakeDisplay(std::chrono::milliseconds timeout) override;
+
+    /**
+     * @copydoc WinApiLayerInterface::keepDisplayAwake
+     */
+    [[nodiscard]] bool keepDisplayAwake() override;
+
+    /**
+     * @copydoc WinApiLayerInterface::restorePowerRequest
+     */
+    [[nodiscard]] bool restorePowerRequest() override;
+
+    /**
      * @copydoc WinApiLayerInterface::getDeviceId
      */
     [[nodiscard]] std::string getDeviceId(const DISPLAYCONFIG_PATH_INFO &path) const override;

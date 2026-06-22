@@ -44,6 +44,29 @@ namespace display_device {
     [[nodiscard]] virtual std::optional<PathAndModeData> queryDisplayConfig(QueryType type) const = 0;
 
     /**
+     * @brief Ask Windows to wake the display and wait before retrying detection.
+     *
+     * Windows accepts a display-required execution-state request, but this low-level
+     * call does not prove that a specific output is active afterward.
+     *
+     * @param timeout Maximum time to wait after issuing the wake request.
+     * @returns True if Windows accepted the wake request, false otherwise.
+     */
+    [[nodiscard]] virtual bool wakeDisplay(std::chrono::milliseconds timeout) = 0;
+
+    /**
+     * @brief Request that Windows keep the current thread's display awake.
+     * @returns True if Windows accepted the keep-awake request, false otherwise.
+     */
+    [[nodiscard]] virtual bool keepDisplayAwake() = 0;
+
+    /**
+     * @brief Clear the current thread's display keep-awake request.
+     * @returns True if Windows accepted the restore request, false otherwise.
+     */
+    [[nodiscard]] virtual bool restorePowerRequest() = 0;
+
+    /**
      * @brief Get a stable and persistent device id for the path.
      *
      * This function tries to generate a unique id for the path that

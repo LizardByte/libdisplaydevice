@@ -57,9 +57,9 @@ namespace display_device {
     [[nodiscard]] virtual EnumeratedDeviceList enumAvailableDevices() const = 0;
 
     /**
-     * @brief Get display name associated with the device.
+     * @brief Get the platform-specific display name associated with the device.
      * @param device_id A device to get display name for.
-     * @returns A display name for the device, or an empty string if the device is inactive or not found.
+     * @returns A display name or capture selector for the device, or an empty string if the device is inactive or not found.
      *          Empty string can also be returned if an error has occurred.
      * @examples
      * const std::string device_id { "MY_DEVICE_ID" };

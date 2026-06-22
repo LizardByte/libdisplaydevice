@@ -11,6 +11,7 @@
 #include <thread>
 
 // local includes
+#include "display_device/detail/settings_state_utils.h"
 #include "display_device/logging.h"
 #include "display_device/windows/json.h"
 
@@ -51,46 +52,6 @@ namespace display_device::win_utils {
       }
 
       return device_ids;
-    }
-
-    /**
-     * @brief Remove the topology device ids and groups that no longer have valid devices.
-     * @param topology Topology to be stripped.
-     * @param devices List of devices.
-     * @return Topology without missing device ids.
-     */
-    ActiveTopology stripTopology(const ActiveTopology &topology, const EnumeratedDeviceList &devices) {
-      const StringSet available_device_ids {getDeviceIds(devices, anyDevice)};
-
-      ActiveTopology stripped_topology;
-      for (const auto &group : topology) {
-        std::vector<std::string> stripped_group;
-        for (const auto &device_id : group) {
-          if (available_device_ids.contains(device_id)) {
-            stripped_group.push_back(device_id);
-          }
-        }
-
-        if (!stripped_group.empty()) {
-          stripped_topology.push_back(stripped_group);
-        }
-      }
-
-      return stripped_topology;
-    }
-
-    /**
-     * @brief Remove device ids that are no longer available.
-     * @param device_ids Id list to be stripped.
-     * @param devices List of devices.
-     * @return List without missing device ids.
-     */
-    StringSet stripDevices(const StringSet &device_ids, const EnumeratedDeviceList &devices) {
-      StringSet available_device_ids {getDeviceIds(devices, anyDevice)};
-
-      StringSet available_devices;
-      std::ranges::set_intersection(device_ids, available_device_ids, std::inserter(available_devices, std::begin(available_devices)));
-      return available_devices;
     }
 
     /**
@@ -218,35 +179,20 @@ namespace display_device::win_utils {
   }
 
   std::optional<SingleDisplayConfigState::Initial> stripInitialState(const SingleDisplayConfigState::Initial &initial_state, const EnumeratedDeviceList &devices) {
-    const auto stripped_initial_topology {stripTopology(initial_state.m_topology, devices)};
-    auto initial_primary_devices {stripDevices(initial_state.m_primary_devices, devices)};
-
-    if (stripped_initial_topology.empty()) {
-      DD_LOG(error) << "Enumerated device list does not contain ANY of the devices from the initial state!";
-      return std::nullopt;
-    }
-
-    if (initial_primary_devices.empty()) {
-      // The initial primay device is no longer available, so maybe it makes sense to use the current one. Maybe...
-      initial_primary_devices = getDeviceIds(devices, primaryOnlyDevices);
-      if (initial_primary_devices.empty()) {
-        DD_LOG(error) << "Enumerated device list does not contain primary devices!";
-        return std::nullopt;
+    return detail::stripInitialState(
+      initial_state,
+      getDeviceIds(devices, anyDevice),
+      getDeviceIds(devices, primaryOnlyDevices),
+      detail::InitialStateStripMessages {
+        "Enumerated device list does not contain ANY of the devices from the initial state!",
+        "Enumerated device list does not contain primary devices!",
+        "Trying to apply configuration without reverting back to initial topology first, however not all devices from that topology are available.\n"
+        "Will try adapting the initial topology that is used as a base:",
+      },
+      [](const ActiveTopology &topology) {
+        return toJson(topology, JSON_COMPACT);
       }
-    }
-
-    if (initial_state.m_topology != stripped_initial_topology || initial_state.m_primary_devices != initial_primary_devices) {
-      DD_LOG(warning) << "Trying to apply configuration without reverting back to initial topology first, however not all devices from that "
-                         "topology are available.\n"
-                      << "Will try adapting the initial topology that is used as a base:\n"
-                      << "  - topology: " << toJson(initial_state.m_topology, JSON_COMPACT) << " -> " << toJson(stripped_initial_topology, JSON_COMPACT) << "\n"
-                      << "  - primary devices: " << toJson(initial_state.m_primary_devices, JSON_COMPACT) << " -> " << toJson(initial_primary_devices, JSON_COMPACT);
-    }
-
-    return SingleDisplayConfigState::Initial {
-      stripped_initial_topology,
-      initial_primary_devices
-    };
+    );
   }
 
   std::tuple<ActiveTopology, std::string, StringSet> computeNewTopologyAndMetadata(const SingleDisplayConfiguration::DevicePreparation device_prep, const std::string &device_id, const SingleDisplayConfigState::Initial &initial_state) {
