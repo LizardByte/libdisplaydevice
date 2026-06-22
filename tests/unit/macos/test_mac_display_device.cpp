@@ -21,11 +21,12 @@ namespace {
 
   const display_device::MacDisplayMode CURRENT_MODE {{1920, 1080}, {60, 1}};
   const display_device::MacDisplayMode REQUESTED_MODE {{1280, 720}, {60, 1}};
+  const display_device::MacDisplayModeList REQUESTED_MODES {REQUESTED_MODE};
 
   // Test fixture(s) for this file
   class MacDisplayDeviceMocked: public BaseTest {
   public:
-    void expectActiveDeviceLookup(Sequence &sequence, const std::string &device_id = "DeviceId1") {
+    void expectActiveDeviceLookup(const Sequence &sequence, const std::string &device_id = "DeviceId1") const {
       EXPECT_CALL(*m_layer, getDisplayIds(display_device::MacQueryType::Active))
         .Times(1)
         .InSequence(sequence)
@@ -36,28 +37,28 @@ namespace {
         .WillOnce(Return(device_id));
     }
 
-    void expectCurrentMode(Sequence &sequence, const display_device::MacDisplayMode &mode) {
+    void expectCurrentMode(const Sequence &sequence, const display_device::MacDisplayMode &mode) const {
       EXPECT_CALL(*m_layer, getCurrentDisplayMode(1))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(Return(mode));
     }
 
-    void expectAvailableModes(Sequence &sequence, const display_device::MacDisplayModeList &modes) {
+    void expectAvailableModes(const Sequence &sequence, const display_device::MacDisplayModeList &modes) const {
       EXPECT_CALL(*m_layer, getDisplayModes(1))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(Return(modes));
     }
 
-    void expectSetMode(Sequence &sequence, const display_device::MacDisplayMode &mode, const bool result) {
+    void expectSetMode(const Sequence &sequence, const display_device::MacDisplayMode &mode, const bool result) const {
       EXPECT_CALL(*m_layer, setDisplayMode(1, mode))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(Return(result));
     }
 
-    void expectModePreparation(Sequence &sequence, const display_device::MacDisplayMode &current_mode = CURRENT_MODE, display_device::MacDisplayModeList available_modes = {REQUESTED_MODE}) {
+    void expectModePreparation(const Sequence &sequence, const display_device::MacDisplayMode &current_mode = CURRENT_MODE, const display_device::MacDisplayModeList &available_modes = REQUESTED_MODES) const {
       expectActiveDeviceLookup(sequence);
       expectCurrentMode(sequence, current_mode);
       expectAvailableModes(sequence, available_modes);

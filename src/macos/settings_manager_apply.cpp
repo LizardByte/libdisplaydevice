@@ -104,7 +104,7 @@ namespace display_device {
      * @return Prepared apply data, or empty optional on failure.
      */
     [[nodiscard]] std::optional<MacApplyPlan> createApplyPlan(
-      MacDisplayDeviceInterface &dd_api,
+      const MacDisplayDeviceInterface &dd_api,
       const SingleDisplayConfiguration &config,
       const std::optional<MacSingleDisplayConfigState> &cached_state
     ) {
@@ -208,14 +208,16 @@ namespace display_device {
       MacApplyPlan &plan,
       ModeRollbackState &rollback_state
     ) {
+      using enum SettingsManagerInterface::ApplyResult;
+
       const auto original_display_modes {plan.m_cached_display_modes.empty() ? current_modes : plan.m_cached_display_modes};
       if (const auto new_display_modes {mac_utils::computeNewDisplayModes(config.m_resolution, config.m_refresh_rate, plan.m_configuring_primary_devices, plan.m_device_to_configure, plan.m_additional_devices_to_configure, original_display_modes)}; !changeDisplayModes(dd_api, current_modes, new_display_modes, rollback_state)) {
         DD_LOG(error) << "Failed to apply new macOS display modes!";
-        return MacSettingsManager::ApplyResult::DisplayModePrepFailed;
+        return DisplayModePrepFailed;
       }
 
       plan.m_state.m_modified.m_original_modes = original_display_modes;
-      return MacSettingsManager::ApplyResult::Ok;
+      return Ok;
     }
 
     /**
@@ -232,17 +234,18 @@ namespace display_device {
       MacApplyPlan &plan,
       ModeRollbackState &rollback_state
     ) {
+      using enum SettingsManagerInterface::ApplyResult;
+
       const bool change_required {config.m_resolution || config.m_refresh_rate};
-      const bool might_need_to_restore {!plan.m_cached_display_modes.empty()};
-      if (!change_required && !might_need_to_restore) {
-        return MacSettingsManager::ApplyResult::Ok;
+      if (const bool might_need_to_restore {!plan.m_cached_display_modes.empty()}; !change_required && !might_need_to_restore) {
+        return Ok;
       }
 
       const auto topology_devices {mac_utils::flattenTopology(plan.m_state.m_modified.m_topology)};
       const auto current_display_modes {dd_api.getCurrentDisplayModes(topology_devices)};
       if (current_display_modes.empty()) {
         DD_LOG(error) << "Failed to get current macOS display modes!";
-        return MacSettingsManager::ApplyResult::DisplayModePrepFailed;
+        return DisplayModePrepFailed;
       }
 
       if (change_required) {
@@ -251,41 +254,43 @@ namespace display_device {
 
       if (!changeDisplayModes(dd_api, current_display_modes, plan.m_cached_display_modes, rollback_state)) {
         DD_LOG(error) << "Failed to restore original macOS display modes!";
-        return MacSettingsManager::ApplyResult::DisplayModePrepFailed;
+        return DisplayModePrepFailed;
       }
 
-      return MacSettingsManager::ApplyResult::Ok;
+      return Ok;
     }
   }  // namespace
 
   MacSettingsManager::ApplyResult MacSettingsManager::applySettings(const SingleDisplayConfiguration &config) {
+    using enum SettingsManagerInterface::ApplyResult;
+
     const auto api_access {m_dd_api->isApiAccessAvailable()};
     DD_LOG(info) << "Trying to apply macOS display device settings. API is available: " << toJson(api_access);
 
     if (!api_access) {
-      return ApplyResult::ApiTemporarilyUnavailable;
+      return ApiTemporarilyUnavailable;
     }
 
     DD_LOG(info) << "Using the following macOS configuration:\n"
                  << toJson(config);
 
     if (config.m_hdr_state) {
-      return ApplyResult::HdrStatePrepFailed;
+      return HdrStatePrepFailed;
     }
 
     if (config.m_device_prep != SingleDisplayConfiguration::DevicePreparation::VerifyOnly) {
       DD_LOG(error) << "macOS phase 2 only supports VerifyOnly device preparation.";
-      return ApplyResult::DevicePrepFailed;
+      return DevicePrepFailed;
     }
 
     const auto &cached_state {m_persistence_state->getState()};
     auto apply_plan {createApplyPlan(*m_dd_api, config, cached_state)};
     if (!apply_plan) {
-      return ApplyResult::DevicePrepFailed;
+      return DevicePrepFailed;
     }
 
     ModeRollbackState mode_rollback;
-    if (const auto mode_result {applyDisplayModes(*m_dd_api, config, *apply_plan, mode_rollback)}; mode_result != ApplyResult::Ok) {
+    if (const auto mode_result {applyDisplayModes(*m_dd_api, config, *apply_plan, mode_rollback)}; mode_result != Ok) {
       return mode_result;
     }
 
@@ -294,9 +299,9 @@ namespace display_device {
       if (mode_rollback.m_required) {
         static_cast<void>(m_dd_api->setDisplayModes(mode_rollback.m_modes));
       }
-      return ApplyResult::PersistenceSaveFailed;
+      return PersistenceSaveFailed;
     }
 
-    return ApplyResult::Ok;
+    return Ok;
   }
 }  // namespace display_device

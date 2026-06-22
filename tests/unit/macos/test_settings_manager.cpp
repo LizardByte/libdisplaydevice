@@ -102,26 +102,26 @@ namespace {
       return *m_impl;
     }
 
-    void expectNoStateLoad() {
+    void expectNoStateLoad() const {
       EXPECT_CALL(*m_settings_persistence_api, load())
         .Times(1)
         .WillOnce(Return(serializeNoState()));
     }
 
-    void expectStoredStateLoad(const display_device::MacSingleDisplayConfigState &state) {
+    void expectStoredStateLoad(const display_device::MacSingleDisplayConfigState &state) const {
       EXPECT_CALL(*m_settings_persistence_api, load())
         .Times(1)
         .WillOnce(Return(serializeState(state)));
     }
 
-    void expectApiAvailable(Sequence &sequence) {
+    void expectApiAvailable(const Sequence &sequence) const {
       EXPECT_CALL(*m_dd_api, isApiAccessAvailable())
         .Times(1)
         .InSequence(sequence)
         .WillOnce(Return(true));
     }
 
-    void expectApplyPreparation(Sequence &sequence) {
+    void expectApplyPreparation(const Sequence &sequence) const {
       expectApiAvailable(sequence);
       EXPECT_CALL(*m_dd_api, getCurrentTopology())
         .Times(1)
@@ -137,28 +137,28 @@ namespace {
         .WillOnce(Return(DEFAULT_DEVICES));
     }
 
-    void expectCurrentModes(Sequence &sequence, const display_device::MacDeviceDisplayModeMap &modes) {
+    void expectCurrentModes(const Sequence &sequence, const display_device::MacDeviceDisplayModeMap &modes) const {
       EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(display_device::StringSet {"DeviceId1", "DeviceId2"}))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(Return(modes));
     }
 
-    void expectSetModes(Sequence &sequence, const display_device::MacDeviceDisplayModeMap &modes, const bool result) {
+    void expectSetModes(const Sequence &sequence, const display_device::MacDeviceDisplayModeMap &modes, const bool result) const {
       EXPECT_CALL(*m_dd_api, setDisplayModes(modes))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(Return(result));
     }
 
-    void expectStoreState(Sequence &sequence, const display_device::MacSingleDisplayConfigState &state, const bool result) {
+    void expectStoreState(const Sequence &sequence, const display_device::MacSingleDisplayConfigState &state, const bool result) const {
       EXPECT_CALL(*m_settings_persistence_api, store(*serializeState(state)))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(Return(result));
     }
 
-    void expectModeRevertPreparation(Sequence &sequence, const display_device::MacDeviceDisplayModeMap &current_modes) {
+    void expectModeRevertPreparation(const Sequence &sequence, const display_device::MacDeviceDisplayModeMap &current_modes) const {
       expectApiAvailable(sequence);
       EXPECT_CALL(*m_dd_api, getCurrentTopology())
         .Times(1)
