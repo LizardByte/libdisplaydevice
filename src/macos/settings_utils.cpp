@@ -14,6 +14,7 @@
 #include <vector>
 
 // local includes
+#include "display_device/detail/settings_state_utils.h"
 #include "display_device/logging.h"
 #include "display_device/macos/json.h"
 
@@ -53,46 +54,6 @@ namespace display_device::mac_utils {
       }
 
       return device_ids;
-    }
-
-    /**
-     * @brief Remove unavailable devices from a topology.
-     * @param topology Topology to strip.
-     * @param devices Currently available devices.
-     * @return Topology containing only available devices.
-     */
-    [[nodiscard]] MacActiveTopology stripTopology(const MacActiveTopology &topology, const EnumeratedDeviceList &devices) {
-      const StringSet available_device_ids {getDeviceIds(devices, anyDevice)};
-
-      MacActiveTopology stripped_topology;
-      for (const auto &group : topology) {
-        std::vector<std::string> stripped_group;
-        for (const auto &device_id : group) {
-          if (available_device_ids.contains(device_id)) {
-            stripped_group.push_back(device_id);
-          }
-        }
-
-        if (!stripped_group.empty()) {
-          stripped_topology.push_back(stripped_group);
-        }
-      }
-
-      return stripped_topology;
-    }
-
-    /**
-     * @brief Remove unavailable device ids.
-     * @param device_ids Device ids to strip.
-     * @param devices Currently available devices.
-     * @return Device ids containing only available devices.
-     */
-    [[nodiscard]] StringSet stripDevices(const StringSet &device_ids, const EnumeratedDeviceList &devices) {
-      const StringSet available_device_ids {getDeviceIds(devices, anyDevice)};
-
-      StringSet available_devices;
-      std::ranges::set_intersection(device_ids, available_device_ids, std::inserter(available_devices, std::begin(available_devices)));
-      return available_devices;
     }
 
     /**
@@ -169,32 +130,19 @@ namespace display_device::mac_utils {
     const MacSingleDisplayConfigState::Initial &initial_state,
     const EnumeratedDeviceList &devices
   ) {
-    const auto stripped_initial_topology {stripTopology(initial_state.m_topology, devices)};
-    auto initial_primary_devices {stripDevices(initial_state.m_primary_devices, devices)};
-
-    if (stripped_initial_topology.empty()) {
-      DD_LOG(error) << "Enumerated macOS device list does not contain any device from the initial state!";
-      return std::nullopt;
-    }
-
-    if (initial_primary_devices.empty()) {
-      initial_primary_devices = getDeviceIds(devices, primaryOnlyDevices);
-      if (initial_primary_devices.empty()) {
-        DD_LOG(error) << "Enumerated macOS device list does not contain primary devices!";
-        return std::nullopt;
+    return detail::stripInitialState(
+      initial_state,
+      getDeviceIds(devices, anyDevice),
+      getDeviceIds(devices, primaryOnlyDevices),
+      detail::InitialStateStripMessages {
+        "Enumerated macOS device list does not contain any device from the initial state!",
+        "Enumerated macOS device list does not contain primary devices!",
+        "Adapting macOS initial state because some devices are unavailable.",
+      },
+      [](const MacActiveTopology &topology) {
+        return toJson(topology, JSON_COMPACT);
       }
-    }
-
-    if (initial_state.m_topology != stripped_initial_topology || initial_state.m_primary_devices != initial_primary_devices) {
-      DD_LOG(warning) << "Adapting macOS initial state because some devices are unavailable.\n"
-                      << "  - topology: " << toJson(initial_state.m_topology, JSON_COMPACT) << " -> " << toJson(stripped_initial_topology, JSON_COMPACT) << "\n"
-                      << "  - primary devices: " << toJson(initial_state.m_primary_devices, JSON_COMPACT) << " -> " << toJson(initial_primary_devices, JSON_COMPACT);
-    }
-
-    return MacSingleDisplayConfigState::Initial {
-      stripped_initial_topology,
-      initial_primary_devices
-    };
+    );
   }
 
   MacDeviceDisplayModeMap computeNewDisplayModes(

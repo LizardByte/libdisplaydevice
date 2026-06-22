@@ -9,6 +9,7 @@
 #include <stdexcept>
 
 // local includes
+#include "display_device/detail/persistent_state_utils.h"
 #include "display_device/logging.h"
 #include "display_device/macos/json.h"
 #include "display_device/noop_settings_persistence.h"
@@ -53,33 +54,15 @@ namespace display_device {
   }
 
   bool MacPersistentState::persistState(const std::optional<MacSingleDisplayConfigState> &state) {
-    if (m_cached_state == state) {
-      return true;
-    }
-
-    if (!state) {
-      if (!m_settings_persistence_api->clear()) {
-        return false;
-      }
-
-      m_cached_state = std::nullopt;
-      return true;
-    }
-
-    bool success {false};
-    const auto json_string {toJson(*state, 2, &success)};
-    if (!success) {
-      DD_LOG(error) << "Failed to serialize new macOS persistent state! Error:\n"
-                    << json_string;
-      return false;
-    }
-
-    if (!m_settings_persistence_api->store({std::begin(json_string), std::end(json_string)})) {
-      return false;
-    }
-
-    m_cached_state = *state;
-    return true;
+    return detail::persistState(
+      *m_settings_persistence_api,
+      m_cached_state,
+      state,
+      [](const MacSingleDisplayConfigState &state_to_serialize, bool &success) {
+        return toJson(state_to_serialize, 2, &success);
+      },
+      "Failed to serialize new macOS persistent state! Error:"
+    );
   }
 
   const std::optional<MacSingleDisplayConfigState> &MacPersistentState::getState() const {
