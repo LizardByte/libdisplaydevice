@@ -33,8 +33,9 @@ namespace display_device {
 
     MacActiveTopology topology;
     topology.reserve(groups.size());
-    for (auto &group : groups) {
-      topology.push_back(std::move(group.second));
+    for (auto &[group_key, device_ids] : groups) {
+      static_cast<void>(group_key);
+      topology.push_back(std::move(device_ids));
     }
 
     return topology;

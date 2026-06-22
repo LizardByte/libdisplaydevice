@@ -73,6 +73,6 @@ namespace display_device {
     std::shared_ptr<MacDisplayDeviceInterface> m_dd_api;
     std::shared_ptr<AudioContextInterface> m_audio_context_api;
     std::unique_ptr<MacPersistentState> m_persistence_state;
-    MacWorkarounds m_workarounds;
+    [[no_unique_address]] MacWorkarounds m_workarounds;
   };
 }  // namespace display_device

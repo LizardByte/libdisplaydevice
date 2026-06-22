@@ -5,6 +5,9 @@
 // class header include
 #include "display_device/macos/mac_display_device.h"
 
+// system includes
+#include <algorithm>
+
 namespace display_device {
   MacHdrStateMap MacDisplayDevice::getCurrentHdrStates(const StringSet &device_ids) const {
     MacHdrStateMap states;
@@ -16,13 +19,8 @@ namespace display_device {
   }
 
   bool MacDisplayDevice::setHdrStates(const MacHdrStateMap &states) {
-    for (const auto &[device_id, state] : states) {
-      static_cast<void>(device_id);
-      if (state) {
-        return false;
-      }
-    }
-
-    return true;
+    return std::ranges::all_of(states, [](const auto &entry) {
+      return !entry.second;
+    });
   }
 }  // namespace display_device

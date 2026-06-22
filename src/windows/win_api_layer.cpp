@@ -530,8 +530,7 @@ namespace display_device {
   }
 
   bool WinApiLayer::wakeDisplay(const std::chrono::milliseconds timeout) {
-    const auto result {SetThreadExecutionState(ES_DISPLAY_REQUIRED)};
-    if (result == 0) {
+    if (const auto result {SetThreadExecutionState(ES_DISPLAY_REQUIRED)}; result == 0) {
       DD_LOG(error) << getErrorString(static_cast<LONG>(GetLastError())) << " failed to wake display.";
       return false;
     }
@@ -545,8 +544,7 @@ namespace display_device {
   }
 
   bool WinApiLayer::keepDisplayAwake() {
-    const auto result {SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED)};
-    if (result == 0) {
+    if (const auto result {SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED)}; result == 0) {
       DD_LOG(error) << getErrorString(static_cast<LONG>(GetLastError())) << " failed to request display keep-awake.";
       return false;
     }
@@ -555,8 +553,7 @@ namespace display_device {
   }
 
   bool WinApiLayer::restorePowerRequest() {
-    const auto result {SetThreadExecutionState(ES_CONTINUOUS)};
-    if (result == 0) {
+    if (const auto result {SetThreadExecutionState(ES_CONTINUOUS)}; result == 0) {
       DD_LOG(error) << getErrorString(static_cast<LONG>(GetLastError())) << " failed to restore display power request.";
       return false;
     }

@@ -57,7 +57,7 @@ namespace display_device {
         }
       }
 
-      devices.push_back({device_id, display_name, friendly_name, edid, info});
+      devices.emplace_back(device_id, display_name, friendly_name, edid, info);
     }
 
     return devices;
@@ -72,7 +72,7 @@ namespace display_device {
     return m_m_api->getDisplayName(*display_id);
   }
 
-  std::optional<MacDisplayId> MacDisplayDevice::getDisplayId(const std::string &device_id, const MacQueryType query_type) const {
+  std::optional<MacDisplayId> MacDisplayDevice::getDisplayId(const std::string_view device_id, const MacQueryType query_type) const {
     if (device_id.empty()) {
       return std::nullopt;
     }

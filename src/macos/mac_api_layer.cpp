@@ -11,11 +11,11 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreGraphics/CoreGraphics.h>
 #include <cstdint>
+#include <format>
 #include <IOKit/graphics/IOGraphicsLib.h>
 #include <IOKit/graphics/IOGraphicsTypes.h>
 #include <IOKit/IOKitLib.h>
 #include <IOKit/pwr_mgt/IOPMLib.h>
-#include <iomanip>
 #include <limits>
 #include <numeric>
 #include <sstream>
@@ -458,9 +458,7 @@ namespace display_device {
      * @return Formatted device id.
      */
     [[nodiscard]] std::string makeDeviceId(const std::string_view prefix, const std::uint64_t hash) {
-      std::ostringstream output;
-      output << "macos-" << prefix << '-' << std::hex << std::setw(16) << std::setfill('0') << hash;
-      return output.str();
+      return std::format("macos-{}-{:016x}", prefix, hash);
     }
   }  // namespace
 

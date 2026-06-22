@@ -6,6 +6,7 @@
 
 // system includes
 #include <memory>
+#include <string_view>
 
 // local includes
 #include "mac_api_layer_interface.h"
@@ -95,7 +96,7 @@ namespace display_device {
      * @param query_type Display list type to search.
      * @return Display id, or empty optional if not found.
      */
-    [[nodiscard]] std::optional<MacDisplayId> getDisplayId(const std::string &device_id, MacQueryType query_type) const;
+    [[nodiscard]] std::optional<MacDisplayId> getDisplayId(std::string_view device_id, MacQueryType query_type) const;
 
     std::shared_ptr<MacApiLayerInterface> m_m_api;
   };
