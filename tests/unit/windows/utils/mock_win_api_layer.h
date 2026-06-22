@@ -7,7 +7,7 @@
 #include "display_device/windows/win_api_layer_interface.h"
 
 namespace display_device {
-  class MockWinApiLayer: public WinApiLayerInterface {
+  class MockWinApiLayer: public WinApiLayerInterface {  // NOSONAR(cpp:S1448): GMock class intentionally mirrors the full platform API interface.
   public:
     MOCK_METHOD(std::string, getErrorString, (LONG), (const, override));
     MOCK_METHOD(std::optional<PathAndModeData>, queryDisplayConfig, (QueryType), (const, override));

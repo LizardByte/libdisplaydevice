@@ -7,7 +7,7 @@
 #include "display_device/macos/mac_api_layer_interface.h"
 
 namespace display_device {
-  class MockMacApiLayer: public MacApiLayerInterface {
+  class MockMacApiLayer: public MacApiLayerInterface {  // NOSONAR(cpp:S1448,cpp:S1820): GMock class intentionally mirrors the full platform API interface.
   public:
     MOCK_METHOD(bool, isApiAccessAvailable, (), (const, override));
     MOCK_METHOD(std::string, getErrorString, (MacApiError), (const, override));

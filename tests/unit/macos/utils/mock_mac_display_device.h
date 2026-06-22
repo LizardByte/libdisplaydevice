@@ -7,7 +7,7 @@
 #include "display_device/macos/mac_display_device_interface.h"
 
 namespace display_device {
-  class MockMacDisplayDevice: public MacDisplayDeviceInterface {
+  class MockMacDisplayDevice: public MacDisplayDeviceInterface {  // NOSONAR(cpp:S1448): GMock class intentionally mirrors the full display-device interface.
   public:
     MOCK_METHOD(bool, isApiAccessAvailable, (), (const, override));
     MOCK_METHOD(EnumeratedDeviceList, enumAvailableDevices, (), (const, override));
