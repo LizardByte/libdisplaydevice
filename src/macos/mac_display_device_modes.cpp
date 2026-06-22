@@ -25,6 +25,34 @@ namespace display_device {
         return mac_utils::fuzzyCompareModes(candidate, mode);
       });
     }
+
+    /**
+     * @brief Check whether a requested mode can be used for a display.
+     * @param api macOS API layer.
+     * @param display_id Display to inspect.
+     * @param current_mode Current display mode.
+     * @param requested_mode Requested display mode.
+     * @return True if the requested mode is current or available.
+     */
+    [[nodiscard]] bool isRequestedModeAvailable(
+      const MacApiLayerInterface &api,
+      const MacDisplayId display_id,
+      const MacDisplayMode &current_mode,
+      const MacDisplayMode &requested_mode
+    ) {
+      return mac_utils::fuzzyCompareModes(current_mode, requested_mode) || hasMatchingMode(api.getDisplayModes(display_id), requested_mode);
+    }
+
+    /**
+     * @brief Roll back previously changed display modes.
+     * @param display_device Display-device API used for rollback.
+     * @param changed_modes Original modes for changed devices.
+     */
+    void rollbackChangedModes(MacDisplayDevice &display_device, const MacDeviceDisplayModeMap &changed_modes) {
+      if (!changed_modes.empty()) {
+        static_cast<void>(display_device.setDisplayModes(changed_modes));
+      }
+    }
   }  // namespace
 
   MacDeviceDisplayModeMap MacDisplayDevice::getCurrentDisplayModes(const StringSet &device_ids) const {
@@ -79,7 +107,7 @@ namespace display_device {
         return false;
       }
 
-      if (!mac_utils::fuzzyCompareModes(*current_mode, mode) && !hasMatchingMode(m_m_api->getDisplayModes(*display_id), mode)) {
+      if (!isRequestedModeAvailable(*m_m_api, *display_id, *current_mode, mode)) {
         DD_LOG(error) << "Requested macOS display mode is not available for " << device_id << "!";
         return false;
       }
@@ -97,19 +125,14 @@ namespace display_device {
       const auto display_id {display_ids.at(device_id)};
       if (!m_m_api->setDisplayMode(display_id, mode)) {
         DD_LOG(error) << "Failed to set macOS display mode for " << device_id << "!";
-        if (!changed_modes.empty()) {
-          static_cast<void>(setDisplayModes(changed_modes));
-        }
+        rollbackChangedModes(*this, changed_modes);
         return false;
       }
 
-      const auto verified_mode {m_m_api->getCurrentDisplayMode(display_id)};
-      if (!verified_mode || !mac_utils::fuzzyCompareModes(*verified_mode, mode)) {
+      if (const auto verified_mode {m_m_api->getCurrentDisplayMode(display_id)}; !verified_mode || !mac_utils::fuzzyCompareModes(*verified_mode, mode)) {
         DD_LOG(error) << "Failed to verify macOS display mode for " << device_id << "!";
         changed_modes[device_id] = original_modes.at(device_id);
-        if (!changed_modes.empty()) {
-          static_cast<void>(setDisplayModes(changed_modes));
-        }
+        rollbackChangedModes(*this, changed_modes);
         return false;
       }
 
