@@ -57,7 +57,7 @@ namespace display_device {
         }
       }
 
-      devices.emplace_back(EnumeratedDevice {device_id, display_name, friendly_name, edid, info});
+      devices.push_back(EnumeratedDevice {device_id, display_name, friendly_name, edid, info});
     }
 
     return devices;

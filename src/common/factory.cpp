@@ -8,7 +8,7 @@
 #if !defined(_WIN32) && !defined(__APPLE__)
 
 namespace display_device {
-  std::unique_ptr<SettingsManagerInterface> makeSettingsManager(SettingsManagerFactoryConfig) {
+  std::unique_ptr<SettingsManagerInterface> makeSettingsManager(const SettingsManagerFactoryConfig &) {
     return nullptr;
   }
 

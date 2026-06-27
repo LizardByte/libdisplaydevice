@@ -31,7 +31,7 @@ namespace display_device {
    * @param config Dependencies and platform-neutral options.
    * @returns A settings manager, or nullptr when the platform is unsupported.
    */
-  [[nodiscard]] std::unique_ptr<SettingsManagerInterface> makeSettingsManager(SettingsManagerFactoryConfig config = {});
+  [[nodiscard]] std::unique_ptr<SettingsManagerInterface> makeSettingsManager(const SettingsManagerFactoryConfig &config = {});
 
   /**
    * @brief Create the default display power manager for the current platform.

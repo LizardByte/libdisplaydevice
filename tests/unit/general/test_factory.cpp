@@ -1,6 +1,5 @@
 // system includes
 #include <chrono>
-#include <utility>
 
 // local includes
 #include "display_device/factory.h"
@@ -18,7 +17,7 @@ TEST_S(MakeSettingsManager) {
     .m_hdr_blank_delay = 10ms
   };
 
-  const auto settings_manager {display_device::makeSettingsManager(std::move(config))};
+  const auto settings_manager {display_device::makeSettingsManager(config)};
 
 #if defined(_WIN32) || defined(__APPLE__)
   ASSERT_NE(settings_manager, nullptr);
