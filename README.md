@@ -1,20 +1,34 @@
+<div align="center">
+  <img
+    src="https://raw.githubusercontent.com/LizardByte/.github/refs/heads/master/branding/logos/logo.svg"
+    alt="LizardByte icon"
+    width="256"
+  />
+  <h1 align="center">libdisplaydevice</h1>
+  <h4 align="center">C++ library to modify display devices.</h4>
+</div>
+
+<div align="center">
+  <a href="https://github.com/LizardByte/libdisplaydevice"><img src="https://img.shields.io/github/stars/lizardbyte/libdisplaydevice.svg?logo=github&style=for-the-badge" alt="GitHub stars"></a>
+  <a href="https://github.com/LizardByte/libdisplaydevice/actions/workflows/ci.yml?query=branch%3Amaster"><img src="https://img.shields.io/github/actions/workflow/status/lizardbyte/libdisplaydevice/ci.yml.svg?branch=master&label=CI%20build&logo=github&style=for-the-badge" alt="GitHub Workflow Status (CI)"></a>
+  <a href="https://docs.lizardbyte.dev/projects/libdisplaydevice"><img src="https://img.shields.io/readthedocs/libdisplaydevice.svg?label=Docs&style=for-the-badge&logo=readthedocs" alt="Read the Docs"></a>
+  <a href="https://codecov.io/gh/LizardByte/libdisplaydevice"><img src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fapp.lizardbyte.dev%2Fdashboard%2Fshields%2Fcodecov%2Flibdisplaydevice.json&style=for-the-badge&logo=codecov" alt="Codecov"></a>
+  <a href="https://sonarcloud.io/project/overview?id=LizardByte_libdisplaydevice"><img src="https://img.shields.io/sonar/quality_gate/LizardByte_libdisplaydevice.svg?server=https%3A%2F%2Fsonarcloud.io&style=for-the-badge&logo=sonarqubecloud&label=sonarcloud" alt="SonarCloud"></a>
+</div>
+
 # Overview
 
-[![GitHub Workflow Status (CI)](https://img.shields.io/github/actions/workflow/status/lizardbyte/libdisplaydevice/ci.yml.svg?branch=master&label=CI%20build&logo=github&style=for-the-badge)](https://github.com/LizardByte/libdisplaydevice/actions/workflows/ci.yml?query=branch%3Amaster)
-[![Codecov](https://img.shields.io/codecov/c/gh/LizardByte/libdisplaydevice?token=goyvmDl6J5&style=for-the-badge&logo=codecov&label=codecov)](https://codecov.io/gh/LizardByte/libdisplaydevice)
-[![GitHub stars](https://img.shields.io/github/stars/lizardbyte/libdisplaydevice.svg?logo=github&style=for-the-badge)](https://github.com/LizardByte/libdisplaydevice)
-
-## About
+## ℹ️ About
 
 LizardByte has the full documentation hosted on [Read the Docs](https://libdisplaydevice.readthedocs.io/).
 
-libdisplaydevice is a WIP library that provides a common interface for interacting with display devices.
+libdisplaydevice is a library that provides a common interface for interacting with display devices.
 It is intended to be used by applications that need to interact with displays, such as screen capture software,
 remote desktop software, and video players.
 
-Initial support is planned for Windows, but could be expanded to other platforms in the future.
+Windows and macOS are currently supported. Support for Linux is planned for the future.
 
-## Build
+## 🛠️ Build
 
 ### Clone
 
@@ -76,7 +90,7 @@ ninja -C build
 ./build/tests/test_libdisplaydevice
 ```
 
-## Support
+## ❓ Support
 
 Our support methods are listed in our [LizardByte Docs](https://lizardbyte.readthedocs.io/latest/about/support.html).
 
