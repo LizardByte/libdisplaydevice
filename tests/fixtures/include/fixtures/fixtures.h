@@ -6,7 +6,10 @@
 #include <boost/preprocessor/seq/fold_left.hpp>
 #include <boost/preprocessor/variadic/to_seq.hpp>
 #include <filesystem>
-#include <gtest/gtest.h>
+
+#define LIZARDBYTE_COMMON_TESTING_KEEP_GTEST_TEST
+#define LIZARDBYTE_COMMON_TESTING_NO_GLOBAL_ALIASES
+#include <lizardbyte/common/testing.h>
 
 // local includes
 #include "display_device/logging.h"
@@ -39,7 +42,7 @@
  *
  * This class provides a base test fixture for all tests.
  */
-class BaseTest: public ::testing::Test {
+class BaseTest: public ::lizardbyte::common::testing::BaseTest {
 protected:
   ~BaseTest() override = default;
 
@@ -48,52 +51,12 @@ protected:
   void TearDown() override;
 
   /**
-   * @brief Get available command line arguments.
-   * @return Command line args from GTest.
-   */
-  [[nodiscard]] virtual const std::vector<std::string> &getArgs() const;
-
-  /**
-   * @brief Get the command line argument that matches the pattern.
-   * @param pattern Pattern to look for.
-   * @param remove_match Specify if the matched pattern should be removed before returning argument.
-   * @return Matching command line argument or null optional if nothing matched.
-   */
-  [[nodiscard]] virtual std::optional<std::string> getArgWithMatchingPattern(const std::string &pattern, bool remove_match) const;
-
-  /**
-   * @brief Check if the test output is to be redirected and printed out only if test fails.
-   * @return True if output is to be suppressed, false otherwise.
-   * @note It is useful for suppressing noise in automatic tests, but not so much in manual ones.
-   */
-  [[nodiscard]] virtual bool isOutputSuppressed() const;
-
-  /**
-   * @brief Check if the test interacts/modifies with the system settings.
-   * @returns True if it does, false otherwise.
-   * @note By setting SKIP_SYSTEM_TESTS=1 env, these tests will be skipped (useful during development).
-   */
-  [[nodiscard]] virtual bool isSystemTest() const;
-
-  /**
-   * @brief Skip the test by specifying the reason.
-   * @returns A non-empty string (reason) if test needs to be skipped, empty string otherwise.
-   */
-  [[nodiscard]] virtual std::string skipTest() const;
-
-  /**
    * @brief Get the default log level for the test base.
    * @returns A log level set in the env OR null optional if fallback should be used (verbose).
    * @note By setting LOG_LEVEL=<level> env you can change the level (e.g. LOG_LEVEL=error).
    */
   [[nodiscard]] virtual std::optional<display_device::Logger::LogLevel> getDefaultLogLevel() const;
 
-  [[nodiscard]] std::stringstream &coutBuffer() {
-    return m_cout_buffer;
-  }
-
 private:
-  std::stringstream m_cout_buffer; /**< Stores the cout in case the output is suppressed. */
-  std::streambuf *m_sbuf {nullptr}; /**< Stores the handle to the original cout stream. */
   bool m_test_skipped_at_setup {false}; /**< Indicates whether the SetUp method was skipped. */
 };

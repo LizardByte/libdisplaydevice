@@ -4,8 +4,15 @@
 set(INSTALL_GTEST OFF)
 set(INSTALL_GMOCK OFF)
 include(GoogleTest)
-add_subdirectory("${PROJECT_SOURCE_DIR}/third-party/googletest" "third-party/googletest")
+add_subdirectory("${PROJECT_SOURCE_DIR}/third-party/lizardbyte-common/third-party/googletest" "third-party/googletest")
 
+set(LIZARDBYTE_COMMON_BUILD_TEST_SUPPORT ON CACHE BOOL "Build lizardbyte-common GoogleTest support helpers" FORCE)
+if(NOT TARGET lizardbyte::common)
+    add_subdirectory("${PROJECT_SOURCE_DIR}/third-party/lizardbyte-common"
+                     "third-party/lizardbyte-common")
+elseif(NOT TARGET lizardbyte::test_support)
+    message(FATAL_ERROR "libdisplaydevice tests require lizardbyte::test_support")
+endif()
 if (WIN32)
     # For Windows: Prevent overriding the parent project's compiler/linker settings
     set(gtest_force_shared_crt ON CACHE BOOL "Always use msvcrt.dll" FORCE)  # cmake-lint: disable=C0103

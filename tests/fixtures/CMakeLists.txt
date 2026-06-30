@@ -18,8 +18,8 @@ include(Boost_DD)
 target_link_libraries(${MODULE}
         PUBLIC
         Boost::preprocessor
+        lizardbyte::test_support
 
         PRIVATE
-        gtest
         libdisplaydevice::common
 )
