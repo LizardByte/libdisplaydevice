@@ -69,9 +69,11 @@ namespace display_device {
           m_w_api->getHdrState(best_path)
         };
 
-        available_devices.emplace_back(device_id, display_name, friendly_name, edid, info);
+        // Keep braced aggregate construction; emplace_back(args...) relies on parenthesized aggregate init, which older libc++ rejects.
+        available_devices.push_back(EnumeratedDevice {device_id, display_name, friendly_name, edid, info});  // NOSONAR(cpp:S6003): Direct emplace_back args fail on older toolchains
       } else {
-        available_devices.emplace_back(device_id, display_name, friendly_name, edid, std::nullopt);
+        // Keep braced aggregate construction; emplace_back(args...) relies on parenthesized aggregate init, which older libc++ rejects.
+        available_devices.push_back(EnumeratedDevice {device_id, display_name, friendly_name, edid, std::nullopt});  // NOSONAR(cpp:S6003): Direct emplace_back args fail on older toolchains
       }
     }
 

@@ -57,7 +57,8 @@ namespace display_device {
         }
       }
 
-      devices.emplace_back(device_id, display_name, friendly_name, edid, info);
+      // Keep braced aggregate construction; emplace_back(args...) relies on parenthesized aggregate init, which older libc++ rejects.
+      devices.push_back(EnumeratedDevice {device_id, display_name, friendly_name, edid, info});  // NOSONAR(cpp:S6003): Direct emplace_back args fail on older toolchains
     }
 
     return devices;
