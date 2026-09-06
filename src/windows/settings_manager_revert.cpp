@@ -22,6 +22,28 @@ namespace display_device {
     void noopFn() {
       // Intentionally empty guard callback.
     }
+
+    /**
+     * @brief Append available groups without reactivating stream-only outputs or duplicating devices.
+     * @param topology Groups to consider, in priority order.
+     * @param available Currently enumerated device IDs.
+     * @param activated Device IDs activated only for the stream.
+     * @param target Recovery topology to extend.
+     * @param included IDs already included in the recovery topology.
+     */
+    void appendRecoveryGroups(const ActiveTopology &topology, const StringSet &available, const StringSet &activated, ActiveTopology &target, StringSet &included) {
+      for (const auto &group : topology) {
+        std::vector<std::string> remaining;
+        for (const auto &id : group) {
+          if (available.contains(id) && !activated.contains(id) && included.insert(id).second) {
+            remaining.push_back(id);
+          }
+        }
+        if (!remaining.empty()) {
+          target.push_back(std::move(remaining));
+        }
+      }
+    }
   }  // namespace
 
   SettingsManager::RevertResult SettingsManager::revertSettings() {
@@ -111,7 +133,7 @@ namespace display_device {
     for (const auto &device : devices) {
       available.insert(device.m_device_id);
     }
-    if (available.empty() || std::ranges::all_of(initial, [&](const auto &id) {
+    if (available.empty() || std::ranges::all_of(initial, [&available](const auto &id) {
           return available.contains(id);
         })) {
       // An API failure with unchanged hardware must not discard the original state.
@@ -122,25 +144,12 @@ namespace display_device {
     std::ranges::set_difference(modified, initial, std::inserter(activated, activated.end()));
     ActiveTopology target;
     StringSet included;
-    const auto append = [&](const ActiveTopology &topology) {
-      for (const auto &group : topology) {
-        std::vector<std::string> remaining;
-        for (const auto &id : group) {
-          if (available.contains(id) && !activated.contains(id) && included.insert(id).second) {
-            remaining.push_back(id);
-          }
-        }
-        if (!remaining.empty()) {
-          target.push_back(std::move(remaining));
-        }
-      }
-    };
-    append(state.m_initial.m_topology);
+    appendRecoveryGroups(state.m_initial.m_topology, available, activated, target, included);
     if (target.empty()) {
       // An arbitrary virtual/unknown output is not proof of a usable laptop screen.
       for (const auto &device : devices) {
         if (device.m_is_internal && !activated.contains(device.m_device_id)) {
-          append({{device.m_device_id}});
+          appendRecoveryGroups({{device.m_device_id}}, available, activated, target, included);
           break;
         }
       }
@@ -149,7 +158,7 @@ namespace display_device {
       return false;  // Closed lid and no original display: retain pending recovery.
     }
     const auto replacements {win_utils::flattenTopology(target)};
-    append(current_topology);  // Preserve unrelated displays activated by the user.
+    appendRecoveryGroups(current_topology, available, activated, target, included);  // Preserve unrelated displays activated by the user.
 
     // First activate the replacement without switching off the current output.
     ActiveTopology staged {current_topology};
@@ -163,7 +172,7 @@ namespace display_device {
       return false;
     }
     const auto active {win_utils::flattenTopology(m_dd_api->getCurrentTopology())};
-    if (!std::ranges::all_of(replacements, [&](const auto &id) {
+    if (!std::ranges::all_of(replacements, [&active](const auto &id) {
           return active.contains(id);
         })) {
       return false;

@@ -1,3 +1,7 @@
+/**
+ * @file tests/unit/windows/test_settings_manager_undock.cpp
+ * @brief Tests for display recovery across laptop lid and docking changes.
+ */
 #include "display_device/windows/settings_manager.h"
 #include "display_device/windows/settings_utils.h"
 #include "fixtures/fixtures.h"
@@ -15,7 +19,7 @@ namespace {
   using ::testing::Return;
 
   class UndockRecovery: public BaseTest {
-  protected:
+  public:
     ActiveTopology active {{"stream"}};
     EnumeratedDeviceList devices {{.m_device_id = "stream"}};
     SingleDisplayConfigState state {{{{"dock"}}, {"dock"}}, {{{"stream"}}, {}, {}, {}}};
@@ -31,12 +35,44 @@ namespace {
     std::shared_ptr<NiceMock<MockAudioContext>> audio = std::make_shared<NiceMock<MockAudioContext>>();
     std::unique_ptr<SettingsManager> manager;
 
+    /**
+     * @brief Simulate topology writes, including unavailable devices and unreliable API results.
+     * @param target Requested active display groups.
+     * @return Whether the simulated API reports success.
+     */
+    bool applyTopology(const ActiveTopology &target) {
+      writes.push_back(target);
+      const auto ids = win_utils::flattenTopology(target);
+      if (ids.empty()) {
+        ADD_FAILURE() << "Attempted to blank every output";
+        return false;
+      }
+      for (const auto &id : ids) {
+        if (std::ranges::none_of(devices, [&id](const auto &d) {
+              return d.m_device_id == id;
+            })) {
+          return false;
+        }
+      }
+      if (fail_activation && ids.contains("panel")) {
+        return false;
+      }
+      if (fail_cleanup && !ids.contains("stream")) {
+        return false;
+      }
+      if (!lie_about_activation && !(lie_about_cleanup && !ids.contains("stream"))) {
+        active = target;
+      }
+      return true;
+    }
+
+    /** @brief Connect the stateful display and persistence mocks to the manager. */
     void init() {
       ON_CALL(*api, isApiAccessAvailable()).WillByDefault(Return(true));
-      ON_CALL(*api, enumAvailableDevices()).WillByDefault([&] {
+      ON_CALL(*api, enumAvailableDevices()).WillByDefault([this] {
         return devices;
       });
-      ON_CALL(*api, getCurrentTopology()).WillByDefault([&] {
+      ON_CALL(*api, getCurrentTopology()).WillByDefault([this] {
         return active;
       });
       ON_CALL(*api, isTopologyValid(_)).WillByDefault([](const auto &t) {
@@ -45,36 +81,14 @@ namespace {
       ON_CALL(*api, isTopologyTheSame(_, _)).WillByDefault([](const auto &a, const auto &b) {
         return win_utils::flattenTopology(a) == win_utils::flattenTopology(b);
       });
-      ON_CALL(*api, setTopology(_)).WillByDefault([&](const ActiveTopology &target) {
-        writes.push_back(target);
-        const auto ids = win_utils::flattenTopology(target);
-        if (ids.empty()) {
-          ADD_FAILURE() << "Attempted to blank every output";
-          return false;
-        }
-        for (const auto &id : ids) {
-          if (std::ranges::none_of(devices, [&](const auto &d) {
-                return d.m_device_id == id;
-              })) {
-            return false;
-          }
-        }
-        if (fail_activation && ids.contains("panel")) {
-          return false;
-        }
-        if (fail_cleanup && !ids.contains("stream")) {
-          return false;
-        }
-        if (!lie_about_activation && !(lie_about_cleanup && !ids.contains("stream"))) {
-          active = target;
-        }
-        return true;
+      ON_CALL(*api, setTopology(_)).WillByDefault([this](const ActiveTopology &target) {
+        return applyTopology(target);
       });
-      ON_CALL(*persistence, load()).WillByDefault([&] {
+      ON_CALL(*persistence, load()).WillByDefault([this] {
         return serializeState(state);
       });
       ON_CALL(*persistence, store(_)).WillByDefault(Return(true));
-      ON_CALL(*persistence, clear()).WillByDefault([&] {
+      ON_CALL(*persistence, clear()).WillByDefault([this] {
         if (fail_clear) {
           return false;
         }
@@ -84,6 +98,7 @@ namespace {
       manager = std::make_unique<SettingsManager>(api, audio, std::make_unique<PersistentState>(persistence), WinWorkarounds {});
     }
 
+    /** @brief Make the built-in panel available after opening the lid. */
     void openLid() {
       devices.push_back({.m_device_id = "panel", .m_is_internal = true});
     }
