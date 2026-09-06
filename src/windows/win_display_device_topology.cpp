@@ -19,7 +19,7 @@ namespace display_device {
     /**
      * @see set_topology for a description as this was split off to reduce cognitive complexity.
      */
-    bool doSetTopology(WinApiLayerInterface &w_api, const ActiveTopology &new_topology, const PathAndModeData &display_data) {
+    bool doSetTopology(WinApiLayerInterface &w_api, const ActiveTopology &new_topology, const PathAndModeData &display_data, const bool save_to_database) {
       const auto path_data {win_utils::collectSourceDataForMatchingPaths(w_api, display_data.m_paths)};
       if (path_data.empty()) {
         // Error already logged
@@ -30,6 +30,18 @@ namespace display_device {
       if (paths.empty()) {
         // Error already logged
         return false;
+      }
+
+      if (!save_to_database) {
+        // TOPOLOGY_SUPPLIED also changes the remembered topology. Session-only
+        // layouts must use the explicitly temporary supplied-config API path.
+        const UINT32 flags {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_ALLOW_CHANGES | SDC_VIRTUAL_MODE_AWARE};
+        const LONG result {w_api.setDisplayConfig(paths, {}, flags)};
+        if (result != ERROR_SUCCESS) {
+          DD_LOG(error) << w_api.getErrorString(result) << " failed to set temporary topology!";
+          return false;
+        }
+        return true;
       }
 
       UINT32 flags {SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE};
@@ -158,7 +170,7 @@ namespace display_device {
       return false;
     }
 
-    if (doSetTopology(*m_w_api, new_topology, *original_data)) {
+    if (doSetTopology(*m_w_api, new_topology, *original_data, m_save_to_database)) {
       if (const auto updated_topology {getCurrentTopology()}; isTopologyValid(updated_topology)) {
         if (isTopologyTheSame(new_topology, updated_topology)) {
           return true;
@@ -194,7 +206,7 @@ namespace display_device {
       }
 
       // Revert back to the original topology
-      const UINT32 flags {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE};
+      const UINT32 flags {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | (m_save_to_database ? SDC_SAVE_TO_DATABASE : 0u) | SDC_VIRTUAL_MODE_AWARE};
       static_cast<void>(m_w_api->setDisplayConfig(original_data->m_paths, original_data->m_modes, flags));  // Return value does not matter as we are trying out best to undo
     }
 

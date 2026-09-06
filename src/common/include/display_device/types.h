@@ -195,6 +195,7 @@ namespace display_device {
     std::string m_friendly_name {};  ///< A human-readable name for the device.
     std::optional<EdidData> m_edid {};  ///< Some basic parsed EDID data.
     std::optional<Info> m_info {};  ///< Additional information about an active display device.
+    bool m_is_internal {};  ///< Positively identified built-in panel; false also covers unknown connectors.
 
     /**
      * @brief Comparator for strict equality.
