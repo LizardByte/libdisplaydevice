@@ -21,6 +21,11 @@ namespace display_device {
   DD_JSON_DEFINE_SERIALIZE_STRUCT(EdidData, manufacturer_id, product_code, serial_number)
   DD_JSON_DEFINE_SERIALIZE_STRUCT(EnumeratedDevice::Info, resolution, resolution_scale, refresh_rate, primary, origin_point, hdr_state)
 
+  /**
+   * @brief Serialize an enumerated display, including its internal-panel classification.
+   * @param nlohmann_json_j JSON output object.
+   * @param nlohmann_json_t Device to serialize.
+   */
   void to_json(nlohmann::json &nlohmann_json_j, const EnumeratedDevice &nlohmann_json_t) {
     DD_JSON_TO(device_id)
     DD_JSON_TO(display_name)
@@ -30,6 +35,11 @@ namespace display_device {
     DD_JSON_TO(is_internal)
   }
 
+  /**
+   * @brief Deserialize a display, treating missing internal-panel information as unknown.
+   * @param nlohmann_json_j JSON input object.
+   * @param nlohmann_json_t Device to populate.
+   */
   void from_json(const nlohmann::json &nlohmann_json_j, EnumeratedDevice &nlohmann_json_t) {
     DD_JSON_FROM(device_id)
     DD_JSON_FROM(display_name)

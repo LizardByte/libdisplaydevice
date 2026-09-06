@@ -152,6 +152,8 @@ namespace display_device {
      * @brief Recover to surviving original displays or a built-in panel after an undock.
      * Only devices activated by this session may be removed. The original recovery
      * record remains intact on failure; a visible replacement is verified first.
+     * @param current_topology Active topology before attempting to restore the saved layout.
+     * @return True when the replacement topology has been applied and verified.
      */
     [[nodiscard]] bool recoverMissingTopology(const ActiveTopology &current_topology);
 
