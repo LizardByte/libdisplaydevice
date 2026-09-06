@@ -16,6 +16,9 @@ namespace {
   using ::testing::Return;
   using ::testing::StrictMock;
 
+  const UINT32 SAVED_TOPOLOGY_FLAGS {SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE};
+  const UINT32 TEMPORARY_TOPOLOGY_FLAGS {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_ALLOW_CHANGES | SDC_VIRTUAL_MODE_AWARE};
+
   // Test fixture(s) for this file
   class WinDisplayDeviceTopology: public BaseTest {
   public:
@@ -274,7 +277,7 @@ TEST_P(WinDisplayDeviceTopologyPersistence, SetCurrentTopology) {
   display_device::win_utils::setDesktopIndex(expected_path, std::nullopt);
   display_device::win_utils::setActive(expected_path);
 
-  UINT32 expected_flags {GetParam() ? SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE : SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_ALLOW_CHANGES | SDC_VIRTUAL_MODE_AWARE};
+  UINT32 expected_flags {GetParam() ? SAVED_TOPOLOGY_FLAGS : TEMPORARY_TOPOLOGY_FLAGS};
   EXPECT_CALL(*m_layer, setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> {expected_path}, std::vector<DISPLAYCONFIG_MODE_INFO> {}, expected_flags))
     .Times(1)
     .WillOnce(Return(ERROR_SUCCESS));
@@ -379,7 +382,7 @@ TEST_P(WinDisplayDeviceTopologyPersistence, FailedToSetTopology) {
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::Active, sequence);
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::All, sequence);
 
-  UINT32 expected_flags {GetParam() ? SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE : SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_ALLOW_CHANGES | SDC_VIRTUAL_MODE_AWARE};
+  UINT32 expected_flags {GetParam() ? SAVED_TOPOLOGY_FLAGS : TEMPORARY_TOPOLOGY_FLAGS};
   EXPECT_CALL(*m_layer, setDisplayConfig(getExpectedPathToBeSet(), std::vector<DISPLAYCONFIG_MODE_INFO> {}, expected_flags))
     .Times(1)
     .WillOnce(Return(ERROR_INVALID_PARAMETER));
@@ -420,7 +423,7 @@ TEST_P(WinDisplayDeviceTopologyPersistence, ReadbackFailureRestoresOriginalTopol
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::Active, sequence);
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::All, sequence);
 
-  UINT32 expected_flags {GetParam() ? SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE : SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_ALLOW_CHANGES | SDC_VIRTUAL_MODE_AWARE};
+  UINT32 expected_flags {GetParam() ? SAVED_TOPOLOGY_FLAGS : TEMPORARY_TOPOLOGY_FLAGS};
   EXPECT_CALL(*m_layer, setDisplayConfig(getExpectedPathToBeSet(), std::vector<DISPLAYCONFIG_MODE_INFO> {}, expected_flags))
     .Times(1)
     .WillOnce(Return(ERROR_SUCCESS));
