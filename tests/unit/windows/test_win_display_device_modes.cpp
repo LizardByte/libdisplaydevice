@@ -590,3 +590,127 @@ TEST_F_S_MOCKED(SetDisplayModes, Strict, ModesDidNotChange) {
 
   EXPECT_FALSE(m_win_dd.setDisplayModes(new_modes));
 }
+
+// Session-only CCD changes must never replace the saved docking layout.
+TEST_F_S_MOCKED(SetDisplayModes, Strict, Temporary) {
+  m_win_dd = display_device::WinDisplayDevice {m_layer, false};
+  const display_device::DeviceDisplayModeMap new_modes {
+    {"DeviceId1", {1920, 1080, {120, 10}}},
+    {"DeviceId2", {1000, 2160, {119995, 100}}},
+    {"DeviceId3", {1000, 1000, {90, 1}}},
+    {"DeviceId4", {3840, 2160, {90, 1}}},
+  };
+
+  const auto pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId4"})};
+
+  InSequence sequence;
+  setupExpectedGetAllDeviceIdsCall(sequence);
+  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
+    .Times(1)
+    .WillOnce(Return(pam_initial))
+    .RetiresOnSaturation();
+
+  // Relaxed try
+  {
+    EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
+      .Times(1)
+      .WillOnce(Return(pam_initial))
+      .RetiresOnSaturation();
+    setupExpectedGetActivePathCall(1, sequence);
+    setupExpectedGetActivePathCall(2, sequence);
+    setupExpectedGetActivePathCall(3, sequence);
+    setupExpectedGetActivePathCall(4, sequence);
+
+    EXPECT_CALL(*m_layer, setDisplayConfig(pam_submitted->m_paths, pam_submitted->m_modes, (RELAXED_FLAGS & ~SDC_SAVE_TO_DATABASE)))
+      .Times(1)
+      .WillOnce(Return(ERROR_SUCCESS))
+      .RetiresOnSaturation();
+    setupExpectedGetCurrentDisplayModesCall(sequence, pam_initial);
+  }
+
+  // Strict try
+  {
+    EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
+      .Times(1)
+      .WillOnce(Return(pam_initial))
+      .RetiresOnSaturation();
+    setupExpectedGetActivePathCall(1, sequence);
+    setupExpectedGetActivePathCall(2, sequence);
+    setupExpectedGetActivePathCall(3, sequence);
+    setupExpectedGetActivePathCall(4, sequence);
+
+    EXPECT_CALL(*m_layer, setDisplayConfig(pam_submitted->m_paths, pam_submitted->m_modes, (STRICT_FLAGS & ~SDC_SAVE_TO_DATABASE)))
+      .Times(1)
+      .WillOnce(Return(ERROR_SUCCESS))
+      .RetiresOnSaturation();
+    setupExpectedGetCurrentDisplayModesCall(sequence, pam_submitted);
+  }
+
+  EXPECT_TRUE(m_win_dd.setDisplayModes(new_modes));
+}
+
+TEST_F_S_MOCKED(SetDisplayModes, Strict, FailedToSetDisplayConfig, Temporary) {
+  m_win_dd = display_device::WinDisplayDevice {m_layer, false};
+  const display_device::DeviceDisplayModeMap new_modes {
+    {"DeviceId1", {1920, 1080, {120, 10}}},
+    {"DeviceId2", {1000, 2160, {119995, 100}}},
+    {"DeviceId3", {1000, 1000, {90, 1}}},
+    {"DeviceId4", {3840, 2160, {90, 1}}},
+  };
+
+  const auto pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+  const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId4"})};
+
+  InSequence sequence;
+  setupExpectedGetAllDeviceIdsCall(sequence);
+  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::All))
+    .Times(1)
+    .WillOnce(Return(pam_initial))
+    .RetiresOnSaturation();
+
+  // Relaxed try
+  {
+    EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
+      .Times(1)
+      .WillOnce(Return(pam_initial))
+      .RetiresOnSaturation();
+    setupExpectedGetActivePathCall(1, sequence);
+    setupExpectedGetActivePathCall(2, sequence);
+    setupExpectedGetActivePathCall(3, sequence);
+    setupExpectedGetActivePathCall(4, sequence);
+
+    EXPECT_CALL(*m_layer, setDisplayConfig(pam_submitted->m_paths, pam_submitted->m_modes, (RELAXED_FLAGS & ~SDC_SAVE_TO_DATABASE)))
+      .Times(1)
+      .WillOnce(Return(ERROR_SUCCESS))
+      .RetiresOnSaturation();
+    setupExpectedGetCurrentDisplayModesCall(sequence, pam_initial);
+  }
+
+  // Strict try
+  {
+    EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
+      .Times(1)
+      .WillOnce(Return(pam_initial))
+      .RetiresOnSaturation();
+    setupExpectedGetActivePathCall(1, sequence);
+    setupExpectedGetActivePathCall(2, sequence);
+    setupExpectedGetActivePathCall(3, sequence);
+    setupExpectedGetActivePathCall(4, sequence);
+
+    EXPECT_CALL(*m_layer, setDisplayConfig(pam_submitted->m_paths, pam_submitted->m_modes, (STRICT_FLAGS & ~SDC_SAVE_TO_DATABASE)))
+      .Times(1)
+      .WillOnce(Return(ERROR_ACCESS_DENIED))
+      .RetiresOnSaturation();
+    EXPECT_CALL(*m_layer, getErrorString(ERROR_ACCESS_DENIED))
+      .Times(1)
+      .WillRepeatedly(Return("ErrorDesc"))
+      .RetiresOnSaturation();
+    EXPECT_CALL(*m_layer, setDisplayConfig(pam_initial->m_paths, pam_initial->m_modes, (UNDO_FLAGS & ~SDC_SAVE_TO_DATABASE)))
+      .Times(1)
+      .WillOnce(Return(ERROR_SUCCESS))
+      .RetiresOnSaturation();
+  }
+
+  EXPECT_FALSE(m_win_dd.setDisplayModes(new_modes));
+}

@@ -317,3 +317,35 @@ TEST_F_S_MOCKED(SetAsPrimary, FailedToSetDisplayConfig) {
 
   EXPECT_FALSE(m_win_dd.setAsPrimary("DeviceId4"));
 }
+
+// Session-only CCD changes must never replace the saved docking layout.
+TEST_F_S_MOCKED(SetAsPrimary, NonDuplicatePrimaryDeviceSet, Temporary) {
+  m_win_dd = display_device::WinDisplayDevice {m_layer, false};
+  const auto initial_pam {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
+
+  auto origin_point {initial_pam->m_modes.at(initial_pam->m_paths.at(3).sourceInfo.sourceModeInfoIdx).sourceMode.position};
+  auto expected_pam {initial_pam};
+  shiftModeBy(expected_pam, 0, origin_point);
+  shiftModeBy(expected_pam, 1, origin_point);
+  shiftModeBy(expected_pam, 2, origin_point);
+  shiftModeBy(expected_pam, 3, origin_point);
+
+  InSequence sequence;
+  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
+    .Times(1)
+    .WillOnce(Return(initial_pam));
+  setupExpectedGetActivePathCall(4, sequence);
+  for (int i = 1; i <= 4; ++i) {
+    EXPECT_CALL(*m_layer, getDeviceId(_))
+      .Times(1)
+      .WillOnce(Return("DeviceId" + std::to_string(i)))
+      .RetiresOnSaturation();
+  }
+
+  EXPECT_CALL(*m_layer, setDisplayConfig(expected_pam->m_paths, expected_pam->m_modes, (FLAGS & ~SDC_SAVE_TO_DATABASE)))
+    .Times(1)
+    .WillOnce(Return(ERROR_SUCCESS))
+    .RetiresOnSaturation();
+
+  EXPECT_TRUE(m_win_dd.setAsPrimary("DeviceId4"));
+}
