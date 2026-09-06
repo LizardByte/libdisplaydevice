@@ -36,8 +36,7 @@ namespace display_device {
         // TOPOLOGY_SUPPLIED also changes the remembered topology. Session-only
         // layouts must use the explicitly temporary supplied-config API path.
         const UINT32 flags {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_ALLOW_CHANGES | SDC_VIRTUAL_MODE_AWARE};
-        const LONG result {w_api.setDisplayConfig(paths, {}, flags)};
-        if (result != ERROR_SUCCESS) {
+        if (const LONG result {w_api.setDisplayConfig(paths, {}, flags)}; result != ERROR_SUCCESS) {
           DD_LOG(error) << w_api.getErrorString(result) << " failed to set temporary topology!";
           return false;
         }

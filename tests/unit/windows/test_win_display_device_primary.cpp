@@ -39,14 +39,14 @@ namespace {
       expectActivePathLookup(m_layer, id_number);
     }
 
-    void setupExpectedSetAsPrimaryConfigCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::PathAndModeData> &initial_pam, const std::optional<display_device::PathAndModeData> &expected_pam, const int active_path_id, const LONG result = ERROR_SUCCESS) const {
+    void setupExpectedSetAsPrimaryConfigCall(InSequence &sequence /* To ensure that sequence is created outside this scope */, const std::optional<display_device::PathAndModeData> &initial_pam, const std::optional<display_device::PathAndModeData> &expected_pam, const int active_path_id, const LONG result = ERROR_SUCCESS, const UINT32 flags = FLAGS) const {
       EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
         .Times(1)
         .WillOnce(Return(initial_pam));
       setupExpectedGetActivePathCall(active_path_id, sequence);
       expectDeviceIdLookups(m_layer, 4);
 
-      EXPECT_CALL(*m_layer, setDisplayConfig(expected_pam->m_paths, expected_pam->m_modes, FLAGS))
+      EXPECT_CALL(*m_layer, setDisplayConfig(expected_pam->m_paths, expected_pam->m_modes, flags))
         .Times(1)
         .WillOnce(Return(result))
         .RetiresOnSaturation();
@@ -62,6 +62,16 @@ namespace {
     std::shared_ptr<StrictMock<display_device::MockWinApiLayer>> m_layer {std::make_shared<StrictMock<display_device::MockWinApiLayer>>()};
     display_device::WinDisplayDevice m_win_dd {m_layer};
   };
+
+  /** @brief Exercise saved and session-only display changes with the same assertions. */
+  class WinDisplayDevicePrimaryPersistence: public WinDisplayDevicePrimaryMocked, public ::testing::WithParamInterface<bool> {
+  public:
+    WinDisplayDevicePrimaryPersistence() {
+      m_win_dd = display_device::WinDisplayDevice {m_layer, GetParam()};
+    }
+  };
+
+  INSTANTIATE_TEST_SUITE_P(SaveToDatabase, WinDisplayDevicePrimaryPersistence, ::testing::Bool());
 
   // Specialized TEST macro(s) for this test file
 #define TEST_F_S(...) DD_MAKE_TEST(TEST_F, WinDisplayDevicePrimary, __VA_ARGS__)
@@ -221,12 +231,12 @@ TEST_F_S_MOCKED(SetAsPrimary, DuplicatePrimaryDevicesSet) {
   EXPECT_TRUE(m_win_dd.setAsPrimary("DeviceId2"));
 }
 
-TEST_F_S_MOCKED(SetAsPrimary, NonDuplicatePrimaryDeviceSet) {
+TEST_P(WinDisplayDevicePrimaryPersistence, NonDuplicatePrimaryDeviceSet) {
   const auto &initial_pam {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto expected_pam {makeShiftedPrimaryPam(initial_pam, 3, {0, 1, 2, 3})};
 
   InSequence sequence;
-  setupExpectedSetAsPrimaryConfigCall(sequence, initial_pam, expected_pam, 4);
+  setupExpectedSetAsPrimaryConfigCall(sequence, initial_pam, expected_pam, 4, ERROR_SUCCESS, GetParam() ? FLAGS : FLAGS & ~SDC_SAVE_TO_DATABASE);
 
   EXPECT_TRUE(m_win_dd.setAsPrimary("DeviceId4"));
 }
@@ -316,36 +326,4 @@ TEST_F_S_MOCKED(SetAsPrimary, FailedToSetDisplayConfig) {
   setupExpectedSetAsPrimaryConfigCall(sequence, initial_pam, expected_pam, 4, ERROR_ACCESS_DENIED);
 
   EXPECT_FALSE(m_win_dd.setAsPrimary("DeviceId4"));
-}
-
-// Session-only CCD changes must never replace the saved docking layout.
-TEST_F_S_MOCKED(SetAsPrimary, NonDuplicatePrimaryDeviceSet, Temporary) {
-  m_win_dd = display_device::WinDisplayDevice {m_layer, false};
-  const auto initial_pam {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
-
-  auto origin_point {initial_pam->m_modes.at(initial_pam->m_paths.at(3).sourceInfo.sourceModeInfoIdx).sourceMode.position};
-  auto expected_pam {initial_pam};
-  shiftModeBy(expected_pam, 0, origin_point);
-  shiftModeBy(expected_pam, 1, origin_point);
-  shiftModeBy(expected_pam, 2, origin_point);
-  shiftModeBy(expected_pam, 3, origin_point);
-
-  InSequence sequence;
-  EXPECT_CALL(*m_layer, queryDisplayConfig(display_device::QueryType::Active))
-    .Times(1)
-    .WillOnce(Return(initial_pam));
-  setupExpectedGetActivePathCall(4, sequence);
-  for (int i = 1; i <= 4; ++i) {
-    EXPECT_CALL(*m_layer, getDeviceId(_))
-      .Times(1)
-      .WillOnce(Return("DeviceId" + std::to_string(i)))
-      .RetiresOnSaturation();
-  }
-
-  EXPECT_CALL(*m_layer, setDisplayConfig(expected_pam->m_paths, expected_pam->m_modes, (FLAGS & ~SDC_SAVE_TO_DATABASE)))
-    .Times(1)
-    .WillOnce(Return(ERROR_SUCCESS))
-    .RetiresOnSaturation();
-
-  EXPECT_TRUE(m_win_dd.setAsPrimary("DeviceId4"));
 }
