@@ -102,8 +102,8 @@ namespace {
       }
     }
 
-    void setupExpectedDisplayModeUndo(const std::optional<display_device::PathAndModeData> &pam_initial) const {
-      EXPECT_CALL(*m_layer, setDisplayConfig(pam_initial->m_paths, pam_initial->m_modes, UNDO_FLAGS))
+    void setupExpectedDisplayModeUndo(const std::optional<display_device::PathAndModeData> &pam_initial, const UINT32 flags = UNDO_FLAGS) const {
+      EXPECT_CALL(*m_layer, setDisplayConfig(pam_initial->m_paths, pam_initial->m_modes, flags))
         .Times(1)
         .WillOnce(Return(ERROR_SUCCESS))
         .RetiresOnSaturation();
@@ -112,6 +112,16 @@ namespace {
     std::shared_ptr<StrictMock<display_device::MockWinApiLayer>> m_layer {std::make_shared<StrictMock<display_device::MockWinApiLayer>>()};
     display_device::WinDisplayDevice m_win_dd {m_layer};
   };
+
+  /** @brief Exercise saved and session-only display changes with the same assertions. */
+  class WinDisplayDeviceModesPersistence: public WinDisplayDeviceModesMocked, public ::testing::WithParamInterface<bool> {
+  public:
+    WinDisplayDeviceModesPersistence() {
+      m_win_dd = display_device::WinDisplayDevice {m_layer, GetParam()};
+    }
+  };
+
+  INSTANTIATE_TEST_SUITE_P(SaveToDatabase, WinDisplayDeviceModesPersistence, ::testing::Bool());
 
   // Specialized TEST macro(s) for this test file
 #define TEST_F_S(...) DD_MAKE_TEST(TEST_F, WinDisplayDeviceModes, __VA_ARGS__)
@@ -339,7 +349,7 @@ TEST_F_S_MOCKED(SetDisplayModes, Relaxed) {
   EXPECT_TRUE(m_win_dd.setDisplayModes(new_modes));
 }
 
-TEST_F_S_MOCKED(SetDisplayModes, Strict) {
+TEST_P(WinDisplayDeviceModesPersistence, Strict) {
   const auto new_modes {makeStrictDisplayModes()};
   const auto &pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId4"})};
@@ -349,13 +359,13 @@ TEST_F_S_MOCKED(SetDisplayModes, Strict) {
 
   // Relaxed try
   {
-    setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, RELAXED_FLAGS);
+    setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, (GetParam() ? RELAXED_FLAGS : RELAXED_FLAGS & ~SDC_SAVE_TO_DATABASE));
     setupExpectedGetCurrentDisplayModesCall(sequence, pam_initial);
   }
 
   // Strict try
   {
-    setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, STRICT_FLAGS);
+    setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, (GetParam() ? STRICT_FLAGS : STRICT_FLAGS & ~SDC_SAVE_TO_DATABASE));
     setupExpectedGetCurrentDisplayModesCall(sequence, pam_submitted);
   }
 
@@ -517,7 +527,7 @@ TEST_F_S_MOCKED(SetDisplayModes, Relaxed, FailedToGetCurrentDisplayModes) {
   EXPECT_FALSE(m_win_dd.setDisplayModes(new_modes));
 }
 
-TEST_F_S_MOCKED(SetDisplayModes, Strict, FailedToSetDisplayConfig) {
+TEST_P(WinDisplayDeviceModesPersistence, StrictFailureRestoresOriginalModes) {
   const auto new_modes {makeStrictDisplayModes()};
   const auto &pam_initial {ut_consts::PAM_4_ACTIVE_WITH_2_DUPLICATES};
   const auto pam_submitted {applyExpectedModesOntoInput(pam_initial, new_modes, {"DeviceId4"})};
@@ -527,14 +537,14 @@ TEST_F_S_MOCKED(SetDisplayModes, Strict, FailedToSetDisplayConfig) {
 
   // Relaxed try
   {
-    setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, RELAXED_FLAGS);
+    setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, (GetParam() ? RELAXED_FLAGS : RELAXED_FLAGS & ~SDC_SAVE_TO_DATABASE));
     setupExpectedGetCurrentDisplayModesCall(sequence, pam_initial);
   }
 
   // Strict try
   {
-    setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, STRICT_FLAGS, ERROR_ACCESS_DENIED);
-    setupExpectedDisplayModeUndo(pam_initial);
+    setupExpectedDisplayModeSubmitAttempt(sequence, pam_initial, pam_submitted, (GetParam() ? STRICT_FLAGS : STRICT_FLAGS & ~SDC_SAVE_TO_DATABASE), ERROR_ACCESS_DENIED);
+    setupExpectedDisplayModeUndo(pam_initial, GetParam() ? UNDO_FLAGS : UNDO_FLAGS & ~SDC_SAVE_TO_DATABASE);
   }
 
   EXPECT_FALSE(m_win_dd.setDisplayModes(new_modes));
