@@ -1,0 +1,21 @@
+[project]
+name = "libdisplaydevice"
+version = "0.0.0"
+description = "C++ library to modify display devices."
+repository = "https://github.com/LizardByte/libdisplaydevice"
+
+[build]
+output = "_site"
+work = ".dockle"
+strict = true
+clean = true
+
+[[targets]]
+name = "api"
+title = "libdisplaydevice documentation"
+framework = "doxygen"
+source = "."
+
+[targets.doxygen]
+inputs = ["README.md", "src"]
+main_page = "README.md"
