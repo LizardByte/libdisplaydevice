@@ -1,0 +1,30 @@
+[project]
+name = "libdisplaydevice"
+version = "0.0.0"
+description = "C++ library to modify display devices."
+repository = "https://github.com/LizardByte/libdisplaydevice"
+logo = "https://raw.githubusercontent.com/LizardByte/.github/refs/heads/master/branding/logos/logo.svg"
+
+[build]
+output = "_site"
+work = ".dockle"
+strict = true
+clean = true
+
+[[targets]]
+name = "api"
+title = "libdisplaydevice documentation"
+framework = "doxygen"
+source = "."
+home = true
+
+[targets.doxygen]
+inputs = ["README.md", "src"]
+extra_stylesheets = [
+  "https://cdn.jsdelivr.net/npm/@lizardbyte/shared-web@2026.920.12131/dist/crowdin-dockle-css.css",
+]
+extra_javascript = [
+  "https://cdn.jsdelivr.net/npm/@lizardbyte/shared-web@2026.920.12131/dist/crowdin.js",
+  "docs/crowdin.js",
+]
+main_page = "README.md"
