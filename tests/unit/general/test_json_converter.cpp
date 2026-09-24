@@ -58,9 +58,9 @@ TEST_F_S(EnumeratedDevice) {
   const auto item_1 {makeEnumeratedDeviceOne()};
   const auto item_2 {makeEnumeratedDeviceTwo()};
 
-  executeTestCase(display_device::EnumeratedDevice {}, R"({"device_id":"","display_name":"","edid":null,"friendly_name":"","info":null})");
-  executeTestCase(item_1, R"({"device_id":"ID_1","display_name":"NAME_2","edid":null,"friendly_name":"FU_NAME_3","info":{"hdr_state":"Enabled","origin_point":{"x":1,"y":2},"primary":false,"refresh_rate":{"type":"double","value":119.9554},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"rational","value":{"denominator":100,"numerator":175}}}})");
-  executeTestCase(item_2, R"({"device_id":"ID_2","display_name":"NAME_2","edid":{"manufacturer_id":"","product_code":"","serial_number":0},"friendly_name":"FU_NAME_2","info":{"hdr_state":"Disabled","origin_point":{"x":0,"y":0},"primary":true,"refresh_rate":{"type":"rational","value":{"denominator":10000,"numerator":1199554}},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"double","value":1.75}}})");
+  executeTestCase(display_device::EnumeratedDevice {}, R"({"device_id":"","display_name":"","edid":null,"friendly_name":"","info":null,"is_internal":false})");
+  executeTestCase(item_1, R"({"device_id":"ID_1","display_name":"NAME_2","edid":null,"friendly_name":"FU_NAME_3","info":{"hdr_state":"Enabled","origin_point":{"x":1,"y":2},"primary":false,"refresh_rate":{"type":"double","value":119.9554},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"rational","value":{"denominator":100,"numerator":175}}},"is_internal":false})");
+  executeTestCase(item_2, R"({"device_id":"ID_2","display_name":"NAME_2","edid":{"manufacturer_id":"","product_code":"","serial_number":0},"friendly_name":"FU_NAME_2","info":{"hdr_state":"Disabled","origin_point":{"x":0,"y":0},"primary":true,"refresh_rate":{"type":"rational","value":{"denominator":10000,"numerator":1199554}},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"double","value":1.75}},"is_internal":false})");
   executeInvalidJsonTestCase<display_device::EnumeratedDevice>();
   executeFromJsonFailureTestCase<display_device::EnumeratedDevice>(R"({})");
   executeFromJsonFailureTestCase<display_device::EnumeratedDevice>(R"({"device_id":"","display_name":"","edid":null,"friendly_name":"","info":{"hdr_state":null,"origin_point":{"x":0,"y":0},"primary":false,"refresh_rate":{"type":"unknown","value":0},"resolution":{"height":0,"width":0},"resolution_scale":{"type":"double","value":1.0}}})");
@@ -73,9 +73,9 @@ TEST_F_S(EnumeratedDeviceList) {
   display_device::EnumeratedDevice item_3 {};
 
   executeTestCase(display_device::EnumeratedDeviceList {}, R"([])");
-  executeTestCase(display_device::EnumeratedDeviceList {item_1, item_2, item_3}, R"([{"device_id":"ID_1","display_name":"NAME_2","edid":null,"friendly_name":"FU_NAME_3","info":{"hdr_state":"Enabled","origin_point":{"x":1,"y":2},"primary":false,"refresh_rate":{"type":"double","value":119.9554},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"rational","value":{"denominator":100,"numerator":175}}}},)"
-                                                                                 R"({"device_id":"ID_2","display_name":"NAME_2","edid":{"manufacturer_id":"","product_code":"","serial_number":0},"friendly_name":"FU_NAME_2","info":{"hdr_state":"Disabled","origin_point":{"x":0,"y":0},"primary":true,"refresh_rate":{"type":"rational","value":{"denominator":10000,"numerator":1199554}},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"double","value":1.75}}},)"
-                                                                                 R"({"device_id":"","display_name":"","edid":null,"friendly_name":"","info":null}])");
+  executeTestCase(display_device::EnumeratedDeviceList {item_1, item_2, item_3}, R"([{"device_id":"ID_1","display_name":"NAME_2","edid":null,"friendly_name":"FU_NAME_3","info":{"hdr_state":"Enabled","origin_point":{"x":1,"y":2},"primary":false,"refresh_rate":{"type":"double","value":119.9554},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"rational","value":{"denominator":100,"numerator":175}}},"is_internal":false},)"
+                                                                                 R"({"device_id":"ID_2","display_name":"NAME_2","edid":{"manufacturer_id":"","product_code":"","serial_number":0},"friendly_name":"FU_NAME_2","info":{"hdr_state":"Disabled","origin_point":{"x":0,"y":0},"primary":true,"refresh_rate":{"type":"rational","value":{"denominator":10000,"numerator":1199554}},"resolution":{"height":1080,"width":1920},"resolution_scale":{"type":"double","value":1.75}},"is_internal":false},)"
+                                                                                 R"({"device_id":"","display_name":"","edid":null,"friendly_name":"","info":null,"is_internal":false}])");
   executeInvalidJsonTestCase<display_device::EnumeratedDeviceList>();
   executeFromJsonFailureTestCase<display_device::EnumeratedDeviceList>(R"([{}])");
   executeToJsonFailureTestCase(display_device::EnumeratedDeviceList {display_device::EnumeratedDevice {.m_device_id = "ID\xC2"}});
@@ -124,4 +124,12 @@ TEST_F_S(Bool) {
   executeTestCase(false, R"(false)");
   executeInvalidJsonTestCase<bool>();
   executeFromJsonFailureTestCase<bool>(R"("not-bool")");
+}
+
+TEST_F_S(EnumeratedDeviceInternalPanelMetadata) {
+  display_device::EnumeratedDevice device {.m_is_internal = true};
+  EXPECT_TRUE(display_device::fromJson(R"({"device_id":"","display_name":"","edid":null,"friendly_name":"","info":null})", device));
+  EXPECT_FALSE(device.m_is_internal);
+  device.m_is_internal = true;
+  executeTestCase(device, R"({"device_id":"","display_name":"","edid":null,"friendly_name":"","info":null,"is_internal":true})");
 }

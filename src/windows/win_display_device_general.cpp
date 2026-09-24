@@ -13,8 +13,9 @@
 #include "display_device/windows/win_api_utils.h"
 
 namespace display_device {
-  WinDisplayDevice::WinDisplayDevice(std::shared_ptr<WinApiLayerInterface> w_api):
-      m_w_api {std::move(w_api)} {
+  WinDisplayDevice::WinDisplayDevice(std::shared_ptr<WinApiLayerInterface> w_api, bool save_to_database):
+      m_w_api {std::move(w_api)},
+      m_save_to_database {save_to_database} {
     if (!m_w_api) {
       throw std::invalid_argument {"Nullptr provided for WinApiLayerInterface in WinDisplayDevice!"};
     }
@@ -53,6 +54,8 @@ namespace display_device {
       const auto source_mode {is_active ? win_utils::getSourceMode(win_utils::getSourceIndex(best_path, display_data->m_modes), display_data->m_modes) : nullptr};
       const auto display_name {is_active ? m_w_api->getDisplayName(best_path) : std::string {}};  // Inactive devices can have multiple display names, so it's just meaningless use any
       const auto edid {EdidData::parse(m_w_api->getEdid(best_path))};
+      const auto technology {best_path.targetInfo.outputTechnology};
+      const bool is_internal {technology == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INTERNAL || technology == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_LVDS || technology == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_DISPLAYPORT_EMBEDDED || technology == DISPLAYCONFIG_OUTPUT_TECHNOLOGY_UDI_EMBEDDED};
 
       if (is_active && !source_mode) {
         DD_LOG(warning) << "Device " << device_id << " is missing source mode!";
@@ -70,10 +73,10 @@ namespace display_device {
         };
 
         // Keep braced aggregate construction; emplace_back(args...) relies on parenthesized aggregate init, which older libc++ rejects.
-        available_devices.push_back(EnumeratedDevice {device_id, display_name, friendly_name, edid, info});  // NOSONAR(cpp:S6003): Direct emplace_back args fail on older toolchains
+        available_devices.push_back(EnumeratedDevice {device_id, display_name, friendly_name, edid, info, is_internal});  // NOSONAR(cpp:S6003): Direct emplace_back args fail on older toolchains
       } else {
         // Keep braced aggregate construction; emplace_back(args...) relies on parenthesized aggregate init, which older libc++ rejects.
-        available_devices.push_back(EnumeratedDevice {device_id, display_name, friendly_name, edid, std::nullopt});  // NOSONAR(cpp:S6003): Direct emplace_back args fail on older toolchains
+        available_devices.push_back(EnumeratedDevice {device_id, display_name, friendly_name, edid, std::nullopt, is_internal});  // NOSONAR(cpp:S6003): Direct emplace_back args fail on older toolchains
       }
     }
 

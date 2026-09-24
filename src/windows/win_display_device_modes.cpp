@@ -26,7 +26,7 @@ namespace display_device {
     /**
      * @see set_display_modes for a description as this was split off to reduce cognitive complexity.
      */
-    bool doSetModes(WinApiLayerInterface &w_api, const DeviceDisplayModeMap &modes, const Strategy strategy) {
+    bool doSetModes(WinApiLayerInterface &w_api, const DeviceDisplayModeMap &modes, const Strategy strategy, const bool save_to_database) {
       auto display_data {w_api.queryDisplayConfig(QueryType::Active)};
       if (!display_data) {
         // Error already logged
@@ -85,7 +85,7 @@ namespace display_device {
         return true;
       }
 
-      UINT32 flags {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE};
+      UINT32 flags {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | (save_to_database ? SDC_SAVE_TO_DATABASE : 0u) | SDC_VIRTUAL_MODE_AWARE};
       if (strategy == Strategy::Relaxed) {
         // It's probably best for Windows to select the "best" display settings for us. However, in case we
         // have custom resolution set in nvidia control panel for example, this flag will prevent successfully applying
@@ -182,7 +182,7 @@ namespace display_device {
       return false;
     }
 
-    if (!doSetModes(*m_w_api, modes, Strategy::Relaxed)) {
+    if (!doSetModes(*m_w_api, modes, Strategy::Relaxed, m_save_to_database)) {
       // Error already logged
       return false;
     }
@@ -219,7 +219,7 @@ namespace display_device {
       // resolution to be selected, we actually need to omit SDC_ALLOW_CHANGES
       // flag.
       DD_LOG(info) << "Failed to change display modes using Windows recommended modes, trying to set modes more strictly!";
-      if (doSetModes(*m_w_api, modes, Strategy::Strict)) {
+      if (doSetModes(*m_w_api, modes, Strategy::Strict, m_save_to_database)) {
         current_modes = getCurrentDisplayModes(device_ids);
         if (!current_modes.empty() && all_modes_match(current_modes)) {
           return true;
@@ -227,7 +227,7 @@ namespace display_device {
       }
     }
 
-    const UINT32 flags {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE};
+    const UINT32 flags {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | (m_save_to_database ? SDC_SAVE_TO_DATABASE : 0u) | SDC_VIRTUAL_MODE_AWARE};
     static_cast<void>(m_w_api->setDisplayConfig(original_data->m_paths, original_data->m_modes, flags));  // Return value does not matter as we are trying out best to undo
     DD_LOG(error) << "Failed to set display mode(-s) completely!";
     return false;

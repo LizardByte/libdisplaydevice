@@ -6,6 +6,7 @@
 #include "display_device/windows/settings_manager.h"
 
 // system includes
+#include <algorithm>
 #include <boost/scope/scope_exit.hpp>
 
 // local includes
@@ -20,6 +21,28 @@ namespace display_device {
      */
     void noopFn() {
       // Intentionally empty guard callback.
+    }
+
+    /**
+     * @brief Append available groups without reactivating stream-only outputs or duplicating devices.
+     * @param topology Groups to consider, in priority order.
+     * @param available Currently enumerated device IDs.
+     * @param activated Device IDs activated only for the stream.
+     * @param target Recovery topology to extend.
+     * @param included IDs already included in the recovery topology.
+     */
+    void appendRecoveryGroups(const ActiveTopology &topology, const StringSet &available, const StringSet &activated, ActiveTopology &target, StringSet &included) {
+      for (const auto &group : topology) {
+        std::vector<std::string> remaining;
+        for (const auto &id : group) {
+          if (available.contains(id) && !activated.contains(id) && included.insert(id).second) {
+            remaining.push_back(id);
+          }
+        }
+        if (!remaining.empty()) {
+          target.push_back(std::move(remaining));
+        }
+      }
     }
   }  // namespace
 
@@ -82,7 +105,9 @@ namespace display_device {
     if (need_to_switch_topology && !m_dd_api->setTopology(cached_state->m_initial.m_topology)) {
       DD_LOG(error) << "Failed to change topology to:\n"
                     << toJson(cached_state->m_initial.m_topology);
-      return RevertResult::SwitchingTopologyFailed;
+      if (!recoverMissingTopology(current_topology)) {
+        return RevertResult::SwitchingTopologyFailed;
+      }
     }
 
     if (!m_persistence_state->persistState(std::nullopt)) {
@@ -97,6 +122,67 @@ namespace display_device {
     // Disable guards
     topology_prep_guard.set_active(false);
     return RevertResult::Ok;
+  }
+
+  bool SettingsManager::recoverMissingTopology(const ActiveTopology &current_topology) {
+    const auto &state {*m_persistence_state->getState()};
+    const auto initial {win_utils::flattenTopology(state.m_initial.m_topology)};
+    const auto modified {win_utils::flattenTopology(state.m_modified.m_topology)};
+    const auto devices {m_dd_api->enumAvailableDevices()};
+    StringSet available;
+    for (const auto &device : devices) {
+      available.insert(device.m_device_id);
+    }
+    if (available.empty() || std::ranges::all_of(initial, [&available](const auto &id) {
+          return available.contains(id);
+        })) {
+      // An API failure with unchanged hardware must not discard the original state.
+      return false;
+    }
+
+    StringSet activated;
+    std::ranges::set_difference(modified, initial, std::inserter(activated, activated.end()));
+    ActiveTopology target;
+    StringSet included;
+    appendRecoveryGroups(state.m_initial.m_topology, available, activated, target, included);
+    if (target.empty()) {
+      // An arbitrary virtual/unknown output is not proof of a usable laptop screen.
+      for (const auto &device : devices) {
+        if (device.m_is_internal && !activated.contains(device.m_device_id)) {
+          appendRecoveryGroups({{device.m_device_id}}, available, activated, target, included);
+          break;
+        }
+      }
+    }
+    if (target.empty()) {
+      return false;  // Closed lid and no original display: retain pending recovery.
+    }
+    const auto replacements {win_utils::flattenTopology(target)};
+    appendRecoveryGroups(current_topology, available, activated, target, included);  // Preserve unrelated displays activated by the user.
+
+    // First activate the replacement without switching off the current output.
+    ActiveTopology staged {current_topology};
+    auto staged_ids {win_utils::flattenTopology(staged)};
+    for (const auto &id : included) {
+      if (staged_ids.insert(id).second) {
+        staged.push_back({id});
+      }
+    }
+    if (!m_dd_api->setTopology(staged)) {
+      return false;
+    }
+    const auto active {win_utils::flattenTopology(m_dd_api->getCurrentTopology())};
+    if (!std::ranges::all_of(replacements, [&active](const auto &id) {
+          return active.contains(id);
+        })) {
+      return false;
+    }
+    if (!m_dd_api->setTopology(target) || !m_dd_api->isTopologyTheSame(m_dd_api->getCurrentTopology(), target)) {
+      return false;
+    }
+    DD_LOG(info) << "Recovered display topology after original devices disappeared:\n"
+                 << toJson(target);
+    return true;
   }
 
   SettingsManager::RevertResult SettingsManager::revertModifiedHdrStates(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched) {
