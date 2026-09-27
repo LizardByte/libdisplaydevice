@@ -29,6 +29,7 @@ namespace {
     bool fail_cleanup {};
     bool fail_clear {};
     bool lie_about_cleanup {};
+    bool split_clones {};
     int clears {};
     std::shared_ptr<NiceMock<MockWinDisplayDevice>> api = std::make_shared<NiceMock<MockWinDisplayDevice>>();
     std::shared_ptr<NiceMock<MockSettingsPersistence>> persistence = std::make_shared<NiceMock<MockSettingsPersistence>>();
@@ -56,6 +57,11 @@ namespace {
       }
       if (fail_activation && ids.contains("panel")) {
         return false;
+      }
+      if (split_clones && ids.contains("left") && ids.contains("right") && std::ranges::none_of(target, [](const auto &group) {
+            return std::ranges::find(group, "left") != group.end() && std::ranges::find(group, "right") != group.end();
+          })) {
+        return false;  // The adapter cannot drive both members of the clone group from separate sources.
       }
       if (fail_cleanup && !ids.contains("stream")) {
         return false;
@@ -215,4 +221,47 @@ TEST_F(UndockRecovery, CleanupRequiresReadback) {
   EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::SwitchingTopologyFailed);
   EXPECT_EQ(clears, 0);
   EXPECT_TRUE(win_utils::flattenTopology(active).contains("stream"));
+}
+
+TEST_F(UndockRecovery, UnpluggedDisplayInModifiedTopologyDoesNotBlockRecovery) {
+  const DisplayMode dock_mode {{3840, 2160}, {60, 1}};
+  const DisplayMode stream_mode {{1920, 1080}, {60, 1}};
+  state.m_modified = {{{"dock"}, {"stream"}}, {{"dock", dock_mode}, {"stream", stream_mode}}, {{"dock", HdrState::Enabled}, {"stream", HdrState::Disabled}}, "dock"};
+  std::vector<DeviceDisplayModeMap> mode_writes;
+  std::vector<HdrStateMap> hdr_writes;
+  init();
+  ON_CALL(*api, setDisplayModes(_)).WillByDefault([&mode_writes](const DeviceDisplayModeMap &modes) {
+    mode_writes.push_back(modes);
+    return true;
+  });
+  ON_CALL(*api, setHdrStates(_)).WillByDefault([&hdr_writes](const HdrStateMap &states) {
+    hdr_writes.push_back(states);
+    return true;
+  });
+  EXPECT_CALL(*api, setAsPrimary(_)).Times(0);
+
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::SwitchingTopologyFailed);
+  EXPECT_EQ(clears, 0);
+  EXPECT_EQ(active, (ActiveTopology {{"stream"}}));
+  ASSERT_FALSE(mode_writes.empty());
+  EXPECT_EQ(mode_writes.front(), (DeviceDisplayModeMap {{"stream", stream_mode}}));
+  ASSERT_FALSE(hdr_writes.empty());
+  EXPECT_EQ(hdr_writes.front(), (HdrStateMap {{"stream", HdrState::Disabled}}));
+
+  openLid();
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(active, (ActiveTopology {{"panel"}}));
+  EXPECT_EQ(clears, 1);
+}
+
+TEST_F(UndockRecovery, StagingKeepsSurvivingCloneGroup) {
+  state.m_initial.m_topology.push_back({"left", "right"});
+  devices.push_back({.m_device_id = "left"});
+  devices.push_back({.m_device_id = "right"});
+  split_clones = true;
+  init();
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(active, (ActiveTopology {{"left", "right"}}));
+  ASSERT_GE(writes.size(), 3u);
+  EXPECT_EQ(writes[writes.size() - 2], (ActiveTopology {{"stream"}, {"left", "right"}}));
 }

@@ -44,6 +44,42 @@ namespace display_device {
         }
       }
     }
+
+    /**
+     * @brief Collect the IDs of the enumerated devices.
+     * @param devices Currently enumerated devices.
+     * @return Set of available device IDs.
+     */
+    StringSet toDeviceIds(const EnumeratedDeviceList &devices) {
+      StringSet ids;
+      for (const auto &device : devices) {
+        ids.insert(device.m_device_id);
+      }
+      return ids;
+    }
+
+    /**
+     * @brief Restrict modified settings to the devices that are still available.
+     * @param modified Modified settings to filter.
+     * @param available Currently enumerated device IDs.
+     * @return Modified settings without the unavailable devices.
+     */
+    SingleDisplayConfigState::Modified keepAvailableDevices(const SingleDisplayConfigState::Modified &modified, const StringSet &available) {
+      SingleDisplayConfigState::Modified result {modified};
+      result.m_topology.clear();
+      StringSet included;
+      appendRecoveryGroups(modified.m_topology, available, {}, result.m_topology, included);
+      std::erase_if(result.m_original_modes, [&available](const auto &entry) {
+        return !available.contains(entry.first);
+      });
+      std::erase_if(result.m_original_hdr_states, [&available](const auto &entry) {
+        return !available.contains(entry.first);
+      });
+      if (!available.contains(result.m_original_primary_device)) {
+        result.m_original_primary_device.clear();
+      }
+      return result;
+    }
   }  // namespace
 
   SettingsManager::RevertResult SettingsManager::revertSettings() {
@@ -129,10 +165,7 @@ namespace display_device {
     const auto initial {win_utils::flattenTopology(state.m_initial.m_topology)};
     const auto modified {win_utils::flattenTopology(state.m_modified.m_topology)};
     const auto devices {m_dd_api->enumAvailableDevices()};
-    StringSet available;
-    for (const auto &device : devices) {
-      available.insert(device.m_device_id);
-    }
+    const auto available {toDeviceIds(devices)};
     if (available.empty() || std::ranges::all_of(initial, [&available](const auto &id) {
           return available.contains(id);
         })) {
@@ -161,13 +194,10 @@ namespace display_device {
     appendRecoveryGroups(current_topology, available, activated, target, included);  // Preserve unrelated displays activated by the user.
 
     // First activate the replacement without switching off the current output.
+    // Keep the target's groups intact, since cloned displays share a source.
     ActiveTopology staged {current_topology};
     auto staged_ids {win_utils::flattenTopology(staged)};
-    for (const auto &id : included) {
-      if (staged_ids.insert(id).second) {
-        staged.push_back({id});
-      }
-    }
+    appendRecoveryGroups(target, available, {}, staged, staged_ids);
     if (!m_dd_api->setTopology(staged)) {
       return false;
     }
@@ -277,12 +307,38 @@ namespace display_device {
       return RevertResult::TopologyIsInvalid;
     }
 
-    const bool is_topology_the_same {m_dd_api->isTopologyTheSame(current_topology, cached_state->m_modified.m_topology)};
+    auto modified_state {cached_state->m_modified};
+    bool is_topology_the_same {m_dd_api->isTopologyTheSame(current_topology, modified_state.m_topology)};
     system_settings_touched = !is_topology_the_same;
-    if (!is_topology_the_same && !m_dd_api->setTopology(cached_state->m_modified.m_topology)) {
+    bool devices_missing {false};
+    if (!is_topology_the_same && !m_dd_api->setTopology(modified_state.m_topology)) {
       DD_LOG(error) << "Failed to change topology to:\n"
-                    << toJson(cached_state->m_modified.m_topology);
-      return RevertResult::SwitchingTopologyFailed;
+                    << toJson(modified_state.m_topology);
+
+      const auto available {toDeviceIds(m_dd_api->enumAvailableDevices())};
+      const auto modified_ids {win_utils::flattenTopology(modified_state.m_topology)};
+      devices_missing = !available.empty() && std::ranges::any_of(modified_ids, [&available](const auto &id) {
+        return !available.contains(id);
+      });
+      if (!devices_missing) {
+        return RevertResult::SwitchingTopologyFailed;
+      }
+
+      // A display from the modified topology has been unplugged. Revert the settings of the remaining
+      // displays so that the initial topology, or its recovery, can still be applied.
+      modified_state = keepAvailableDevices(modified_state, available);
+      DD_LOG(warning) << "Some modified devices are unavailable, reverting settings for the remaining topology:\n"
+                      << toJson(modified_state.m_topology);
+      if (modified_state.m_topology.empty()) {
+        return RevertResult::Ok;
+      }
+
+      is_topology_the_same = m_dd_api->isTopologyTheSame(current_topology, modified_state.m_topology);
+      if (!is_topology_the_same && !m_dd_api->setTopology(modified_state.m_topology)) {
+        DD_LOG(error) << "Failed to change topology to:\n"
+                      << toJson(modified_state.m_topology);
+        return RevertResult::SwitchingTopologyFailed;
+      }
     }
     if (switched_topology) {
       *switched_topology = !is_topology_the_same;
@@ -290,23 +346,31 @@ namespace display_device {
 
     DdGuardFn hdr_guard_fn {noopFn};
     boost::scope::scope_exit<DdGuardFn &> hdr_guard {hdr_guard_fn};
-    if (const auto result {revertModifiedHdrStates(cached_state->m_modified, hdr_guard_fn, system_settings_touched)}; result != RevertResult::Ok) {
+    if (const auto result {revertModifiedHdrStates(modified_state, hdr_guard_fn, system_settings_touched)}; result != RevertResult::Ok) {
       // Error already logged
       return result;
     }
 
     DdGuardFn mode_guard_fn {noopFn};
     boost::scope::scope_exit<DdGuardFn &> mode_guard {mode_guard_fn};
-    if (const auto result {revertModifiedDisplayModes(cached_state->m_modified, mode_guard_fn, system_settings_touched)}; result != RevertResult::Ok) {
+    if (const auto result {revertModifiedDisplayModes(modified_state, mode_guard_fn, system_settings_touched)}; result != RevertResult::Ok) {
       // Error already logged
       return result;
     }
 
     DdGuardFn primary_guard_fn {noopFn};
     boost::scope::scope_exit<DdGuardFn &> primary_guard {primary_guard_fn};
-    if (const auto result {revertModifiedPrimaryDevice(cached_state->m_modified, primary_guard_fn, system_settings_touched)}; result != RevertResult::Ok) {
+    if (const auto result {revertModifiedPrimaryDevice(modified_state, primary_guard_fn, system_settings_touched)}; result != RevertResult::Ok) {
       // Error already logged
       return result;
+    }
+
+    if (devices_missing) {
+      // Keep the full record so that the unplugged displays can still be reverted if they return.
+      hdr_guard.set_active(false);
+      mode_guard.set_active(false);
+      primary_guard.set_active(false);
+      return RevertResult::Ok;
     }
 
     auto cleared_data {*cached_state};

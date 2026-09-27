@@ -112,6 +112,8 @@ namespace display_device {
 
     /**
      * @brief Try to revert the modified settings.
+     * If a device from the modified topology is no longer available, only the settings
+     * of the remaining devices are reverted and the persisted record is left unchanged.
      * @param current_topology Topology before this method is called.
      * @param system_settings_touched Indicates whether a "write" operation could have been performed on the OS.
      * @param switched_topology [Optional] Indicates whether the current topology was switched to revert settings.
