@@ -16,6 +16,9 @@ namespace {
   using ::testing::Return;
   using ::testing::StrictMock;
 
+  const UINT32 SAVED_TOPOLOGY_FLAGS {SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE};
+  const UINT32 TEMPORARY_TOPOLOGY_FLAGS {SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_ALLOW_CHANGES | SDC_VIRTUAL_MODE_AWARE};
+
   // Test fixture(s) for this file
   class WinDisplayDeviceTopology: public BaseTest {
   public:
@@ -53,6 +56,16 @@ namespace {
     std::shared_ptr<StrictMock<display_device::MockWinApiLayer>> m_layer {std::make_shared<StrictMock<display_device::MockWinApiLayer>>()};
     display_device::WinDisplayDevice m_win_dd {m_layer};
   };
+
+  /** @brief Exercise saved and session-only display changes with the same assertions. */
+  class WinDisplayDeviceTopologyPersistence: public WinDisplayDeviceTopologyMocked, public ::testing::WithParamInterface<bool> {
+  public:
+    WinDisplayDeviceTopologyPersistence() {
+      m_win_dd = display_device::WinDisplayDevice {m_layer, GetParam()};
+    }
+  };
+
+  INSTANTIATE_TEST_SUITE_P(SaveToDatabase, WinDisplayDeviceTopologyPersistence, ::testing::Bool());
 
   // Specialized TEST macro(s) for this test file
 #define TEST_F_S(...) DD_MAKE_TEST(TEST_F, WinDisplayDeviceTopology, __VA_ARGS__)
@@ -252,7 +265,7 @@ TEST_F_S_MOCKED(isTopologyTheSame) {
   EXPECT_EQ(m_win_dd.isTopologyTheSame({{"ID_3"}, {"ID_1", "ID_2"}}, {{"ID_2", "ID_1"}, {"ID_3"}}), true);
 }
 
-TEST_F_S_MOCKED(SetCurrentTopology) {
+TEST_P(WinDisplayDeviceTopologyPersistence, SetCurrentTopology) {
   InSequence sequence;
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::Active, sequence);
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::All, sequence);
@@ -264,7 +277,7 @@ TEST_F_S_MOCKED(SetCurrentTopology) {
   display_device::win_utils::setDesktopIndex(expected_path, std::nullopt);
   display_device::win_utils::setActive(expected_path);
 
-  UINT32 expected_flags {SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE};
+  UINT32 expected_flags {GetParam() ? SAVED_TOPOLOGY_FLAGS : TEMPORARY_TOPOLOGY_FLAGS};
   EXPECT_CALL(*m_layer, setDisplayConfig(std::vector<DISPLAYCONFIG_PATH_INFO> {expected_path}, std::vector<DISPLAYCONFIG_MODE_INFO> {}, expected_flags))
     .Times(1)
     .WillOnce(Return(ERROR_SUCCESS));
@@ -364,12 +377,12 @@ TEST_F_S_MOCKED(SetCurrentTopology, WindowsDoesNotKnowAboutTheTopology, FailedTo
   EXPECT_FALSE(m_win_dd.setTopology({{"DeviceId1"}}));
 }
 
-TEST_F_S_MOCKED(SetCurrentTopology, FailedToSetTopology, NoRecovery) {
+TEST_P(WinDisplayDeviceTopologyPersistence, FailedToSetTopology) {
   InSequence sequence;
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::Active, sequence);
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::All, sequence);
 
-  UINT32 expected_flags {SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE};
+  UINT32 expected_flags {GetParam() ? SAVED_TOPOLOGY_FLAGS : TEMPORARY_TOPOLOGY_FLAGS};
   EXPECT_CALL(*m_layer, setDisplayConfig(getExpectedPathToBeSet(), std::vector<DISPLAYCONFIG_MODE_INFO> {}, expected_flags))
     .Times(1)
     .WillOnce(Return(ERROR_INVALID_PARAMETER));
@@ -405,12 +418,12 @@ TEST_F_S_MOCKED(SetCurrentTopology, TopologyWasSetAccordingToWinApi, CouldNotGet
   EXPECT_FALSE(m_win_dd.setTopology({{"DeviceId1"}}));
 }
 
-TEST_F_S_MOCKED(SetCurrentTopology, TopologyWasSetAccordingToWinApi, WinApiLied) {
+TEST_P(WinDisplayDeviceTopologyPersistence, ReadbackFailureRestoresOriginalTopology) {
   InSequence sequence;
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::Active, sequence);
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::All, sequence);
 
-  UINT32 expected_flags {SDC_APPLY | SDC_TOPOLOGY_SUPPLIED | SDC_ALLOW_PATH_ORDER_CHANGES | SDC_VIRTUAL_MODE_AWARE};
+  UINT32 expected_flags {GetParam() ? SAVED_TOPOLOGY_FLAGS : TEMPORARY_TOPOLOGY_FLAGS};
   EXPECT_CALL(*m_layer, setDisplayConfig(getExpectedPathToBeSet(), std::vector<DISPLAYCONFIG_MODE_INFO> {}, expected_flags))
     .Times(1)
     .WillOnce(Return(ERROR_SUCCESS));
@@ -419,7 +432,7 @@ TEST_F_S_MOCKED(SetCurrentTopology, TopologyWasSetAccordingToWinApi, WinApiLied)
   setupExpectCallFor3ActivePathsAndModes(display_device::QueryType::Active, sequence);
 
   // Called when doing the undo
-  expected_flags = SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_SAVE_TO_DATABASE | SDC_VIRTUAL_MODE_AWARE;
+  expected_flags = SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_VIRTUAL_MODE_AWARE | (GetParam() ? SDC_SAVE_TO_DATABASE : 0);
   EXPECT_CALL(*m_layer, setDisplayConfig(ut_consts::PAM_3_ACTIVE->m_paths, ut_consts::PAM_3_ACTIVE->m_modes, expected_flags))
     .Times(1)
     .WillOnce(Return(ERROR_SUCCESS));

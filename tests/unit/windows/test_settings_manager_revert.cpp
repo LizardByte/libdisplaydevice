@@ -340,6 +340,7 @@ TEST_F_S_MOCKED(RevertModifiedSettings, FailedToSetModifiedTopology) {
   EXPECT_CALL(*m_dd_api, setTopology(ut_consts::SDCS_FULL->m_modified.m_topology))
     .Times(1)
     .WillOnce(Return(false));
+  EXPECT_CALL(*m_dd_api, enumAvailableDevices()).WillOnce(Return(CURRENT_DEVICES));
   expectedDefaultTopologyGuardCall(sequence);
   expectedHdrWorkaroundCalls(sequence);
 
@@ -529,6 +530,7 @@ TEST_F_S_MOCKED(FailedToSetInitialTopology) {
     .WillOnce(Return(false))
     .RetiresOnSaturation();
 
+  EXPECT_CALL(*m_dd_api, enumAvailableDevices()).WillOnce(Return(CURRENT_DEVICES));
   expectedDefaultTopologyGuardCall(sequence);
   expectedHdrWorkaroundCalls(sequence);
 

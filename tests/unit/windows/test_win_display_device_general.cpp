@@ -151,6 +151,9 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
   const auto pam_active_and_inactive {[]() {
     auto pam {ut_consts::PAM_3_ACTIVE};
     pam->m_paths.at(0).targetInfo.refreshRate.Denominator = 0;
+    pam->m_paths.at(0).targetInfo.outputTechnology = DISPLAYCONFIG_OUTPUT_TECHNOLOGY_DISPLAYPORT_EMBEDDED;
+    pam->m_paths.at(1).targetInfo.outputTechnology = DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INDIRECT_WIRED;
+    pam->m_paths.at(2).targetInfo.outputTechnology = DISPLAYCONFIG_OUTPUT_TECHNOLOGY_LVDS;
     pam->m_paths.at(2).flags &= ~DISPLAYCONFIG_PATH_ACTIVE;
     return pam;
   }()};
@@ -179,7 +182,8 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
        true,
        {0, 0},
        std::nullopt
-     }},
+     },
+     true},
     {"DeviceId2",
      "DisplayName2",
      "FriendlyName2",
@@ -196,7 +200,8 @@ TEST_F_S_MOCKED(EnumAvailableDevices) {
      "",
      "FriendlyName3",
      std::nullopt,
-     std::nullopt}
+     std::nullopt,
+     true}
   };
   EXPECT_EQ(m_win_dd.enumAvailableDevices(), expected_list);
 }

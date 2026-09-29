@@ -45,6 +45,7 @@ TEST_F_S(SingleDisplayConfigState) {
 
   executeTestCase(display_device::SingleDisplayConfigState {}, R"({"initial":{"primary_devices":[],"topology":[]},"modified":{"original_hdr_states":{},"original_modes":{},"original_primary_device":"","topology":[]}})");
   executeTestCase(valid_input, R"({"initial":{"primary_devices":["DeviceId1"],"topology":[["DeviceId1"]]},"modified":{"original_hdr_states":{"DeviceId2":"Disabled"},"original_modes":{"DeviceId2":{"refresh_rate":{"denominator":1,"numerator":120},"resolution":{"height":1080,"width":1920}}},"original_primary_device":"DeviceId2","topology":[["DeviceId2"]]}})");
+  executeTestCase(display_device::SingleDisplayConfigState {.m_modified = {.m_original_primary_device = "DeviceId2", .m_interim_primary_device = "DeviceId3"}}, R"({"initial":{"primary_devices":[],"topology":[]},"modified":{"interim_primary_device":"DeviceId3","original_hdr_states":{},"original_modes":{},"original_primary_device":"DeviceId2","topology":[]}})");
   executeInvalidJsonTestCase<display_device::SingleDisplayConfigState>();
   executeFromJsonFailureTestCase<display_device::SingleDisplayConfigState>(R"({})");
   executeToJsonFailureTestCase(display_device::SingleDisplayConfigState {

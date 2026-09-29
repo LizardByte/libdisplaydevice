@@ -112,6 +112,8 @@ namespace display_device {
 
     /**
      * @brief Try to revert the modified settings.
+     * If a device from the modified topology is no longer available, only the settings
+     * of the remaining devices are reverted and the persisted record is left unchanged.
      * @param current_topology Topology before this method is called.
      * @param system_settings_touched Indicates whether a "write" operation could have been performed on the OS.
      * @param switched_topology [Optional] Indicates whether the current topology was switched to revert settings.
@@ -147,6 +149,15 @@ namespace display_device {
      * @returns Result enum indicating success or failure.
      */
     [[nodiscard]] RevertResult revertModifiedPrimaryDevice(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched);
+
+    /**
+     * @brief Recover to surviving original displays or a built-in panel after an undock.
+     * Only devices activated by this session may be removed. The original recovery
+     * record remains intact on failure; a visible replacement is verified first.
+     * @param current_topology Active topology before attempting to restore the saved layout.
+     * @return True when the replacement topology has been applied and verified.
+     */
+    [[nodiscard]] bool recoverMissingTopology(const ActiveTopology &current_topology);
 
   private:
     std::shared_ptr<WinDisplayDeviceInterface> m_dd_api;

@@ -98,6 +98,15 @@ namespace display_device::win_utils {
     return flattened_topology;
   }
 
+  StringSet getDeviceIds(const EnumeratedDeviceList &devices) {
+    StringSet ids;
+    for (const auto &device : devices) {
+      ids.insert(device.m_device_id);
+    }
+
+    return ids;
+  }
+
   ActiveTopology createFullExtendedTopology(const WinDisplayDeviceInterface &win_dd) {
     const auto devices {win_dd.enumAvailableDevices()};
     if (devices.empty()) {
