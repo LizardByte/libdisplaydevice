@@ -22,6 +22,27 @@ namespace display_device {
     void noopFn() {
       // Intentionally empty guard callback.
     }
+
+    /**
+     * @brief Split off the cached entries of devices that are not part of the topology being applied.
+     *
+     * Such devices, for example an unplugged display, cannot be restored now, so their entries must be carried over untouched.
+     * @param entries Cached per-device entries. The entries of inactive devices are removed.
+     * @param active Device IDs of the topology being applied.
+     * @return The removed entries.
+     */
+    template<class Entries>
+    Entries takeInactive(Entries &entries, const StringSet &active) {
+      Entries inactive;
+      std::erase_if(entries, [&](const auto &entry) {
+        if (active.contains(entry.first)) {
+          return false;
+        }
+        inactive.insert(entry);
+        return true;
+      });
+      return inactive;
+    }
   }  // namespace
 
   SettingsManager::ApplyResult SettingsManager::applySettings(const SingleDisplayConfiguration &config) {
@@ -206,7 +227,13 @@ namespace display_device {
 
   bool SettingsManager::preparePrimaryDevice(const SingleDisplayConfiguration &config, const std::string &device_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched) {
     const auto &cached_state {m_persistence_state->getState()};
-    const auto cached_primary_device {cached_state ? cached_state->m_modified.m_original_primary_device : std::string {}};
+    auto cached_primary_device {cached_state ? cached_state->m_modified.m_original_primary_device : std::string {}};
+    std::string pending_primary_device;
+    if (!cached_primary_device.empty() && !win_utils::flattenTopology(new_state.m_modified.m_topology).contains(cached_primary_device)) {
+      // The original primary device is inactive (e.g. unplugged), so it can only be restored once it returns.
+      pending_primary_device = std::move(cached_primary_device);
+      cached_primary_device.clear();
+    }
     const bool ensure_primary {config.m_device_prep == SingleDisplayConfiguration::DevicePreparation::EnsurePrimary};
     const bool might_need_to_restore {!cached_primary_device.empty()};
 
@@ -246,7 +273,7 @@ namespace display_device {
       }
 
       // Here we preserve the data from persistence (unless there's none) as in the end that is what we want to go back to.
-      new_state.m_modified.m_original_primary_device = original_primary_device;
+      new_state.m_modified.m_original_primary_device = pending_primary_device.empty() ? original_primary_device : pending_primary_device;
       return true;
     }
 
@@ -255,12 +282,14 @@ namespace display_device {
       return false;
     }
 
+    new_state.m_modified.m_original_primary_device = pending_primary_device;
     return true;
   }
 
   bool SettingsManager::prepareDisplayModes(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const StringSet &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched) {
     const auto &cached_state {m_persistence_state->getState()};
-    const auto cached_display_modes {cached_state ? cached_state->m_modified.m_original_modes : DeviceDisplayModeMap {}};
+    auto cached_display_modes {cached_state ? cached_state->m_modified.m_original_modes : DeviceDisplayModeMap {}};
+    const auto pending_display_modes {takeInactive(cached_display_modes, win_utils::flattenTopology(new_state.m_modified.m_topology))};
     const bool change_required {config.m_resolution || config.m_refresh_rate};
     const bool might_need_to_restore {!cached_display_modes.empty()};
 
@@ -306,6 +335,7 @@ namespace display_device {
 
       // Here we preserve the data from persistence (unless there's none) as in the end that is what we want to go back to.
       new_state.m_modified.m_original_modes = original_display_modes;
+      new_state.m_modified.m_original_modes.insert(pending_display_modes.begin(), pending_display_modes.end());
       return true;
     }
 
@@ -314,12 +344,14 @@ namespace display_device {
       return false;
     }
 
+    new_state.m_modified.m_original_modes = pending_display_modes;
     return true;
   }
 
   [[nodiscard]] bool SettingsManager::prepareHdrStates(const SingleDisplayConfiguration &config, const std::string &device_to_configure, const StringSet &additional_devices_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched) {
     const auto &cached_state {m_persistence_state->getState()};
-    const auto cached_hdr_states {cached_state ? cached_state->m_modified.m_original_hdr_states : HdrStateMap {}};
+    auto cached_hdr_states {cached_state ? cached_state->m_modified.m_original_hdr_states : HdrStateMap {}};
+    const auto pending_hdr_states {takeInactive(cached_hdr_states, win_utils::flattenTopology(new_state.m_modified.m_topology))};
     const bool change_required {config.m_hdr_state};
     const bool might_need_to_restore {!cached_hdr_states.empty()};
 
@@ -360,6 +392,7 @@ namespace display_device {
 
       // Here we preserve the data from persistence (unless there's none) as in the end that is what we want to go back to.
       new_state.m_modified.m_original_hdr_states = original_hdr_states;
+      new_state.m_modified.m_original_hdr_states.insert(pending_hdr_states.begin(), pending_hdr_states.end());
       return true;
     }
 
@@ -368,6 +401,7 @@ namespace display_device {
       return false;
     }
 
+    new_state.m_modified.m_original_hdr_states = pending_hdr_states;
     return true;
   }
 }  // namespace display_device

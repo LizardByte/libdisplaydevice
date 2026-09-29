@@ -28,6 +28,16 @@ namespace display_device::win_utils {
   StringSet flattenTopology(const ActiveTopology &topology);
 
   /**
+   * @brief Get the ids of the enumerated devices.
+   * @param devices Enumerated devices.
+   * @return Device ids of the enumerated devices.
+   * @examples
+   * const auto device_ids { getDeviceIds(win_dd.enumAvailableDevices()) };
+   * @examples_end
+   */
+  StringSet getDeviceIds(const EnumeratedDeviceList &devices);
+
+  /**
    * @brief Create extended topology from all the available devices.
    * @param win_dd Interface for interacting with the OS.
    * @return Extended topology with all the available devices.

@@ -264,7 +264,7 @@ TEST_F(UndockRecovery, UnpluggedDisplayInModifiedTopologyDoesNotBlockRecovery) {
   EXPECT_EQ(mode_writes.front(), (DeviceDisplayModeMap {{"dock", dock_mode}}));
   ASSERT_FALSE(hdr_writes.empty());
   EXPECT_EQ(hdr_writes.front(), (HdrStateMap {{"dock", HdrState::Enabled}}));
-  EXPECT_EQ(active, (ActiveTopology {{"dock"}}));
+  EXPECT_EQ(win_utils::flattenTopology(active), (StringSet {"dock", "panel"}));
   EXPECT_EQ(clears, 1);
 }
 
@@ -276,6 +276,41 @@ TEST_F(UndockRecovery, DoesNotRetainSettingsOfStreamOnlyDisplay) {
   ON_CALL(*api, setDisplayModes(_)).WillByDefault(Return(true));
   EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
   EXPECT_EQ(active, (ActiveTopology {{"panel"}}));
+  EXPECT_EQ(clears, 1);
+}
+
+TEST_F(UndockRecovery, PendingSettingsSurviveApplyWhileStillUndocked) {
+  const DisplayMode dock_mode {{3840, 2160}, {60, 1}};
+  state.m_initial = {{{"dock"}, {"panel"}}, {"dock"}};  // As retained after a recovery to the panel.
+  state.m_modified = {{{"dock"}}, {{"dock", dock_mode}}, {{"dock", HdrState::Enabled}}, "dock"};
+  active = {{"panel"}};
+  devices = {{.m_device_id = "panel", .m_info = EnumeratedDevice::Info {.m_primary = true}, .m_is_internal = true}};
+  std::vector<DeviceDisplayModeMap> mode_writes;
+  init();
+  ON_CALL(*api, setDisplayModes(_)).WillByDefault([&mode_writes](const DeviceDisplayModeMap &modes) {
+    mode_writes.push_back(modes);
+    return true;
+  });
+  ON_CALL(*api, setHdrStates(_)).WillByDefault(Return(true));
+  ON_CALL(*api, setAsPrimary(_)).WillByDefault(Return(true));
+  ON_CALL(*api, isPrimary("panel")).WillByDefault(Return(true));
+  ON_CALL(*api, getCurrentDisplayModes(_)).WillByDefault(Return(DeviceDisplayModeMap {{"panel", {{1920, 1080}, {60, 1}}}}));
+  ON_CALL(*api, getCurrentHdrStates(_)).WillByDefault(Return(HdrStateMap {{"panel", HdrState::Disabled}}));
+
+  SingleDisplayConfiguration config;
+  config.m_device_id = "panel";
+  config.m_device_prep = SingleDisplayConfiguration::DevicePreparation::VerifyOnly;
+  EXPECT_CALL(*api, setAsPrimary("dock")).Times(0);
+  EXPECT_EQ(manager->applySettings(config), SettingsManager::ApplyResult::Ok);
+  EXPECT_TRUE(mode_writes.empty());
+
+  // The dock returns and gets its own settings back.
+  devices.push_back({.m_device_id = "dock"});
+  ::testing::Mock::VerifyAndClearExpectations(api.get());
+  EXPECT_CALL(*api, setAsPrimary("dock")).WillOnce(Return(true));
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  ASSERT_FALSE(mode_writes.empty());
+  EXPECT_EQ(mode_writes.front(), (DeviceDisplayModeMap {{"dock", dock_mode}}));
   EXPECT_EQ(clears, 1);
 }
 
