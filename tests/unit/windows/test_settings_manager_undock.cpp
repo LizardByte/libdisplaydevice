@@ -11,6 +11,7 @@
 #include "utils/mock_win_display_device.h"
 
 #include <algorithm>
+#include <string_view>
 
 namespace {
   using namespace display_device;
@@ -325,11 +326,11 @@ TEST_F(UndockRecovery, EnsurePrimaryWhileOriginalPrimaryIsAway) {
   };
   std::string primary {"A"};
   init();
-  ON_CALL(*api, isPrimary(_)).WillByDefault([&primary](const std::string &id) {
+  ON_CALL(*api, isPrimary(_)).WillByDefault([&primary](std::string_view id) {
     return id == primary;
   });
-  ON_CALL(*api, setAsPrimary(_)).WillByDefault([&primary](const std::string &id) {
-    primary = id;
+  ON_CALL(*api, setAsPrimary(_)).WillByDefault([&primary](std::string_view id) {
+    primary = std::string {id};
     return true;
   });
 
