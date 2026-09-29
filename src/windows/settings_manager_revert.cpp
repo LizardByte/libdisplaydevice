@@ -8,6 +8,7 @@
 // system includes
 #include <algorithm>
 #include <boost/scope/scope_exit.hpp>
+#include <optional>
 
 // local includes
 #include "display_device/logging.h"
@@ -43,6 +44,73 @@ namespace display_device {
           target.push_back(std::move(remaining));
         }
       }
+    }
+
+    /**
+     * @brief Add the groups of a target topology to a staged topology, keeping clone groups intact.
+     *
+     * A target group that shares a device with a staged group extends that group in place instead of
+     * being added separately. This way the staged topology never needs more sources than the target does.
+     * @param target Groups that must be active once staging is done.
+     * @param staged Topology to extend.
+     */
+    void stageRecoveryGroups(const ActiveTopology &target, ActiveTopology &staged) {
+      for (const auto &group : target) {
+        const auto in_group {[&group](const auto &id) {
+          return std::ranges::find(group, id) != group.end();
+        }};
+        const auto host {std::ranges::find_if(staged, [&in_group](const auto &staged_group) {
+          return std::ranges::any_of(staged_group, in_group);
+        })};
+        if (host == staged.end()) {
+          staged.push_back(group);
+          continue;
+        }
+
+        for (const auto &id : group) {
+          if (std::ranges::find(*host, id) == host->end()) {
+            host->push_back(id);
+          }
+        }
+        for (auto &other : staged) {
+          if (&other != &*host) {
+            std::erase_if(other, in_group);
+          }
+        }
+        std::erase_if(staged, [](const auto &staged_group) {
+          return staged_group.empty();
+        });
+      }
+    }
+
+    /**
+     * @brief Keep only the pending settings of original devices that are currently unavailable.
+     *
+     * These settings cannot be restored until the devices return, so they must outlive a topology recovery.
+     * @param state State to filter.
+     * @param available Currently enumerated device IDs.
+     * @return State with only the settings of unavailable original devices, or nothing if there are none.
+     */
+    std::optional<SingleDisplayConfigState> keepUnavailableSettings(const SingleDisplayConfigState &state, const StringSet &available) {
+      const auto initial {win_utils::flattenTopology(state.m_initial.m_topology)};
+      const auto is_pending {[&initial, &available](const auto &id) {
+        return initial.contains(id) && !available.contains(id);
+      }};
+
+      SingleDisplayConfigState result {state};
+      std::erase_if(result.m_modified.m_original_modes, [&is_pending](const auto &entry) {
+        return !is_pending(entry.first);
+      });
+      std::erase_if(result.m_modified.m_original_hdr_states, [&is_pending](const auto &entry) {
+        return !is_pending(entry.first);
+      });
+      if (!is_pending(result.m_modified.m_original_primary_device)) {
+        result.m_modified.m_original_primary_device.clear();
+      }
+      if (!result.m_modified.hasModifications()) {
+        return std::nullopt;
+      }
+      return result;
     }
 
     /**
@@ -138,15 +206,19 @@ namespace display_device {
     const bool is_topology_the_same {m_dd_api->isTopologyTheSame(current_topology, cached_state->m_initial.m_topology)};
     const bool need_to_switch_topology {!is_topology_the_same || switched_to_modified_topology};
     system_settings_touched = system_settings_touched || !is_topology_the_same;
+    std::optional<SingleDisplayConfigState> pending_state;
     if (need_to_switch_topology && !m_dd_api->setTopology(cached_state->m_initial.m_topology)) {
       DD_LOG(error) << "Failed to change topology to:\n"
                     << toJson(cached_state->m_initial.m_topology);
       if (!recoverMissingTopology(current_topology)) {
         return RevertResult::SwitchingTopologyFailed;
       }
+
+      // Original devices that are still unplugged keep their settings until they return.
+      pending_state = keepUnavailableSettings(*cached_state, toDeviceIds(m_dd_api->enumAvailableDevices()));
     }
 
-    if (!m_persistence_state->persistState(std::nullopt)) {
+    if (!m_persistence_state->persistState(pending_state)) {
       DD_LOG(error) << "Failed to save reverted settings! Undoing initial topology changes...";
       return RevertResult::PersistenceSaveFailed;
     }
@@ -194,10 +266,9 @@ namespace display_device {
     appendRecoveryGroups(current_topology, available, activated, target, included);  // Preserve unrelated displays activated by the user.
 
     // First activate the replacement without switching off the current output.
-    // Keep the target's groups intact, since cloned displays share a source.
+    // Keep the target's groups intact, even when a member is already active, since cloned displays share a source.
     ActiveTopology staged {current_topology};
-    auto staged_ids {win_utils::flattenTopology(staged)};
-    appendRecoveryGroups(target, available, {}, staged, staged_ids);
+    stageRecoveryGroups(target, staged);
     if (!m_dd_api->setTopology(staged)) {
       return false;
     }

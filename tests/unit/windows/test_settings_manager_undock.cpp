@@ -251,7 +251,45 @@ TEST_F(UndockRecovery, UnpluggedDisplayInModifiedTopologyDoesNotBlockRecovery) {
   openLid();
   EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
   EXPECT_EQ(active, (ActiveTopology {{"panel"}}));
+  EXPECT_EQ(clears, 0);  // The dock display still has settings to restore.
+
+  // Redocking restores what the unplugged display had before the stream.
+  devices.push_back({.m_device_id = "dock"});
+  mode_writes.clear();
+  hdr_writes.clear();
+  ::testing::Mock::VerifyAndClearExpectations(api.get());
+  EXPECT_CALL(*api, setAsPrimary("dock")).WillOnce(Return(true));
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  ASSERT_FALSE(mode_writes.empty());
+  EXPECT_EQ(mode_writes.front(), (DeviceDisplayModeMap {{"dock", dock_mode}}));
+  ASSERT_FALSE(hdr_writes.empty());
+  EXPECT_EQ(hdr_writes.front(), (HdrStateMap {{"dock", HdrState::Enabled}}));
+  EXPECT_EQ(active, (ActiveTopology {{"dock"}}));
   EXPECT_EQ(clears, 1);
+}
+
+TEST_F(UndockRecovery, DoesNotRetainSettingsOfStreamOnlyDisplay) {
+  const DisplayMode stream_mode {{1920, 1080}, {60, 1}};
+  state.m_modified = {{{"stream"}}, {{"stream", stream_mode}}, {}, {}};
+  openLid();
+  init();
+  ON_CALL(*api, setDisplayModes(_)).WillByDefault(Return(true));
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(active, (ActiveTopology {{"panel"}}));
+  EXPECT_EQ(clears, 1);
+}
+
+TEST_F(UndockRecovery, StagingKeepsCloneGroupWithActiveMember) {
+  state.m_initial.m_topology.push_back({"left", "right"});
+  devices.push_back({.m_device_id = "left"});
+  devices.push_back({.m_device_id = "right"});
+  active = {{"left"}, {"stream"}};
+  split_clones = true;
+  init();
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(active, (ActiveTopology {{"left", "right"}}));
+  ASSERT_GE(writes.size(), 3u);
+  EXPECT_EQ(writes[writes.size() - 2], (ActiveTopology {{"left", "right"}, {"stream"}}));
 }
 
 TEST_F(UndockRecovery, StagingKeepsSurvivingCloneGroup) {
