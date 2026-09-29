@@ -34,7 +34,7 @@ namespace display_device {
     template<class Entries>
     Entries takeInactive(Entries &entries, const StringSet &active) {
       Entries inactive;
-      std::erase_if(entries, [&](const auto &entry) {
+      std::erase_if(entries, [&active, &inactive](const auto &entry) {
         if (active.contains(entry.first)) {
           return false;
         }

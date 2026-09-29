@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <boost/scope/scope_exit.hpp>
 #include <optional>
+#include <ranges>
 
 // local includes
 #include "display_device/logging.h"
@@ -89,6 +90,17 @@ namespace display_device {
     }
 
     /**
+     * @brief Check whether an original device is away, so that its settings have to wait for its return.
+     * @param id Device ID to check.
+     * @param initial IDs of the devices in the initial topology.
+     * @param available Currently enumerated device IDs.
+     * @return True if the device is part of the initial topology and is unavailable.
+     */
+    bool isPendingDevice(const std::string &id, const StringSet &initial, const StringSet &available) {
+      return initial.contains(id) && !available.contains(id);
+    }
+
+    /**
      * @brief Keep only the pending settings of original devices that are currently unavailable.
      *
      * These settings cannot be restored until the devices return, so they must outlive a topology recovery.
@@ -101,18 +113,15 @@ namespace display_device {
      */
     std::optional<SingleDisplayConfigState> keepUnavailableSettings(const SingleDisplayConfigState &state, const StringSet &available, const ActiveTopology &recovered_topology) {
       const auto initial {win_utils::flattenTopology(state.m_initial.m_topology)};
-      const auto is_pending {[&initial, &available](const auto &id) {
-        return initial.contains(id) && !available.contains(id);
-      }};
 
       SingleDisplayConfigState result {state};
-      std::erase_if(result.m_modified.m_original_modes, [&is_pending](const auto &entry) {
-        return !is_pending(entry.first);
+      std::erase_if(result.m_modified.m_original_modes, [&initial, &available](const auto &entry) {
+        return !isPendingDevice(entry.first, initial, available);
       });
-      std::erase_if(result.m_modified.m_original_hdr_states, [&is_pending](const auto &entry) {
-        return !is_pending(entry.first);
+      std::erase_if(result.m_modified.m_original_hdr_states, [&initial, &available](const auto &entry) {
+        return !isPendingDevice(entry.first, initial, available);
       });
-      if (!is_pending(result.m_modified.m_original_primary_device)) {
+      if (!isPendingDevice(result.m_modified.m_original_primary_device, initial, available)) {
         result.m_modified.m_original_primary_device.clear();
       }
       if (!result.m_modified.hasModifications()) {
@@ -125,7 +134,7 @@ namespace display_device {
       for (const auto &group : state.m_initial.m_topology) {
         std::vector<std::string> pending_group;
         for (const auto &id : group) {
-          if (is_pending(id) && included.insert(id).second) {
+          if (isPendingDevice(id, initial, available) && included.insert(id).second) {
             pending_group.push_back(id);
           }
         }
@@ -159,21 +168,23 @@ namespace display_device {
      */
     StringSet findCarriedDevices(const SingleDisplayConfigState &state) {
       const auto &modified {state.m_modified};
+      StringSet recorded;
+      for (const auto &id : modified.m_original_modes | std::views::keys) {
+        recorded.insert(id);
+      }
+      for (const auto &id : modified.m_original_hdr_states | std::views::keys) {
+        recorded.insert(id);
+      }
+      recorded.insert(modified.m_original_primary_device);
+
       const auto initial_ids {win_utils::flattenTopology(state.m_initial.m_topology)};
       const auto topology_ids {win_utils::flattenTopology(modified.m_topology)};
       StringSet carried;
-      const auto add {[&](const std::string &id) {
+      for (const auto &id : recorded) {
         if (initial_ids.contains(id) && !topology_ids.contains(id)) {
           carried.insert(id);
         }
-      }};
-      for (const auto &entry : modified.m_original_modes) {
-        add(entry.first);
       }
-      for (const auto &entry : modified.m_original_hdr_states) {
-        add(entry.first);
-      }
-      add(modified.m_original_primary_device);
       return carried;
     }
 
@@ -198,6 +209,37 @@ namespace display_device {
         result.m_original_primary_device.clear();
       }
       return result;
+    }
+
+    /**
+     * @brief Activate the carried devices that are back and drop the settings of those that are not.
+     * @param dd_api Display device API.
+     * @param state Persisted state that carries the settings.
+     * @param modified_state Modified settings to prepare for the revert.
+     * @return True if some carried devices are still unavailable, so their settings have to be kept.
+     */
+    bool prepareCarriedDevices(const WinDisplayDeviceInterface &dd_api, const SingleDisplayConfigState &state, SingleDisplayConfigState::Modified &modified_state) {
+      const auto carried {findCarriedDevices(state)};
+      if (carried.empty()) {
+        return false;
+      }
+
+      // Settings carried over from an earlier session can only be restored once their devices are active.
+      const auto available {win_utils::getDeviceIds(dd_api.enumAvailableDevices())};
+      if (available.empty()) {
+        return false;
+      }
+
+      bool some_unavailable {false};
+      for (const auto &id : carried) {
+        if (available.contains(id)) {
+          modified_state.m_topology.push_back({id});
+        } else {
+          some_unavailable = true;
+        }
+      }
+      modified_state = keepAvailableDevices(modified_state, available);
+      return some_unavailable;
     }
   }  // namespace
 
@@ -430,22 +472,7 @@ namespace display_device {
     }
 
     auto modified_state {cached_state->m_modified};
-    bool keep_record {false};
-    if (!findCarriedDevices(*cached_state).empty()) {
-      // Settings carried over from an earlier session (e.g. of a display that was unplugged) can only be restored
-      // once their devices are active, so activate those that are back and postpone the rest.
-      const auto available {win_utils::getDeviceIds(m_dd_api->enumAvailableDevices())};
-      if (!available.empty()) {
-        for (const auto &id : findCarriedDevices(*cached_state)) {
-          if (available.contains(id)) {
-            modified_state.m_topology.push_back({id});
-          } else {
-            keep_record = true;
-          }
-        }
-        modified_state = keepAvailableDevices(modified_state, available);
-      }
-    }
+    bool keep_record {prepareCarriedDevices(*m_dd_api, *cached_state, modified_state)};
     bool is_topology_the_same {m_dd_api->isTopologyTheSame(current_topology, modified_state.m_topology)};
     system_settings_touched = !is_topology_the_same;
     if (!is_topology_the_same && !m_dd_api->setTopology(modified_state.m_topology)) {
@@ -454,10 +481,10 @@ namespace display_device {
 
       const auto available {win_utils::getDeviceIds(m_dd_api->enumAvailableDevices())};
       const auto modified_ids {win_utils::flattenTopology(modified_state.m_topology)};
-      const bool devices_missing {!available.empty() && std::ranges::any_of(modified_ids, [&available](const auto &id) {
-        return !available.contains(id);
-      })};
-      if (!devices_missing) {
+      if (const bool devices_missing {!available.empty() && std::ranges::any_of(modified_ids, [&available](const auto &id) {
+            return !available.contains(id);
+          })};
+          !devices_missing) {
         return RevertResult::SwitchingTopologyFailed;
       }
       keep_record = true;
