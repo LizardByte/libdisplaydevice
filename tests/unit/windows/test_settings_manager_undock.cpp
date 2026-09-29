@@ -314,6 +314,43 @@ TEST_F(UndockRecovery, PendingSettingsSurviveApplyWhileStillUndocked) {
   EXPECT_EQ(clears, 1);
 }
 
+TEST_F(UndockRecovery, EnsurePrimaryWhileOriginalPrimaryIsAway) {
+  // The dock was primary. After it left, "A" took over and the dock's primary status is pending.
+  state.m_initial = {{{"dock"}, {"A"}, {"B"}}, {"dock"}};
+  state.m_modified = {{{"dock"}}, {}, {}, "dock"};
+  active = {{"A"}, {"B"}};
+  devices = {
+    {.m_device_id = "A", .m_info = EnumeratedDevice::Info {.m_primary = true}},
+    {.m_device_id = "B", .m_info = EnumeratedDevice::Info {}},
+  };
+  std::string primary {"A"};
+  init();
+  ON_CALL(*api, isPrimary(_)).WillByDefault([&primary](const std::string &id) {
+    return id == primary;
+  });
+  ON_CALL(*api, setAsPrimary(_)).WillByDefault([&primary](const std::string &id) {
+    primary = id;
+    return true;
+  });
+
+  SingleDisplayConfiguration config;
+  config.m_device_id = "B";
+  config.m_device_prep = SingleDisplayConfiguration::DevicePreparation::EnsurePrimary;
+  EXPECT_EQ(manager->applySettings(config), SettingsManager::ApplyResult::Ok);
+  EXPECT_EQ(primary, "B");
+
+  // Reverting while the dock is still away brings back the display that was primary before the session.
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(primary, "A");
+  EXPECT_EQ(clears, 0);
+
+  // The dock's own primary status is still pending and is restored once it returns.
+  devices.push_back({.m_device_id = "dock"});
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(primary, "dock");
+  EXPECT_EQ(clears, 1);
+}
+
 TEST_F(UndockRecovery, StagingKeepsCloneGroupWithActiveMember) {
   state.m_initial.m_topology.push_back({"left", "right"});
   devices.push_back({.m_device_id = "left"});

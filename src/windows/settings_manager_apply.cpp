@@ -228,11 +228,16 @@ namespace display_device {
   bool SettingsManager::preparePrimaryDevice(const SingleDisplayConfiguration &config, const std::string &device_to_configure, DdGuardFn &guard_fn, SingleDisplayConfigState &new_state, bool &system_settings_touched) {
     const auto &cached_state {m_persistence_state->getState()};
     auto cached_primary_device {cached_state ? cached_state->m_modified.m_original_primary_device : std::string {}};
+    const auto cached_interim_device {cached_state ? cached_state->m_modified.m_interim_primary_device : std::string {}};
     std::string pending_primary_device;
-    if (!cached_primary_device.empty() && !win_utils::flattenTopology(new_state.m_modified.m_topology).contains(cached_primary_device)) {
+    if (const auto active_devices {win_utils::flattenTopology(new_state.m_modified.m_topology)}; !cached_primary_device.empty() && !active_devices.contains(cached_primary_device)) {
       // The original primary device is inactive (e.g. unplugged), so it can only be restored once it returns.
+      // Until then, the device that was primary before this happened is the one to go back to.
       pending_primary_device = std::move(cached_primary_device);
-      cached_primary_device.clear();
+      cached_primary_device = cached_interim_device;
+      if (!active_devices.contains(cached_primary_device)) {
+        cached_primary_device.clear();
+      }
     }
     const bool ensure_primary {config.m_device_prep == SingleDisplayConfiguration::DevicePreparation::EnsurePrimary};
     const bool might_need_to_restore {!cached_primary_device.empty()};
@@ -273,7 +278,12 @@ namespace display_device {
       }
 
       // Here we preserve the data from persistence (unless there's none) as in the end that is what we want to go back to.
-      new_state.m_modified.m_original_primary_device = pending_primary_device.empty() ? original_primary_device : pending_primary_device;
+      if (pending_primary_device.empty()) {
+        new_state.m_modified.m_original_primary_device = original_primary_device;
+      } else {
+        new_state.m_modified.m_original_primary_device = pending_primary_device;
+        new_state.m_modified.m_interim_primary_device = original_primary_device;
+      }
       return true;
     }
 

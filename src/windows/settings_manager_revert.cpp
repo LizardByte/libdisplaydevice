@@ -124,6 +124,7 @@ namespace display_device {
       if (!isPendingDevice(result.m_modified.m_original_primary_device, initial, available)) {
         result.m_modified.m_original_primary_device.clear();
       }
+      result.m_modified.m_interim_primary_device.clear();  // Already restored by the revert that led here.
       if (!result.m_modified.hasModifications()) {
         return std::nullopt;
       }
@@ -206,8 +207,10 @@ namespace display_device {
         return !available.contains(entry.first);
       });
       if (!available.contains(result.m_original_primary_device)) {
-        result.m_original_primary_device.clear();
+        // The interim device is what was primary before the original one went away.
+        result.m_original_primary_device = available.contains(result.m_interim_primary_device) ? result.m_interim_primary_device : std::string {};
       }
+      result.m_interim_primary_device.clear();
       return result;
     }
 

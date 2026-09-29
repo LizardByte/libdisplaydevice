@@ -146,6 +146,7 @@ namespace display_device {
       DeviceDisplayModeMap m_original_modes {};  ///< Original display modes before modification.
       HdrStateMap m_original_hdr_states {};  ///< Original HDR states before modification.
       std::string m_original_primary_device {};  ///< Original primary device before modification.
+      std::string m_interim_primary_device {};  ///< Primary device to restore while the original one is unavailable.
 
       /**
        * @brief Check if the changed topology has any other modifications.
