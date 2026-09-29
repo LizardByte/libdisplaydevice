@@ -365,8 +365,7 @@ namespace display_device {
     if (!m_dd_api->setTopology(staged)) {
       return false;
     }
-    const auto active {win_utils::flattenTopology(m_dd_api->getCurrentTopology())};
-    if (!std::ranges::all_of(replacements, [&active](const auto &id) {
+    if (const auto active {win_utils::flattenTopology(m_dd_api->getCurrentTopology())}; !std::ranges::all_of(replacements, [&active](const auto &id) {
           return active.contains(id);
         })) {
       return false;
