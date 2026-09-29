@@ -151,15 +151,19 @@ namespace display_device {
     }
 
     /**
-     * @brief Find the devices that have settings recorded but are not part of the topology.
-     * @param modified Modified settings to inspect.
-     * @return IDs of the devices outside of the modified topology.
+     * @brief Find the original devices that have settings recorded but are left out of the modified topology.
+     *
+     * These are carried over from an earlier session, e.g. the settings of a display that was unplugged at the time.
+     * @param state State to inspect.
+     * @return IDs of the devices that are in the initial topology only.
      */
-    StringSet findCarriedDevices(const SingleDisplayConfigState::Modified &modified) {
+    StringSet findCarriedDevices(const SingleDisplayConfigState &state) {
+      const auto &modified {state.m_modified};
+      const auto initial_ids {win_utils::flattenTopology(state.m_initial.m_topology)};
       const auto topology_ids {win_utils::flattenTopology(modified.m_topology)};
       StringSet carried;
       const auto add {[&](const std::string &id) {
-        if (!id.empty() && !topology_ids.contains(id)) {
+        if (initial_ids.contains(id) && !topology_ids.contains(id)) {
           carried.insert(id);
         }
       }};
@@ -427,12 +431,12 @@ namespace display_device {
 
     auto modified_state {cached_state->m_modified};
     bool keep_record {false};
-    if (!findCarriedDevices(modified_state).empty()) {
+    if (!findCarriedDevices(*cached_state).empty()) {
       // Settings carried over from an earlier session (e.g. of a display that was unplugged) can only be restored
       // once their devices are active, so activate those that are back and postpone the rest.
       const auto available {win_utils::getDeviceIds(m_dd_api->enumAvailableDevices())};
       if (!available.empty()) {
-        for (const auto &id : findCarriedDevices(modified_state)) {
+        for (const auto &id : findCarriedDevices(*cached_state)) {
           if (available.contains(id)) {
             modified_state.m_topology.push_back({id});
           } else {
