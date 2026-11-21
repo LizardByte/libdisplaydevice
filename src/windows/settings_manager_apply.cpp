@@ -56,6 +56,32 @@ namespace display_device {
         return available.contains(device_id);
       });
     }
+
+    /**
+     * @brief Get the initial state to use as a base for the new topology, without the unavailable devices.
+     *
+     * The cached initial state cannot be used as a base when all of its devices are gone (e.g. the original displays
+     * are behind a KVM switch or powered off). It is still kept for the revert once they return, but until then
+     * the current topology has to be the base, the same as if there was no cached state.
+     * @param initial_state Initial state that will be persisted.
+     * @param is_cached Whether the initial state comes from a previous session.
+     * @param topology_before_changes Currently active topology.
+     * @param devices Currently enumerated devices.
+     * @return Stripped initial state to base the new topology on, or empty optional if there is nothing to base it on.
+     */
+    std::optional<SingleDisplayConfigState::Initial> computeBaseInitialState(const SingleDisplayConfigState::Initial &initial_state, const bool is_cached, const ActiveTopology &topology_before_changes, const EnumeratedDeviceList &devices) {
+      if (!is_cached || !isTopologyUnavailable(initial_state.m_topology, devices)) {
+        // In case some devices are no longer available in the system, we could try to strip them from the initial state
+        // and hope that we are still "safe" to make further changes (to be determined by computeNewTopologyAndMetadata call).
+        return win_utils::stripInitialState(initial_state, devices);
+      }
+
+      DD_LOG(warning) << "None of the devices from the initial topology are available. Will use the current topology as a base until they return:\n"
+                      << "  - initial topology: " << toJson(initial_state.m_topology, JSON_COMPACT) << "\n"
+                      << "  - current topology: " << toJson(topology_before_changes, JSON_COMPACT);
+      const auto current_state {win_utils::computeInitialState(std::nullopt, topology_before_changes, devices)};
+      return current_state ? win_utils::stripInitialState(*current_state, devices) : std::nullopt;
+    }
   }  // namespace
 
   SettingsManager::ApplyResult SettingsManager::applySettings(const SingleDisplayConfiguration &config) {
@@ -180,24 +206,8 @@ namespace display_device {
     }
     SingleDisplayConfigState new_state {*new_initial_state};
 
-    // The cached initial state cannot be used as a base when all of its devices are gone (e.g. the original displays
-    // are behind a KVM switch or powered off). It is still kept for the revert once they return, but until then
-    // the current topology has to be the base, the same as if there was no cached state.
-    auto base_initial_state {std::make_optional(new_state.m_initial)};
-    if (cached_state && isTopologyUnavailable(new_state.m_initial.m_topology, devices)) {
-      DD_LOG(warning) << "None of the devices from the initial topology are available. Will use the current topology as a base until they return:\n"
-                      << "  - initial topology: " << toJson(new_state.m_initial.m_topology, JSON_COMPACT) << "\n"
-                      << "  - current topology: " << toJson(topology_before_changes, JSON_COMPACT);
-      base_initial_state = win_utils::computeInitialState(std::nullopt, topology_before_changes, devices);
-      if (!base_initial_state) {
-        // Error already logged
-        return std::nullopt;
-      }
-    }
-
-    // In case some devices are no longer available in the system, we could try to strip them from the initial state
-    // and hope that we are still "safe" to make further changes (to be determined by computeNewTopologyAndMetadata call below).
-    const auto stripped_initial_state {win_utils::stripInitialState(*base_initial_state, devices)};
+    // The new topology is based on the initial state, which is the current topology if the cached one is of no use.
+    const auto stripped_initial_state {computeBaseInitialState(new_state.m_initial, cached_state.has_value(), topology_before_changes, devices)};
     if (!stripped_initial_state) {
       // Error already logged
       return std::nullopt;
