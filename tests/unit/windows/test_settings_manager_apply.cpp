@@ -450,6 +450,49 @@ TEST_F_S_MOCKED(PrepareTopology, FailedToStripInitialState) {
   EXPECT_EQ(getImpl().applySettings({.m_device_id = "DeviceId4"}), display_device::SettingsManager::ApplyResult::DevicePrepFailed);
 }
 
+TEST_F_S_MOCKED(PrepareTopology, InitialDevicesUnavailable) {
+  using DevicePrep = display_device::SingleDisplayConfiguration::DevicePreparation;
+  const display_device::ActiveTopology current_topology {{"DeviceId4"}};
+  const display_device::EnumeratedDeviceList devices {{.m_device_id = "DeviceId4", .m_info = display_device::EnumeratedDevice::Info {.m_primary = true}}};
+  const display_device::DeviceDisplayModeMap current_modes {{"DeviceId4", {{2560, 1440}, {60, 1}}}};
+  const display_device::DeviceDisplayModeMap new_modes {{"DeviceId4", {{1920, 1080}, {60, 1}}}};
+
+  // A leftover state from a session that was never reverted, with all the original devices gone since then
+  auto initial_state {DEFAULT_PERSISTENCE_INPUT_BASE};
+  initial_state.m_modified = {current_topology};
+  auto persistence_input {initial_state};
+  persistence_input.m_modified.m_original_modes = current_modes;
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, current_topology, initial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence, devices);
+  expectedIsTopologyTheSameCall(sequence, current_topology, current_topology);
+  expectedGetCurrentDisplayModesCall(sequence, {"DeviceId4"}, current_modes);
+  expectedSetDisplayModesCall(sequence, new_modes);
+  expectedGetCurrentDisplayModesCall(sequence, {"DeviceId4"}, new_modes);
+  expectedPersistenceCall(sequence, persistence_input);
+  expectedHdrWorkaroundCalls(sequence);
+
+  EXPECT_EQ(getImpl().applySettings({.m_device_id = "DeviceId4", .m_device_prep = DevicePrep::EnsureOnlyDisplay, .m_resolution = {{1920, 1080}}}), display_device::SettingsManager::ApplyResult::Ok);
+}
+
+TEST_F_S_MOCKED(PrepareTopology, InitialDevicesUnavailable, FailedToComputeBaseState) {
+  const display_device::ActiveTopology current_topology {{"DeviceId4"}};
+  auto initial_state {DEFAULT_PERSISTENCE_INPUT_BASE};
+  initial_state.m_modified = {current_topology};
+
+  InSequence sequence;
+  expectedDefaultCallsUntilTopologyPrep(sequence, current_topology, initial_state);
+  expectedIsCapturedCall(sequence, false);
+  expectedDeviceEnumCall(sequence, {{.m_device_id = "DeviceId4", .m_info = display_device::EnumeratedDevice::Info {.m_primary = false}}});
+
+  expectedTopologyGuardTopologyCall(sequence, current_topology);
+  expectedTopologyGuardNewlyCapturedContextCall(sequence, false);
+
+  EXPECT_EQ(getImpl().applySettings({.m_device_id = "DeviceId4"}), display_device::SettingsManager::ApplyResult::DevicePrepFailed);
+}
+
 TEST_F_S_MOCKED(PrepareTopology, DeviceNotFoundInNewTopology) {
   InSequence sequence;
   expectedDefaultCallsUntilTopologyPrep(sequence);
