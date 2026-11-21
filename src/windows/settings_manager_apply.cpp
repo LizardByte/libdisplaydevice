@@ -82,6 +82,21 @@ namespace display_device {
       const auto current_state {win_utils::computeInitialState(std::nullopt, topology_before_changes, devices)};
       return current_state ? win_utils::stripInitialState(*current_state, devices) : std::nullopt;
     }
+
+    /**
+     * @brief Check whether a topology change has to be refused because the original devices are away.
+     *
+     * The cached initial state still describes the absent layout, so there would be nothing to restore
+     * the currently active topology from once it is changed.
+     * @param change_is_needed Whether the new topology differs from the active one.
+     * @param is_cached Whether the initial state comes from a previous session.
+     * @param initial_topology Topology of the initial state that will be persisted.
+     * @param devices Currently enumerated devices.
+     * @return True if the topology must not be changed.
+     */
+    bool isTopologyChangeBlocked(const bool change_is_needed, const bool is_cached, const ActiveTopology &initial_topology, const EnumeratedDeviceList &devices) {
+      return change_is_needed && is_cached && isTopologyUnavailable(initial_topology, devices);
+    }
   }  // namespace
 
   SettingsManager::ApplyResult SettingsManager::applySettings(const SingleDisplayConfiguration &config) {
@@ -224,6 +239,11 @@ namespace display_device {
     // have to validate that the device exists, but it doesn't hurt to double-check it in all cases.
     if (!win_utils::flattenTopology(new_topology).contains(device_to_configure)) {
       DD_LOG(error) << "Device " << toJson(device_to_configure, JSON_COMPACT) << " is not active!";
+      return std::nullopt;
+    }
+
+    if (isTopologyChangeBlocked(change_is_needed, cached_state.has_value(), new_state.m_initial.m_topology, devices)) {
+      DD_LOG(error) << "Cannot switch display topology while all original devices are unavailable!";
       return std::nullopt;
     }
 

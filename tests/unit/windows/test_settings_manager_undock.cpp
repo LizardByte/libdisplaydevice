@@ -411,3 +411,21 @@ TEST_F(UndockRecovery, StreamCanBeConfiguredWhileRecoveryIsPending) {
   EXPECT_EQ(active, (ActiveTopology {{"dock"}}));
   EXPECT_EQ(clears, 1);
 }
+
+TEST_F(UndockRecovery, TopologyIsNotSwitchedWhileRecoveryIsPending) {
+  // The saved initial state still describes the absent layout, so a split clone group could not be put back together.
+  active = {{"stream", "clone"}};
+  devices = {
+    {.m_device_id = "stream", .m_info = EnumeratedDevice::Info {.m_primary = true}},
+    {.m_device_id = "clone", .m_info = EnumeratedDevice::Info {.m_primary = true}},
+    {.m_device_id = "inactive"}
+  };
+  init();
+
+  SingleDisplayConfiguration config;
+  config.m_device_id = "stream";
+  config.m_device_prep = SingleDisplayConfiguration::DevicePreparation::EnsureOnlyDisplay;
+  EXPECT_EQ(manager->applySettings(config), SettingsManager::ApplyResult::DevicePrepFailed);
+  EXPECT_EQ(active, (ActiveTopology {{"stream", "clone"}}));
+  EXPECT_EQ(clears, 0);
+}
