@@ -6,6 +6,7 @@
 #include "display_device/macos/mac_display_device.h"
 
 // system includes
+#include <algorithm>
 #include <stdexcept>
 
 // local includes
@@ -78,12 +79,31 @@ namespace display_device {
       return std::nullopt;
     }
 
-    for (const auto display_id : m_m_api->getDisplayIds(query_type)) {
+    const auto display_ids {m_m_api->getDisplayIds(query_type)};
+    for (const auto display_id : display_ids) {
       if (m_m_api->getDeviceId(display_id) == device_id) {
         return display_id;
       }
     }
 
-    return std::nullopt;
+    // The id may have been saved while a display with the same vendor, model and serial was (or
+    // wasn't) online, in which case it is now the display's alias. Twins can't be told apart, so
+    // accept the alias only if exactly one online display has it.
+    std::optional<MacDisplayId> alias_match;
+    for (const auto display_id : query_type == MacQueryType::Online ? display_ids : m_m_api->getDisplayIds(MacQueryType::Online)) {
+      if (m_m_api->getDeviceIdAlias(display_id) != device_id) {
+        continue;
+      }
+      if (alias_match) {
+        DD_LOG(warning) << "Device id " << device_id << " matches more than one display with the same vendor, model and serial; not resolving it.";
+        return std::nullopt;
+      }
+      alias_match = display_id;
+    }
+
+    if (alias_match && std::ranges::find(display_ids, *alias_match) == std::ranges::end(display_ids)) {
+      return std::nullopt;
+    }
+    return alias_match;
   }
 }  // namespace display_device

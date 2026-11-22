@@ -6,6 +6,7 @@
 
 // system includes
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -71,4 +72,18 @@ namespace display_device::mac_utils {
    * @returns Text to hash.
    */
   [[nodiscard]] std::string makeCgDeviceIdentity(const CgDisplayInfo &display, const std::vector<CgDisplayInfo> &online_displays);
+
+  /**
+   * @brief Build the other identity text a display's "macos-cg-*" device id may have been saved with.
+   *
+   * Whether makeCgDeviceIdentity() includes the display id and unit number depends on whether
+   * another online display reports the same vendor, model and serial, so a display that stays
+   * connected while such a display is plugged in or unplugged switches between the two forms. This
+   * returns the form makeCgDeviceIdentity() does not currently give, so a saved id can still be
+   * matched. Displays without a usable serial only ever have one form.
+   * @param display Display to build the identity for.
+   * @param online_displays Every online display (may include `display` itself).
+   * @returns The other identity text, or nothing if the display has only one.
+   */
+  [[nodiscard]] std::optional<std::string> makeCgDeviceIdentityAlias(const CgDisplayInfo &display, const std::vector<CgDisplayInfo> &online_displays);
 }  // namespace display_device::mac_utils

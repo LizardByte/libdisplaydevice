@@ -64,3 +64,29 @@ TEST_S(MakeCgDeviceIdentity) {
   // Once the twin is gone, the remaining display gets the stable identity again.
   EXPECT_EQ(makeCgDeviceIdentity(twin_a, {twin_a}), "vendor=1552;model=41007;serial=16843009");
 }
+
+TEST_S(MakeCgDeviceIdentityAlias) {
+  using display_device::mac_utils::CgDisplayInfo;
+  using display_device::mac_utils::makeCgDeviceIdentity;
+  using display_device::mac_utils::makeCgDeviceIdentityAlias;
+
+  const CgDisplayInfo twin_a {4, 1552, 41007, 16843009, 0};
+  const CgDisplayInfo twin_b {5, 1552, 41007, 16843009, 1};
+
+  // A saved alone, then B plugged in: A's saved id becomes its alias, and B has the same alias.
+  const auto saved_alone {makeCgDeviceIdentity(twin_a, {twin_a})};
+  EXPECT_EQ(makeCgDeviceIdentityAlias(twin_a, {twin_a, twin_b}), saved_alone);
+  EXPECT_EQ(makeCgDeviceIdentityAlias(twin_b, {twin_a, twin_b}), saved_alone);
+
+  // A saved with B online, then B unplugged (A keeps its display id and unit): A's saved id becomes
+  // its alias, which only A has.
+  const auto saved_with_twin {makeCgDeviceIdentity(twin_a, {twin_a, twin_b})};
+  EXPECT_EQ(makeCgDeviceIdentityAlias(twin_a, {twin_a}), saved_with_twin);
+  EXPECT_NE(makeCgDeviceIdentityAlias(twin_b, {twin_b}), saved_with_twin);
+
+  // No usable serial: only one form.
+  for (const auto serial : {0U, 0xFFFFFFFFU}) {
+    const CgDisplayInfo display {1, 1552, 41007, serial, 0};
+    EXPECT_EQ(makeCgDeviceIdentityAlias(display, {display}), std::nullopt);
+  }
+}

@@ -92,6 +92,9 @@ namespace display_device {
   private:
     /**
      * @brief Resolve a library device id to a CoreGraphics display id.
+     *
+     * Matches the display's current device id first, then its alias (see
+     * MacApiLayerInterface::getDeviceIdAlias) if exactly one online display has it.
      * @param device_id Device id to resolve.
      * @param query_type Display list type to search.
      * @return Display id, or empty optional if not found.

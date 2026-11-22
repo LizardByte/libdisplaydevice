@@ -49,6 +49,11 @@ namespace display_device {
     [[nodiscard]] std::string getDeviceId(MacDisplayId display_id) const override;
 
     /**
+     * @copydoc MacApiLayerInterface::getDeviceIdAlias
+     */
+    [[nodiscard]] std::string getDeviceIdAlias(MacDisplayId display_id) const override;
+
+    /**
      * @copydoc MacApiLayerInterface::getCurrentDisplayMode
      */
     [[nodiscard]] std::optional<MacDisplayMode> getCurrentDisplayMode(MacDisplayId display_id) const override;

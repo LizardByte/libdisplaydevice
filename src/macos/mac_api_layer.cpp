@@ -470,6 +470,19 @@ namespace display_device {
     [[nodiscard]] mac_utils::CgDisplayInfo makeCgDisplayInfo(const MacDisplayId display_id) {
       return {display_id, CGDisplayVendorNumber(display_id), CGDisplayModelNumber(display_id), CGDisplaySerialNumber(display_id), CGDisplayUnitNumber(display_id)};
     }
+
+    /**
+     * @brief Read the CoreGraphics identity values of every online display.
+     * @param layer API layer to list the displays with.
+     * @return Identity values.
+     */
+    [[nodiscard]] std::vector<mac_utils::CgDisplayInfo> makeOnlineCgDisplayInfos(const MacApiLayer &layer) {
+      std::vector<mac_utils::CgDisplayInfo> online_displays;
+      for (const auto online_id : layer.getDisplayIds(MacQueryType::Online)) {
+        online_displays.push_back(makeCgDisplayInfo(online_id));
+      }
+      return online_displays;
+    }
   }  // namespace
 
   bool MacApiLayer::isApiAccessAvailable() const {
@@ -598,11 +611,20 @@ namespace display_device {
       }
     }
 
-    std::vector<mac_utils::CgDisplayInfo> online_displays;
-    for (const auto online_id : getDisplayIds(MacQueryType::Online)) {
-      online_displays.push_back(makeCgDisplayInfo(online_id));
+    return makeDeviceId("cg", hashText(mac_utils::makeCgDeviceIdentity(makeCgDisplayInfo(display_id), makeOnlineCgDisplayInfos(*this))));
+  }
+
+  std::string MacApiLayer::getDeviceIdAlias(const MacDisplayId display_id) const {
+    // Only "macos-cg-*" ids have an alias; keep in step with getDeviceId().
+    if (!getEdid(display_id).empty()) {
+      return {};
     }
-    return makeDeviceId("cg", hashText(mac_utils::makeCgDeviceIdentity(makeCgDisplayInfo(display_id), online_displays)));
+    if (const auto dictionary {copyDisplayInfo(display_id)}; dictionary && !makeIokitMetadata(dictionary.get()).empty()) {
+      return {};
+    }
+
+    const auto alias {mac_utils::makeCgDeviceIdentityAlias(makeCgDisplayInfo(display_id), makeOnlineCgDisplayInfos(*this))};
+    return alias ? makeDeviceId("cg", hashText(*alias)) : std::string {};
   }
 
   std::optional<MacDisplayMode> MacApiLayer::getCurrentDisplayMode(const MacDisplayId display_id) const {

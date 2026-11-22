@@ -262,8 +262,58 @@ TEST_F_S(GetDisplayNameUnknownDevice) {
   EXPECT_CALL(*m_layer, getDeviceId(1))
     .Times(1)
     .WillOnce(Return("DeviceId1"));
+  EXPECT_CALL(*m_layer, getDeviceIdAlias(1))
+    .Times(1)
+    .WillOnce(Return(""));
 
   EXPECT_EQ(m_mac_dd.getDisplayName("DeviceId2"), "");
+}
+
+TEST_F_S(GetDisplayName, ResolvesUniqueAlias) {
+  // Saved while a twin was online; the twin has since been unplugged, so the display's current id
+  // is the serial-only one and the saved id is its alias.
+  EXPECT_CALL(*m_layer, getDisplayIds(display_device::MacQueryType::Online))
+    .Times(1)
+    .WillOnce(Return(display_device::MacDisplayIdList {1, 2}));
+  EXPECT_CALL(*m_layer, getDeviceId(1))
+    .Times(1)
+    .WillOnce(Return("SerialId1"));
+  EXPECT_CALL(*m_layer, getDeviceId(2))
+    .Times(1)
+    .WillOnce(Return("DeviceId2"));
+  EXPECT_CALL(*m_layer, getDeviceIdAlias(1))
+    .Times(1)
+    .WillOnce(Return("QualifiedId1"));
+  EXPECT_CALL(*m_layer, getDeviceIdAlias(2))
+    .Times(1)
+    .WillOnce(Return(""));
+  EXPECT_CALL(*m_layer, getDisplayName(1))
+    .Times(1)
+    .WillOnce(Return("1"));
+
+  EXPECT_EQ(m_mac_dd.getDisplayName("QualifiedId1"), "1");
+}
+
+TEST_F_S(GetDisplayName, AmbiguousAliasUnresolved) {
+  // Saved while the display was the only one with its serial; an identical twin has since been
+  // plugged in, so both now have the saved serial-only id as their alias. Neither may be picked.
+  EXPECT_CALL(*m_layer, getDisplayIds(display_device::MacQueryType::Online))
+    .Times(1)
+    .WillOnce(Return(display_device::MacDisplayIdList {1, 2}));
+  EXPECT_CALL(*m_layer, getDeviceId(1))
+    .Times(1)
+    .WillOnce(Return("QualifiedId1"));
+  EXPECT_CALL(*m_layer, getDeviceId(2))
+    .Times(1)
+    .WillOnce(Return("QualifiedId2"));
+  EXPECT_CALL(*m_layer, getDeviceIdAlias(1))
+    .Times(1)
+    .WillOnce(Return("SerialId"));
+  EXPECT_CALL(*m_layer, getDeviceIdAlias(2))
+    .Times(1)
+    .WillOnce(Return("SerialId"));
+
+  EXPECT_EQ(m_mac_dd.getDisplayName("SerialId"), "");
 }
 
 TEST_F_S(TopologyRead) {
@@ -348,6 +398,19 @@ TEST_F_S(SetDisplayModes, EmptyModes) {
 TEST_F_S(SetDisplayModes, InactiveDisplay) {
   Sequence sequence;
   expectActiveDeviceLookup(sequence, "DeviceId2");
+  EXPECT_CALL(*m_layer, getDisplayIds(display_device::MacQueryType::Online))
+    .Times(1)
+    .InSequence(sequence)
+    .WillOnce(Return(display_device::MacDisplayIdList {1, 2}));
+  EXPECT_CALL(*m_layer, getDeviceIdAlias(1))
+    .Times(1)
+    .InSequence(sequence)
+    .WillOnce(Return(""));
+  // The id is the alias of an online display that isn't active, so it must not resolve.
+  EXPECT_CALL(*m_layer, getDeviceIdAlias(2))
+    .Times(1)
+    .InSequence(sequence)
+    .WillOnce(Return("DeviceId1"));
 
   EXPECT_FALSE(m_mac_dd.setDisplayModes({{"DeviceId1", {{1920, 1080}, {60, 1}}}}));
 }
