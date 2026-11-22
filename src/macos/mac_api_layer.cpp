@@ -588,13 +588,7 @@ namespace display_device {
       }
     }
 
-    std::ostringstream fallback;
-    fallback << "vendor=" << CGDisplayVendorNumber(display_id) << ';'
-             << "model=" << CGDisplayModelNumber(display_id) << ';'
-             << "serial=" << CGDisplaySerialNumber(display_id) << ';'
-             << "unit=" << CGDisplayUnitNumber(display_id) << ';'
-             << "display=" << display_id;
-    return makeDeviceId("cg", hashText(fallback.str()));
+    return makeDeviceId("cg", hashText(mac_utils::makeCgDeviceIdentity(CGDisplayVendorNumber(display_id), CGDisplayModelNumber(display_id), CGDisplaySerialNumber(display_id), CGDisplayUnitNumber(display_id), display_id)));
   }
 
   std::optional<MacDisplayMode> MacApiLayer::getCurrentDisplayMode(const MacDisplayId display_id) const {

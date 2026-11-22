@@ -7,6 +7,7 @@
 
 // system includes
 #include <cmath>
+#include <sstream>
 
 namespace display_device::mac_utils {
   bool isSuccess(const MacApiError error_code) {
@@ -26,5 +27,16 @@ namespace display_device::mac_utils {
   bool fuzzyCompareModes(const MacDisplayMode &lhs, const MacDisplayMode &rhs) {
     return lhs.m_resolution == rhs.m_resolution &&
            fuzzyCompareRefreshRates(lhs.m_refresh_rate, rhs.m_refresh_rate);
+  }
+
+  std::string makeCgDeviceIdentity(const std::uint32_t vendor, const std::uint32_t model, const std::uint32_t serial, const std::uint32_t unit, const MacDisplayId display_id) {
+    std::ostringstream identity;
+    identity << "vendor=" << vendor << ';'
+             << "model=" << model << ';'
+             << "serial=" << serial;
+    if (serial == 0) {
+      identity << ';' << "unit=" << unit << ';' << "display=" << display_id;
+    }
+    return identity.str();
   }
 }  // namespace display_device::mac_utils
