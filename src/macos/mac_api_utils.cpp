@@ -6,6 +6,7 @@
 #include "display_device/macos/mac_api_utils.h"
 
 // system includes
+#include <algorithm>
 #include <cmath>
 #include <sstream>
 
@@ -29,13 +30,21 @@ namespace display_device::mac_utils {
            fuzzyCompareRefreshRates(lhs.m_refresh_rate, rhs.m_refresh_rate);
   }
 
-  std::string makeCgDeviceIdentity(const std::uint32_t vendor, const std::uint32_t model, const std::uint32_t serial, const std::uint32_t unit, const MacDisplayId display_id) {
+  bool isUsableCgSerial(const std::uint32_t serial) {
+    return serial != 0 && serial != 0xFFFFFFFF;
+  }
+
+  std::string makeCgDeviceIdentity(const CgDisplayInfo &display, const std::vector<CgDisplayInfo> &online_displays) {
+    const auto shares_serial {[&display](const CgDisplayInfo &other) {
+      return other.m_display_id != display.m_display_id && other.m_vendor == display.m_vendor && other.m_model == display.m_model && other.m_serial == display.m_serial;
+    }};
+
     std::ostringstream identity;
-    identity << "vendor=" << vendor << ';'
-             << "model=" << model << ';'
-             << "serial=" << serial;
-    if (serial == 0) {
-      identity << ';' << "unit=" << unit << ';' << "display=" << display_id;
+    identity << "vendor=" << display.m_vendor << ';'
+             << "model=" << display.m_model << ';'
+             << "serial=" << display.m_serial;
+    if (!isUsableCgSerial(display.m_serial) || std::ranges::any_of(online_displays, shares_serial)) {
+      identity << ';' << "unit=" << display.m_unit << ';' << "display=" << display.m_display_id;
     }
     return identity.str();
   }

@@ -20,6 +20,7 @@
 #include <numeric>
 #include <sstream>
 #include <string>
+#include <vector>
 
 // local includes
 #include "display_device/logging.h"
@@ -460,6 +461,15 @@ namespace display_device {
     [[nodiscard]] std::string makeDeviceId(const std::string_view prefix, const std::uint64_t hash) {
       return std::format("macos-{}-{:016x}", prefix, hash);
     }
+
+    /**
+     * @brief Read the CoreGraphics identity values of a display.
+     * @param display_id Display id.
+     * @return Identity values.
+     */
+    [[nodiscard]] mac_utils::CgDisplayInfo makeCgDisplayInfo(const MacDisplayId display_id) {
+      return {display_id, CGDisplayVendorNumber(display_id), CGDisplayModelNumber(display_id), CGDisplaySerialNumber(display_id), CGDisplayUnitNumber(display_id)};
+    }
   }  // namespace
 
   bool MacApiLayer::isApiAccessAvailable() const {
@@ -588,7 +598,11 @@ namespace display_device {
       }
     }
 
-    return makeDeviceId("cg", hashText(mac_utils::makeCgDeviceIdentity(CGDisplayVendorNumber(display_id), CGDisplayModelNumber(display_id), CGDisplaySerialNumber(display_id), CGDisplayUnitNumber(display_id), display_id)));
+    std::vector<mac_utils::CgDisplayInfo> online_displays;
+    for (const auto online_id : getDisplayIds(MacQueryType::Online)) {
+      online_displays.push_back(makeCgDisplayInfo(online_id));
+    }
+    return makeDeviceId("cg", hashText(mac_utils::makeCgDeviceIdentity(makeCgDisplayInfo(display_id), online_displays)));
   }
 
   std::optional<MacDisplayMode> MacApiLayer::getCurrentDisplayMode(const MacDisplayId display_id) const {
