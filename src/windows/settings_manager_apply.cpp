@@ -43,6 +43,60 @@ namespace display_device {
       });
       return inactive;
     }
+
+    /**
+     * @brief Check whether all the devices of a topology are unavailable.
+     * @param topology Topology to check.
+     * @param devices Currently enumerated devices.
+     * @return True if none of the topology's devices are available.
+     */
+    bool isTopologyUnavailable(const ActiveTopology &topology, const EnumeratedDeviceList &devices) {
+      const auto available {win_utils::getDeviceIds(devices)};
+      return std::ranges::none_of(win_utils::flattenTopology(topology), [&available](const auto &device_id) {
+        return available.contains(device_id);
+      });
+    }
+
+    /**
+     * @brief Get the initial state to use as a base for the new topology, without the unavailable devices.
+     *
+     * The cached initial state cannot be used as a base when all of its devices are gone (e.g. the original displays
+     * are behind a KVM switch or powered off). It is still kept for the revert once they return, but until then
+     * the current topology has to be the base, the same as if there was no cached state.
+     * @param initial_state Initial state that will be persisted.
+     * @param is_cached Whether the initial state comes from a previous session.
+     * @param topology_before_changes Currently active topology.
+     * @param devices Currently enumerated devices.
+     * @return Stripped initial state to base the new topology on, or empty optional if there is nothing to base it on.
+     */
+    std::optional<SingleDisplayConfigState::Initial> computeBaseInitialState(const SingleDisplayConfigState::Initial &initial_state, const bool is_cached, const ActiveTopology &topology_before_changes, const EnumeratedDeviceList &devices) {
+      if (!is_cached || !isTopologyUnavailable(initial_state.m_topology, devices)) {
+        // In case some devices are no longer available in the system, we could try to strip them from the initial state
+        // and hope that we are still "safe" to make further changes (to be determined by computeNewTopologyAndMetadata call).
+        return win_utils::stripInitialState(initial_state, devices);
+      }
+
+      DD_LOG(warning) << "None of the devices from the initial topology are available. Will use the current topology as a base until they return:\n"
+                      << "  - initial topology: " << toJson(initial_state.m_topology, JSON_COMPACT) << "\n"
+                      << "  - current topology: " << toJson(topology_before_changes, JSON_COMPACT);
+      const auto current_state {win_utils::computeInitialState(std::nullopt, topology_before_changes, devices)};
+      return current_state ? win_utils::stripInitialState(*current_state, devices) : std::nullopt;
+    }
+
+    /**
+     * @brief Check whether a topology change has to be refused because the original devices are away.
+     *
+     * The cached initial state still describes the absent layout, so there would be nothing to restore
+     * the currently active topology from once it is changed.
+     * @param change_is_needed Whether the new topology differs from the active one.
+     * @param is_cached Whether the initial state comes from a previous session.
+     * @param initial_topology Topology of the initial state that will be persisted.
+     * @param devices Currently enumerated devices.
+     * @return True if the topology must not be changed.
+     */
+    bool isTopologyChangeBlocked(const bool change_is_needed, const bool is_cached, const ActiveTopology &initial_topology, const EnumeratedDeviceList &devices) {
+      return change_is_needed && is_cached && isTopologyUnavailable(initial_topology, devices);
+    }
   }  // namespace
 
   SettingsManager::ApplyResult SettingsManager::applySettings(const SingleDisplayConfiguration &config) {
@@ -167,9 +221,8 @@ namespace display_device {
     }
     SingleDisplayConfigState new_state {*new_initial_state};
 
-    // In case some devices are no longer available in the system, we could try to strip them from the initial state
-    // and hope that we are still "safe" to make further changes (to be determined by computeNewTopologyAndMetadata call below).
-    const auto stripped_initial_state {win_utils::stripInitialState(new_state.m_initial, devices)};
+    // The new topology is based on the initial state, which is the current topology if the cached one is of no use.
+    const auto stripped_initial_state {computeBaseInitialState(new_state.m_initial, cached_state.has_value(), topology_before_changes, devices)};
     if (!stripped_initial_state) {
       // Error already logged
       return std::nullopt;
@@ -186,6 +239,11 @@ namespace display_device {
     // have to validate that the device exists, but it doesn't hurt to double-check it in all cases.
     if (!win_utils::flattenTopology(new_topology).contains(device_to_configure)) {
       DD_LOG(error) << "Device " << toJson(device_to_configure, JSON_COMPACT) << " is not active!";
+      return std::nullopt;
+    }
+
+    if (isTopologyChangeBlocked(change_is_needed, cached_state.has_value(), new_state.m_initial.m_topology, devices)) {
+      DD_LOG(error) << "Cannot switch display topology while all original devices are unavailable!";
       return std::nullopt;
     }
 

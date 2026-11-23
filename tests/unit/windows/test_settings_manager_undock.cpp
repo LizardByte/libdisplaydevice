@@ -376,3 +376,56 @@ TEST_F(UndockRecovery, StagingKeepsSurvivingCloneGroup) {
   ASSERT_GE(writes.size(), 3u);
   EXPECT_EQ(writes[writes.size() - 2], (ActiveTopology {{"stream"}, {"left", "right"}}));
 }
+
+TEST_F(UndockRecovery, StreamCanBeConfiguredWhileRecoveryIsPending) {
+  // Neither the original display nor a panel is available, e.g. a desktop with its monitors behind a KVM switch.
+  const DeviceDisplayModeMap idle_modes {{"stream", {{2560, 1440}, {60, 1}}}};
+  const DeviceDisplayModeMap stream_modes {{"stream", {{1920, 1080}, {60, 1}}}};
+  auto modes {idle_modes};
+  devices = {{.m_device_id = "stream", .m_info = EnumeratedDevice::Info {.m_primary = true}}};
+  init();
+  ON_CALL(*api, getCurrentDisplayModes(_)).WillByDefault([&modes](const auto &) {
+    return modes;
+  });
+  ON_CALL(*api, setDisplayModes(_)).WillByDefault([&modes](const DeviceDisplayModeMap &new_modes) {
+    modes = new_modes;
+    return true;
+  });
+
+  SingleDisplayConfiguration config;
+  config.m_device_id = "stream";
+  config.m_device_prep = SingleDisplayConfiguration::DevicePreparation::EnsureOnlyDisplay;
+  config.m_resolution = Resolution {1920, 1080};
+  EXPECT_EQ(manager->applySettings(config), SettingsManager::ApplyResult::Ok);
+  EXPECT_EQ(modes, stream_modes);
+  EXPECT_EQ(active, (ActiveTopology {{"stream"}}));
+
+  // The stream ends with the dock still away. Its mode is restored and the recovery stays pending.
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::SwitchingTopologyFailed);
+  EXPECT_EQ(modes, idle_modes);
+  EXPECT_EQ(clears, 0);
+
+  // The dock returns and the original layout comes back.
+  devices.push_back({.m_device_id = "dock"});
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(active, (ActiveTopology {{"dock"}}));
+  EXPECT_EQ(clears, 1);
+}
+
+TEST_F(UndockRecovery, TopologyIsNotSwitchedWhileRecoveryIsPending) {
+  // The saved initial state still describes the absent layout, so a split clone group could not be put back together.
+  active = {{"stream", "clone"}};
+  devices = {
+    {.m_device_id = "stream", .m_info = EnumeratedDevice::Info {.m_primary = true}},
+    {.m_device_id = "clone", .m_info = EnumeratedDevice::Info {.m_primary = true}},
+    {.m_device_id = "inactive"}
+  };
+  init();
+
+  SingleDisplayConfiguration config;
+  config.m_device_id = "stream";
+  config.m_device_prep = SingleDisplayConfiguration::DevicePreparation::EnsureOnlyDisplay;
+  EXPECT_EQ(manager->applySettings(config), SettingsManager::ApplyResult::DevicePrepFailed);
+  EXPECT_EQ(active, (ActiveTopology {{"stream", "clone"}}));
+  EXPECT_EQ(clears, 0);
+}
