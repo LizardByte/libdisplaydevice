@@ -20,6 +20,7 @@
 #include <numeric>
 #include <sstream>
 #include <string>
+#include <vector>
 
 // local includes
 #include "display_device/logging.h"
@@ -460,6 +461,28 @@ namespace display_device {
     [[nodiscard]] std::string makeDeviceId(const std::string_view prefix, const std::uint64_t hash) {
       return std::format("macos-{}-{:016x}", prefix, hash);
     }
+
+    /**
+     * @brief Read the CoreGraphics identity values of a display.
+     * @param display_id Display id.
+     * @return Identity values.
+     */
+    [[nodiscard]] mac_utils::CgDisplayInfo makeCgDisplayInfo(const MacDisplayId display_id) {
+      return {display_id, CGDisplayVendorNumber(display_id), CGDisplayModelNumber(display_id), CGDisplaySerialNumber(display_id), CGDisplayUnitNumber(display_id)};
+    }
+
+    /**
+     * @brief Read the CoreGraphics identity values of every online display.
+     * @param layer API layer to list the displays with.
+     * @return Identity values.
+     */
+    [[nodiscard]] std::vector<mac_utils::CgDisplayInfo> makeOnlineCgDisplayInfos(const MacApiLayer &layer) {
+      std::vector<mac_utils::CgDisplayInfo> online_displays;
+      for (const auto online_id : layer.getDisplayIds(MacQueryType::Online)) {
+        online_displays.push_back(makeCgDisplayInfo(online_id));
+      }
+      return online_displays;
+    }
   }  // namespace
 
   bool MacApiLayer::isApiAccessAvailable() const {
@@ -588,13 +611,20 @@ namespace display_device {
       }
     }
 
-    std::ostringstream fallback;
-    fallback << "vendor=" << CGDisplayVendorNumber(display_id) << ';'
-             << "model=" << CGDisplayModelNumber(display_id) << ';'
-             << "serial=" << CGDisplaySerialNumber(display_id) << ';'
-             << "unit=" << CGDisplayUnitNumber(display_id) << ';'
-             << "display=" << display_id;
-    return makeDeviceId("cg", hashText(fallback.str()));
+    return makeDeviceId("cg", hashText(mac_utils::makeCgDeviceIdentity(makeCgDisplayInfo(display_id), makeOnlineCgDisplayInfos(*this))));
+  }
+
+  std::string MacApiLayer::getDeviceIdAlias(const MacDisplayId display_id) const {
+    // Only "macos-cg-*" ids have an alias; keep in step with getDeviceId().
+    if (!getEdid(display_id).empty()) {
+      return {};
+    }
+    if (const auto dictionary {copyDisplayInfo(display_id)}; dictionary && !makeIokitMetadata(dictionary.get()).empty()) {
+      return {};
+    }
+
+    const auto alias {mac_utils::makeCgDeviceIdentityAlias(makeCgDisplayInfo(display_id), makeOnlineCgDisplayInfos(*this))};
+    return alias ? makeDeviceId("cg", hashText(*alias)) : std::string {};
   }
 
   std::optional<MacDisplayMode> MacApiLayer::getCurrentDisplayMode(const MacDisplayId display_id) const {

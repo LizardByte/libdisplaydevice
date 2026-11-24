@@ -67,6 +67,16 @@ namespace display_device {
     [[nodiscard]] virtual std::string getDeviceId(MacDisplayId display_id) const = 0;
 
     /**
+     * @brief Get the other device id a display may have been saved under.
+     *
+     * A "macos-cg-*" id depends on whether another online display reports the same vendor, model
+     * and serial, so a display that stays connected can have had a different id when it was saved.
+     * @param display_id Display to query.
+     * @returns The other device id, or empty string if the display only has one.
+     */
+    [[nodiscard]] virtual std::string getDeviceIdAlias(MacDisplayId display_id) const = 0;
+
+    /**
      * @brief Get the current display mode.
      * @param display_id Display to query.
      * @returns Current display mode, or empty optional if unavailable.
