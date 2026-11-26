@@ -18,6 +18,8 @@ namespace {
 
   // Additional convenience global const(s)
   const display_device::ActiveTopology CURRENT_TOPOLOGY {{"DeviceId4"}};
+  const display_device::ActiveTopology PHYSICAL_ONLY_TOPOLOGY {{"Physical1"}};
+  const display_device::ActiveTopology VIRTUAL_ONLY_TOPOLOGY {{"Virtual1"}};
   const display_device::HdrStateMap CURRENT_MODIFIED_HDR_STATES {
     {"DeviceId1", {display_device::HdrState::Enabled}},
     {"DeviceId3", std::nullopt}
@@ -197,6 +199,69 @@ namespace {
         .Times(1)
         .WillOnce(Return(true))
         .RetiresOnSaturation();
+    }
+
+    [[nodiscard]] static display_device::SingleDisplayConfigState makeStreamOnlyState(const bool with_modes_and_hdr, const std::string &primary_device = {}) {
+      display_device::SingleDisplayConfigState state {
+        {PHYSICAL_ONLY_TOPOLOGY, {"Physical1"}},
+        {VIRTUAL_ONLY_TOPOLOGY, {}, {}, primary_device}
+      };
+      if (with_modes_and_hdr) {
+        state.m_modified.m_original_modes = {{"Virtual1", {{1920, 1080}, {60, 1}}}};
+        state.m_modified.m_original_hdr_states = {{"Virtual1", {display_device::HdrState::Disabled}}};
+      }
+      if (!primary_device.empty()) {
+        state.m_modified.m_interim_primary_device = primary_device;
+      }
+      return state;
+    }
+
+    void expectStreamOnlyRevertStart(InSequence & /* To ensure that sequence is created outside this scope */, const display_device::SingleDisplayConfigState &state, const bool reactivation_succeeds) {
+      EXPECT_CALL(*m_settings_persistence_api, load()).Times(1).WillOnce(Return(serializeState(state))).RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, isApiAccessAvailable()).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, getCurrentTopology()).Times(1).WillOnce(Return(PHYSICAL_ONLY_TOPOLOGY)).RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, isTopologyValid(PHYSICAL_ONLY_TOPOLOGY)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, isTopologyValid(VIRTUAL_ONLY_TOPOLOGY)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, isTopologyTheSame(PHYSICAL_ONLY_TOPOLOGY, VIRTUAL_ONLY_TOPOLOGY)).Times(1).WillOnce(Return(false)).RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, setTopology(VIRTUAL_ONLY_TOPOLOGY)).Times(1).WillOnce(Return(reactivation_succeeds)).RetiresOnSaturation();
+    }
+
+    void expectStreamOnlyRevertFinish(InSequence &sequence, const display_device::SingleDisplayConfigState &state, const bool switch_back_to_physical) {
+      auto cleared_state {state};
+      cleared_state.m_modified = {VIRTUAL_ONLY_TOPOLOGY};
+      EXPECT_CALL(*m_settings_persistence_api, store(*serializeState(cleared_state))).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, isTopologyValid(PHYSICAL_ONLY_TOPOLOGY)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, isTopologyTheSame(PHYSICAL_ONLY_TOPOLOGY, PHYSICAL_ONLY_TOPOLOGY)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+      if (switch_back_to_physical) {
+        EXPECT_CALL(*m_dd_api, setTopology(PHYSICAL_ONLY_TOPOLOGY)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+      }
+      expectedDefaultFinalPersistenceCalls(sequence);
+      expectedDefaultAudioContextCalls(sequence, false);
+      expectedHdrWorkaroundCalls(sequence);
+    }
+
+    void expectTopologyGuardPreservesInitial(InSequence &sequence, const bool restore_succeeds) {
+      auto state {*ut_consts::SDCS_FULL};
+      state.m_initial.m_topology = CURRENT_TOPOLOGY;
+      state.m_modified.m_topology = {{"DeviceId4"}, {"DeviceId3"}};
+      state.m_modified.m_original_modes.clear();
+      state.m_modified.m_original_primary_device.clear();
+      state.m_modified.m_original_hdr_states = {{"DeviceId4", {display_device::HdrState::Disabled}}};
+
+      expectedDefaultCallsUntilModifiedSettings(sequence, state);
+      EXPECT_CALL(*m_dd_api, isTopologyValid(state.m_modified.m_topology)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, state.m_modified.m_topology)).Times(1).WillOnce(Return(false)).RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, setTopology(state.m_modified.m_topology)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, getCurrentHdrStates(display_device::StringSet {"DeviceId3", "DeviceId4"}))
+        .Times(1)
+        .WillOnce(Return(display_device::HdrStateMap {{"DeviceId4", {display_device::HdrState::Enabled}}}))
+        .RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, setHdrStates(state.m_modified.m_original_hdr_states))
+        .Times(1)
+        .WillOnce(Return(false))
+        .RetiresOnSaturation();
+      EXPECT_CALL(*m_dd_api, setTopology(CURRENT_TOPOLOGY)).Times(1).WillOnce(Return(restore_succeeds)).RetiresOnSaturation();
+      expectedHdrWorkaroundCalls(sequence);
     }
 
     void expectedDefaultAudioContextCalls(InSequence & /* To ensure that sequence is created outside this scope */, const bool audio_captured) {
@@ -642,6 +707,178 @@ TEST_F_S_MOCKED(CurrentSettingsMatchPersistentOnes) {
   EXPECT_CALL(*m_dd_api, isTopologyTheSame(CURRENT_TOPOLOGY, state.m_initial.m_topology)).Times(1).WillOnce(Return(true)).RetiresOnSaturation();
   expectedDefaultFinalPersistenceCalls(sequence);
   expectedDefaultAudioContextCalls(sequence, false);
+
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::Ok);
+}
+
+TEST_F_S_MOCKED(RevertModifiedSettings, EmptyHdrQueryFailsWithoutCallingSetHdrStates) {
+  auto sdcs_stripped {ut_consts::SDCS_FULL};
+  sdcs_stripped->m_modified.m_original_modes.clear();
+  sdcs_stripped->m_modified.m_original_primary_device.clear();
+
+  InSequence sequence;
+  expectedDefaultCallsUntilModifiedSettings(sequence, sdcs_stripped);
+  expectedDefaultMofifiedTopologyCalls(sequence);
+  EXPECT_CALL(*m_dd_api, getCurrentHdrStates(display_device::win_utils::flattenTopology(sdcs_stripped->m_modified.m_topology)))
+    .Times(1)
+    .WillOnce(Return(display_device::HdrStateMap {}))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, getCurrentTopology())
+    .Times(1)
+    .WillOnce(Return(display_device::ActiveTopology {}))
+    .RetiresOnSaturation();
+  expectedDefaultTopologyGuardCall(sequence);
+  expectedHdrWorkaroundCalls(sequence);
+
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::RevertingHdrStatesFailed);
+}
+
+TEST_F_S_MOCKED(RevertModifiedSettings, EmptyModeQueryFailsWithoutCallingSetDisplayModes) {
+  auto sdcs_stripped {ut_consts::SDCS_FULL};
+  sdcs_stripped->m_modified.m_original_hdr_states.clear();
+  sdcs_stripped->m_modified.m_original_primary_device.clear();
+
+  InSequence sequence;
+  expectedDefaultCallsUntilModifiedSettings(sequence, sdcs_stripped);
+  expectedDefaultMofifiedTopologyCalls(sequence);
+  EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(display_device::win_utils::flattenTopology(sdcs_stripped->m_modified.m_topology)))
+    .Times(1)
+    .WillOnce(Return(display_device::DeviceDisplayModeMap {}))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, getCurrentTopology())
+    .Times(1)
+    .WillOnce(Return(display_device::ActiveTopology {{"DeviceId3"}}))
+    .RetiresOnSaturation();
+  expectedDefaultTopologyGuardCall(sequence);
+  expectedHdrWorkaroundCalls(sequence);
+
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::RevertingDisplayModesFailed);
+}
+
+TEST_F_S_MOCKED(RevertModifiedSettings, StreamOnlyDeviceDropsBeforeModeRevertRestoresInitialWithoutHdrGuard) {
+  const auto state {makeStreamOnlyState(true)};
+
+  InSequence sequence;
+  expectStreamOnlyRevertStart(sequence, state, true);
+
+  // HDR revert succeeds while the virtual display is briefly active.
+  EXPECT_CALL(*m_dd_api, getCurrentHdrStates(display_device::StringSet {"Virtual1"}))
+    .Times(1)
+    .WillOnce(Return(display_device::HdrStateMap {{"Virtual1", {display_device::HdrState::Enabled}}}))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, setHdrStates(state.m_modified.m_original_hdr_states))
+    .Times(1)
+    .WillOnce(Return(true))
+    .RetiresOnSaturation();
+
+  // Windows drops the virtual display before display modes are queried; hdrStateGuardFn must not fire.
+  EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(display_device::StringSet {"Virtual1"}))
+    .Times(1)
+    .WillOnce(Return(display_device::DeviceDisplayModeMap {}))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, getCurrentTopology()).Times(1).WillOnce(Return(PHYSICAL_ONLY_TOPOLOGY)).RetiresOnSaturation();
+  expectStreamOnlyRevertFinish(sequence, state, true);
+
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::Ok);
+}
+
+TEST_F_S_MOCKED(RevertModifiedSettings, StreamOnlyTopologyReactivationFailureSkipsModifiedCleanup) {
+  const auto state {makeStreamOnlyState(true)};
+
+  InSequence sequence;
+  expectStreamOnlyRevertStart(sequence, state, false);
+  EXPECT_CALL(*m_dd_api, enumAvailableDevices())
+    .Times(1)
+    .WillOnce(Return(display_device::EnumeratedDeviceList {{.m_device_id = "Physical1"}, {.m_device_id = "Virtual1"}}))
+    .RetiresOnSaturation();
+  expectStreamOnlyRevertFinish(sequence, state, false);
+
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::Ok);
+}
+
+TEST_F_S_MOCKED(RevertModifiedSettings, MixedTopologyPrunesInactiveStreamOnlyDeviceAndRevertsInitialDevice) {
+  auto state {*ut_consts::SDCS_FULL};
+  state.m_modified.m_original_hdr_states.clear();
+  state.m_modified.m_original_primary_device.clear();
+  auto cleared_state {state};
+  cleared_state.m_modified = {state.m_modified.m_topology};
+  const display_device::DeviceDisplayModeMap active_initial_mode {{"DeviceId1", {{2560, 1440}, {60, 1}}}};
+  const display_device::DeviceDisplayModeMap original_initial_mode {{"DeviceId1", {{1920, 1080}, {120, 1}}}};
+
+  InSequence sequence;
+  expectedDefaultCallsUntilModifiedSettings(sequence, state);
+  expectedDefaultMofifiedTopologyCalls(sequence);
+  EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(display_device::StringSet {"DeviceId1", "DeviceId3"}))
+    .Times(1)
+    .WillOnce(Return(display_device::DeviceDisplayModeMap {}))
+    .RetiresOnSaturation();
+  // Stream-only DeviceId3 dropped out of active paths, while initial DeviceId1 remains active.
+  EXPECT_CALL(*m_dd_api, getCurrentTopology())
+    .Times(1)
+    .WillOnce(Return(display_device::ActiveTopology {{"DeviceId1"}}))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(display_device::StringSet {"DeviceId1"}))
+    .Times(1)
+    .WillOnce(Return(active_initial_mode))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, setDisplayModes(original_initial_mode))
+    .Times(1)
+    .WillOnce(Return(true))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, getCurrentDisplayModes(display_device::StringSet {"DeviceId1"}))
+    .Times(1)
+    .WillOnce(Return(original_initial_mode))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_settings_persistence_api, store(*serializeState(cleared_state)))
+    .Times(1)
+    .WillOnce(Return(true))
+    .RetiresOnSaturation();
+  expectedDefaultInitialTopologyCalls(sequence, state);
+  expectedDefaultFinalPersistenceCalls(sequence);
+  expectedDefaultAudioContextCalls(sequence, false);
+  expectedHdrWorkaroundCalls(sequence);
+
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::Ok);
+}
+
+TEST_F_S_MOCKED(TopologyGuard, PreservesInitialTopologyOnFailureInsteadOfEnablingAllDisplays) {
+  InSequence sequence;
+  expectTopologyGuardPreservesInitial(sequence, true);
+
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::RevertingHdrStatesFailed);
+}
+
+TEST_F_S_MOCKED(TopologyGuard, PreservesInitialTopologyLogsFailureWhenRestoreFails) {
+  InSequence sequence;
+  expectTopologyGuardPreservesInitial(sequence, false);
+
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::RevertingHdrStatesFailed);
+}
+
+TEST_F_S_MOCKED(RevertModifiedSettings, StreamOnlyDeviceDropsBeforeHdrRevertSkipsModifiedCleanup) {
+  const auto state {makeStreamOnlyState(true)};
+
+  InSequence sequence;
+  expectStreamOnlyRevertStart(sequence, state, true);
+  EXPECT_CALL(*m_dd_api, getCurrentHdrStates(display_device::StringSet {"Virtual1"}))
+    .Times(1)
+    .WillOnce(Return(display_device::HdrStateMap {}))
+    .RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, getCurrentTopology()).Times(1).WillOnce(Return(PHYSICAL_ONLY_TOPOLOGY)).RetiresOnSaturation();
+  expectStreamOnlyRevertFinish(sequence, state, true);
+
+  EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::Ok);
+}
+
+TEST_F_S_MOCKED(RevertModifiedSettings, StreamOnlyDeviceDropsBeforePrimaryRevertClearsPrimaryFields) {
+  const auto state {makeStreamOnlyState(false, "Virtual1")};
+
+  InSequence sequence;
+  expectStreamOnlyRevertStart(sequence, state, true);
+  EXPECT_CALL(*m_dd_api, isPrimary("Virtual1")).Times(1).WillOnce(Return(false)).RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, setAsPrimary("Virtual1")).Times(1).WillOnce(Return(false)).RetiresOnSaturation();
+  EXPECT_CALL(*m_dd_api, getCurrentTopology()).Times(1).WillOnce(Return(PHYSICAL_ONLY_TOPOLOGY)).RetiresOnSaturation();
+  expectStreamOnlyRevertFinish(sequence, state, true);
 
   EXPECT_EQ(getImpl().revertSettings(), display_device::SettingsManager::RevertResult::Ok);
 }

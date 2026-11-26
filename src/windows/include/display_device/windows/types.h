@@ -147,6 +147,8 @@ namespace display_device {
       HdrStateMap m_original_hdr_states {};  ///< Original HDR states before modification.
       std::string m_original_primary_device {};  ///< Original primary device before modification.
       std::string m_interim_primary_device {};  ///< Primary device to restore while the original one is unavailable.
+      StringSet m_pending_topology_devices {};  ///< Original devices whose saved Windows database topology still needs to be restored once they return.
+      StringSet m_activated_devices {};  ///< Stream-only devices excluded when pending topology recovery runs later.
 
       /**
        * @brief Check if the changed topology has any other modifications.

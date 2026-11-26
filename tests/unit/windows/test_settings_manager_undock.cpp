@@ -11,6 +11,7 @@
 #include "utils/mock_win_display_device.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <string_view>
 
 namespace {
@@ -31,7 +32,9 @@ namespace {
     bool fail_clear {};
     bool lie_about_cleanup {};
     bool split_clones {};
+    bool saves_to_database {};
     int clears {};
+    std::vector<std::uint8_t> stored_record;
     std::shared_ptr<NiceMock<MockWinDisplayDevice>> api = std::make_shared<NiceMock<MockWinDisplayDevice>>();
     std::shared_ptr<NiceMock<MockSettingsPersistence>> persistence = std::make_shared<NiceMock<MockSettingsPersistence>>();
     std::shared_ptr<NiceMock<MockAudioContext>> audio = std::make_shared<NiceMock<MockAudioContext>>();
@@ -76,6 +79,9 @@ namespace {
     /** @brief Connect the stateful display and persistence mocks to the manager. */
     void init() {
       ON_CALL(*api, isApiAccessAvailable()).WillByDefault(Return(true));
+      ON_CALL(*api, savesToDatabase()).WillByDefault([this] {
+        return saves_to_database;
+      });
       ON_CALL(*api, enumAvailableDevices()).WillByDefault([this] {
         return devices;
       });
@@ -91,14 +97,32 @@ namespace {
       ON_CALL(*api, setTopology(_)).WillByDefault([this](const ActiveTopology &target) {
         return applyTopology(target);
       });
-      ON_CALL(*persistence, load()).WillByDefault([this] {
-        return serializeState(state);
+      ON_CALL(*api, getCurrentDisplayModes(_)).WillByDefault([](const StringSet &ids) {
+        DeviceDisplayModeMap modes;
+        for (const auto &id : ids) {
+          modes[id] = DisplayMode {{1280, 720}, {30, 1}};
+        }
+        return modes;
       });
-      ON_CALL(*persistence, store(_)).WillByDefault(Return(true));
+      ON_CALL(*api, getCurrentHdrStates(_)).WillByDefault([](const StringSet &ids) {
+        HdrStateMap states;
+        for (const auto &id : ids) {
+          states[id] = std::nullopt;
+        }
+        return states;
+      });
+      ON_CALL(*persistence, load()).WillByDefault([this] {
+        return stored_record.empty() ? serializeState(state) : std::make_optional(stored_record);
+      });
+      ON_CALL(*persistence, store(_)).WillByDefault([this](const std::vector<std::uint8_t> &data) {
+        stored_record = data;
+        return true;
+      });
       ON_CALL(*persistence, clear()).WillByDefault([this] {
         if (fail_clear) {
           return false;
         }
+        stored_record.clear();
         ++clears;
         return true;
       });
@@ -375,4 +399,75 @@ TEST_F(UndockRecovery, StagingKeepsSurvivingCloneGroup) {
   EXPECT_EQ(active, (ActiveTopology {{"left", "right"}}));
   ASSERT_GE(writes.size(), 3u);
   EXPECT_EQ(writes[writes.size() - 2], (ActiveTopology {{"stream"}, {"left", "right"}}));
+}
+
+TEST_F(UndockRecovery, DatabaseBackedTopologyStaysPendingUntilClosedLidRedock) {
+  saves_to_database = true;
+  openLid();
+  init();
+
+  // Undocked recovery restores the built-in panel, but retains pending topology recovery for the missing dock.
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(active, (ActiveTopology {{"panel"}}));
+  EXPECT_EQ(clears, 0);
+  EXPECT_FALSE(stored_record.empty());
+
+  // Close the lid and redock: Windows loads the saved streaming topology from its database until revert runs.
+  devices = {{.m_device_id = "stream"}, {.m_device_id = "dock"}};
+  active = {{"stream"}};
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(active, (ActiveTopology {{"dock"}}));
+  EXPECT_EQ(clears, 1);
+  EXPECT_TRUE(stored_record.empty());
+}
+
+TEST_F(UndockRecovery, DatabaseBackedPendingTopologySurvivesUndockedStreamAndClearsOnOpenLidRedock) {
+  saves_to_database = true;
+  openLid();
+  init();
+
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(active, (ActiveTopology {{"panel"}}));
+  EXPECT_EQ(clears, 0);
+
+  // Start and stop another stream while still undocked.
+  devices[1].m_info = EnumeratedDevice::Info {.m_primary = true};
+  SingleDisplayConfiguration config;
+  config.m_device_id = "stream";
+  config.m_device_prep = SingleDisplayConfiguration::DevicePreparation::EnsureOnlyDisplay;
+  EXPECT_EQ(manager->applySettings(config), SettingsManager::ApplyResult::Ok);
+  EXPECT_EQ(active, (ActiveTopology {{"stream"}}));
+
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(active, (ActiveTopology {{"panel"}}));
+  EXPECT_EQ(clears, 0);
+
+  // Redocking with the lid open restores the dock alongside the panel and clears the pending record.
+  devices.push_back({.m_device_id = "dock"});
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(win_utils::flattenTopology(active), (StringSet {"dock", "panel"}));
+  EXPECT_EQ(clears, 1);
+}
+
+TEST_F(UndockRecovery, DatabaseBackedPartialRedockKeepsOnlyStillMissingDisplaysPending) {
+  saves_to_database = true;
+  state.m_initial = {{{"dock1"}, {"dock2"}}, {"dock1"}};
+  openLid();
+  init();
+
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(active, (ActiveTopology {{"panel"}}));
+  EXPECT_EQ(clears, 0);
+
+  // Returning one of two docked monitors recovers it while keeping the second monitor pending.
+  devices.push_back({.m_device_id = "dock1"});
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(win_utils::flattenTopology(active), (StringSet {"dock1", "panel"}));
+  EXPECT_EQ(clears, 0);
+
+  // Returning the second monitor completes recovery and clears persistence.
+  devices.push_back({.m_device_id = "dock2"});
+  EXPECT_EQ(manager->revertSettings(), SettingsManager::RevertResult::Ok);
+  EXPECT_EQ(win_utils::flattenTopology(active), (StringSet {"dock1", "dock2", "panel"}));
+  EXPECT_EQ(clears, 1);
 }

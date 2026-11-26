@@ -26,6 +26,28 @@ namespace display_device {
     }
 
     /**
+     * @brief Append non-empty groups from `source` containing only device IDs accepted by `keep_id`.
+     * @tparam KeepFn Callable taking `const std::string &` and returning `bool`.
+     * @param source Topology whose groups are filtered.
+     * @param keep_id Predicate deciding whether a device ID should be included.
+     * @param target Topology to append filtered groups into.
+     */
+    template<typename KeepFn>
+    void appendFilteredTopologyGroups(const ActiveTopology &source, const KeepFn &keep_id, ActiveTopology &target) {
+      for (const auto &group : source) {
+        std::vector<std::string> remaining;
+        for (const auto &id : group) {
+          if (keep_id(id)) {
+            remaining.push_back(id);
+          }
+        }
+        if (!remaining.empty()) {
+          target.push_back(std::move(remaining));
+        }
+      }
+    }
+
+    /**
      * @brief Append available groups without reactivating stream-only outputs or duplicating devices.
      * @param topology Groups to consider, in priority order.
      * @param available Currently enumerated device IDs.
@@ -34,17 +56,13 @@ namespace display_device {
      * @param included IDs already included in the recovery topology.
      */
     void appendRecoveryGroups(const ActiveTopology &topology, const StringSet &available, const StringSet &activated, ActiveTopology &target, StringSet &included) {
-      for (const auto &group : topology) {
-        std::vector<std::string> remaining;
-        for (const auto &id : group) {
-          if (available.contains(id) && !activated.contains(id) && included.insert(id).second) {
-            remaining.push_back(id);
-          }
-        }
-        if (!remaining.empty()) {
-          target.push_back(std::move(remaining));
-        }
-      }
+      appendFilteredTopologyGroups(
+        topology,
+        [&available, &activated, &included](const std::string &id) {
+          return available.contains(id) && !activated.contains(id) && included.insert(id).second;
+        },
+        target
+      );
     }
 
     /**
@@ -90,6 +108,111 @@ namespace display_device {
     }
 
     /**
+     * @brief Compare two topologies ignoring group and member order.
+     * @param lhs First topology to compare.
+     * @param rhs Second topology to compare.
+     * @return True when both topologies contain the same clone groups.
+     */
+    bool areTopologiesEquivalent(ActiveTopology lhs, ActiveTopology rhs) {
+      const auto normalize {[](ActiveTopology &topology) {
+        for (auto &group : topology) {
+          std::ranges::sort(group);
+        }
+        std::ranges::sort(topology);
+      }};
+      normalize(lhs);
+      normalize(rhs);
+      return lhs == rhs;
+    }
+
+    /**
+     * @brief Collect all stream-only devices activated by the current or earlier pending session.
+     * @param state Persisted state to inspect.
+     * @return Device IDs activated only for streaming and excluded from recovery topologies.
+     */
+    StringSet collectActivatedDevices(const SingleDisplayConfigState &state) {
+      const auto initial {win_utils::flattenTopology(state.m_initial.m_topology)};
+      const auto modified {win_utils::flattenTopology(state.m_modified.m_topology)};
+      StringSet activated {state.m_modified.m_activated_devices};
+      std::ranges::set_difference(modified, initial, std::inserter(activated, activated.end()));
+      for (const auto &id : initial) {
+        activated.erase(id);
+      }
+      return activated;
+    }
+
+    /**
+     * @brief Check whether every device in a topology is stream-only (absent from the initial topology).
+     * @param topology Topology to inspect.
+     * @param initial_ids Device IDs belonging to the initial topology.
+     * @return True if `topology` is non-empty and none of its devices belong to `initial_ids`.
+     */
+    bool isStreamOnlyTopology(const ActiveTopology &topology, const StringSet &initial_ids) {
+      const auto ids {win_utils::flattenTopology(topology)};
+      return !ids.empty() && std::ranges::none_of(ids, [&initial_ids](const auto &id) {
+        return initial_ids.contains(id);
+      });
+    }
+
+    /**
+     * @brief Remove stream-only devices that are no longer active from the modified state.
+     *
+     * A stream-only device (absent from the initial topology) can be deactivated externally by
+     * Windows or HPD before or during revert. Dropping only inactive stream-only devices lets
+     * revert finish restoring remaining active devices and return to the initial topology instead
+     * of failing into full-extended mode.
+     *
+     * @param modified_state Modified state to prune in place.
+     * @param initial_ids Device IDs belonging to the initial topology.
+     * @param active_ids Device IDs currently active in the OS topology.
+     * @return True if at least one inactive device was removed and none of the inactive devices belonged to `initial_ids`.
+     */
+    bool dropInactiveStreamOnlyDevices(SingleDisplayConfigState::Modified &modified_state, const StringSet &initial_ids, const StringSet &active_ids) {
+      if (active_ids.empty()) {
+        return false;
+      }
+
+      const auto modified_ids {win_utils::flattenTopology(modified_state.m_topology)};
+      StringSet inactive_stream_only;
+      for (const auto &id : modified_ids) {
+        if (active_ids.contains(id)) {
+          continue;
+        }
+        if (initial_ids.contains(id)) {
+          return false;
+        }
+        inactive_stream_only.insert(id);
+      }
+
+      if (inactive_stream_only.empty()) {
+        return false;
+      }
+
+      ActiveTopology remaining_topology;
+      appendFilteredTopologyGroups(
+        modified_state.m_topology,
+        [&inactive_stream_only](const std::string &id) {
+          return !inactive_stream_only.contains(id);
+        },
+        remaining_topology
+      );
+      modified_state.m_topology = std::move(remaining_topology);
+      std::erase_if(modified_state.m_original_modes, [&inactive_stream_only](const auto &entry) {
+        return inactive_stream_only.contains(entry.first);
+      });
+      std::erase_if(modified_state.m_original_hdr_states, [&inactive_stream_only](const auto &entry) {
+        return inactive_stream_only.contains(entry.first);
+      });
+      if (inactive_stream_only.contains(modified_state.m_original_primary_device)) {
+        modified_state.m_original_primary_device.clear();
+      }
+      if (inactive_stream_only.contains(modified_state.m_interim_primary_device)) {
+        modified_state.m_interim_primary_device.clear();
+      }
+      return true;
+    }
+
+    /**
      * @brief Check whether an original device is away, so that its settings have to wait for its return.
      * @param id Device ID to check.
      * @param initial IDs of the devices in the initial topology.
@@ -101,18 +224,50 @@ namespace display_device {
     }
 
     /**
+     * @brief Collect originally missing devices whose saved Windows database topology still needs restoration.
+     *
+     * Tracks only the originally missing displays so a fallback panel added during recovery does not
+     * stay pending if the laptop lid is closed again before redocking.
+     * @param state Persisted state to inspect.
+     * @param initial Device IDs in the initial topology.
+     * @param available Currently enumerated device IDs.
+     * @param keep_pending_topology True when Windows' display database was updated and needs restoration on return.
+     * @return Pending topology device IDs that are still unavailable.
+     */
+    StringSet collectPendingTopologyDevices(const SingleDisplayConfigState &state, const StringSet &initial, const StringSet &available, const bool keep_pending_topology) {
+      if (!keep_pending_topology) {
+        return {};
+      }
+
+      const auto &tracked_topology_devices {
+        state.m_modified.m_pending_topology_devices.empty() ? initial : state.m_modified.m_pending_topology_devices
+      };
+      StringSet pending;
+      for (const auto &id : tracked_topology_devices) {
+        if (isPendingDevice(id, initial, available)) {
+          pending.insert(id);
+        }
+      }
+      return pending;
+    }
+
+    /**
      * @brief Keep only the pending settings of original devices that are currently unavailable.
      *
      * These settings cannot be restored until the devices return, so they must outlive a topology recovery.
+     * When CCD writes update Windows' display database, original devices that are still unavailable also
+     * retain a pending topology record so their saved database layout is restored once they return.
      * The modified topology is reduced to those devices, as they are all that is needed to restore the settings.
      * The initial topology is extended with the recovered one, so that new settings can still be applied while the devices are away.
      * @param state State to filter.
      * @param available Currently enumerated device IDs.
      * @param recovered_topology Topology that replaced the original one.
+     * @param keep_pending_topology True when Windows' display database was updated and needs restoration on return.
      * @return State with only the settings of unavailable original devices, or nothing if there are none.
      */
-    std::optional<SingleDisplayConfigState> keepUnavailableSettings(const SingleDisplayConfigState &state, const StringSet &available, const ActiveTopology &recovered_topology) {
+    std::optional<SingleDisplayConfigState> keepUnavailableSettings(const SingleDisplayConfigState &state, const StringSet &available, const ActiveTopology &recovered_topology, const bool keep_pending_topology) {
       const auto initial {win_utils::flattenTopology(state.m_initial.m_topology)};
+      const auto activated {collectActivatedDevices(state)};
 
       SingleDisplayConfigState result {state};
       std::erase_if(result.m_modified.m_original_modes, [&initial, &available](const auto &entry) {
@@ -125,38 +280,34 @@ namespace display_device {
         result.m_modified.m_original_primary_device.clear();
       }
       result.m_modified.m_interim_primary_device.clear();  // Already restored by the revert that led here.
-      if (!result.m_modified.hasModifications()) {
+      result.m_modified.m_pending_topology_devices = collectPendingTopologyDevices(state, initial, available, keep_pending_topology);
+
+      if (!result.m_modified.hasModifications() && result.m_modified.m_pending_topology_devices.empty()) {
         return std::nullopt;
       }
+
+      result.m_modified.m_activated_devices = activated;
 
       // Only the returning devices need to be active to restore their settings.
       result.m_modified.m_topology.clear();
       StringSet included;
-      for (const auto &group : state.m_initial.m_topology) {
-        std::vector<std::string> pending_group;
-        for (const auto &id : group) {
-          if (isPendingDevice(id, initial, available) && included.insert(id).second) {
-            pending_group.push_back(id);
-          }
-        }
-        if (!pending_group.empty()) {
-          result.m_modified.m_topology.push_back(std::move(pending_group));
-        }
-      }
+      appendFilteredTopologyGroups(
+        state.m_initial.m_topology,
+        [&initial, &available, &included](const std::string &id) {
+          return isPendingDevice(id, initial, available) && included.insert(id).second;
+        },
+        result.m_modified.m_topology
+      );
 
       // The original devices alone would leave nothing to build on until one of them returns.
       StringSet known {initial};
-      for (const auto &group : recovered_topology) {
-        std::vector<std::string> recovered_group;
-        for (const auto &id : group) {
-          if (known.insert(id).second) {
-            recovered_group.push_back(id);
-          }
-        }
-        if (!recovered_group.empty()) {
-          result.m_initial.m_topology.push_back(std::move(recovered_group));
-        }
-      }
+      appendFilteredTopologyGroups(
+        recovered_topology,
+        [&known](const std::string &id) {
+          return known.insert(id).second;
+        },
+        result.m_initial.m_topology
+      );
       return result;
     }
 
@@ -244,6 +395,187 @@ namespace display_device {
       modified_state = keepAvailableDevices(modified_state, available);
       return some_unavailable;
     }
+
+    /**
+     * @brief Restore a safe fallback topology when `revertSettings()` fails midway.
+     *
+     * When the desktop already matched the original layout before revert started, restore that layout
+     * (only if revert switched away) instead of force-enabling all available displays into Extended mode.
+     * @param dd_api Display device API.
+     * @param current_topology Active topology observed when `revertSettings()` started.
+     * @param initial_topology Persisted original topology.
+     * @param switched_to_modified_topology True if revert switched away from `current_topology`.
+     * @param system_settings_touched Updated to true when a topology write is attempted.
+     */
+    void restoreTopologyOnRevertFailure(
+      WinDisplayDeviceInterface &dd_api,
+      const ActiveTopology &current_topology,
+      const ActiveTopology &initial_topology,
+      const bool switched_to_modified_topology,
+      bool &system_settings_touched
+    ) {
+      if (areTopologiesEquivalent(current_topology, initial_topology)) {
+        if (switched_to_modified_topology) {
+          system_settings_touched = true;
+          if (!dd_api.setTopology(current_topology)) {
+            DD_LOG(error) << "failed to revert topology in revertSettings topology guard! Used the following topology:\n"
+                          << toJson(current_topology);
+          }
+        }
+        return;
+      }
+
+      auto topology_to_restore {win_utils::createFullExtendedTopology(dd_api)};
+      if (!dd_api.isTopologyValid(topology_to_restore)) {
+        topology_to_restore = current_topology;
+      }
+
+      const bool is_topology_the_same {dd_api.isTopologyTheSame(current_topology, topology_to_restore)};
+      system_settings_touched = system_settings_touched || !is_topology_the_same;
+      if (!is_topology_the_same && !dd_api.setTopology(topology_to_restore)) {
+        DD_LOG(error) << "failed to revert topology in revertSettings topology guard! Used the following topology:\n"
+                      << toJson(topology_to_restore);
+      }
+    }
+
+    /**
+     * @brief Clear transient modified settings fields while keeping pending recovery metadata intact.
+     * @param modified_state Modified state whose per-session fields should be cleared.
+     */
+    void clearTransientModifications(SingleDisplayConfigState::Modified &modified_state) {
+      modified_state.m_topology.clear();
+      modified_state.m_original_modes.clear();
+      modified_state.m_original_hdr_states.clear();
+      modified_state.m_original_primary_device.clear();
+      modified_state.m_interim_primary_device.clear();
+    }
+
+    /**
+     * @brief Working state produced while preparing the modified topology for settings revert.
+     */
+    struct ModifiedTopologyState {
+      SingleDisplayConfigState::Modified m_modified {};  ///< Modified state adjusted for available devices.
+      bool m_keep_record {false};  ///< True when missing devices require retaining the persisted record.
+      bool m_switched_topology {false};  ///< True when the OS topology was switched away from `current_topology`.
+    };
+
+    /**
+     * @brief Recover when switching to the modified topology fails during `revertModifiedSettings()`.
+     * @param dd_api Display device API.
+     * @param current_topology Current active topology before revert.
+     * @param initial_ids Device IDs belonging to the initial topology.
+     * @param state Working modified topology state updated in place.
+     * @return An early revert result to return immediately, or `std::nullopt` to continue reverting settings.
+     */
+    std::optional<SettingsManager::RevertResult> recoverModifiedTopologySwitchFailure(
+      WinDisplayDeviceInterface &dd_api,
+      const ActiveTopology &current_topology,
+      const StringSet &initial_ids,
+      ModifiedTopologyState &state
+    ) {
+      DD_LOG(error) << "Failed to change topology to:\n"
+                    << toJson(state.m_modified.m_topology);
+
+      const auto available {win_utils::getDeviceIds(dd_api.enumAvailableDevices())};
+      if (const auto modified_ids {win_utils::flattenTopology(state.m_modified.m_topology)}; available.empty() || std::ranges::all_of(modified_ids, [&available](const auto &id) {
+                                                                                               return available.contains(id);
+                                                                                             })) {
+        if (!isStreamOnlyTopology(state.m_modified.m_topology, initial_ids)) {
+          return SettingsManager::RevertResult::SwitchingTopologyFailed;
+        }
+
+        DD_LOG(warning) << "Stream-only modified topology could not be reactivated; skipping modified settings restoration.";
+        clearTransientModifications(state.m_modified);
+        state.m_switched_topology = false;
+        return std::nullopt;
+      }
+
+      state.m_keep_record = true;
+
+      // A display from the modified topology has been unplugged. Revert the settings of the remaining
+      // displays so that the initial topology, or its recovery, can still be applied.
+      state.m_modified = keepAvailableDevices(state.m_modified, available);
+      DD_LOG(warning) << "Some modified devices are unavailable, reverting settings for the remaining topology:\n"
+                      << toJson(state.m_modified.m_topology);
+      if (state.m_modified.m_topology.empty()) {
+        return SettingsManager::RevertResult::Ok;
+      }
+
+      const bool is_topology_the_same {dd_api.isTopologyTheSame(current_topology, state.m_modified.m_topology)};
+      if (!is_topology_the_same && !dd_api.setTopology(state.m_modified.m_topology)) {
+        DD_LOG(error) << "Failed to change topology to:\n"
+                      << toJson(state.m_modified.m_topology);
+        return SettingsManager::RevertResult::SwitchingTopologyFailed;
+      }
+
+      state.m_switched_topology = !is_topology_the_same;
+      return std::nullopt;
+    }
+
+    /**
+     * @brief Prune inactive stream-only devices from `modified_state` when allowed.
+     * @param dd_api Display device API.
+     * @param modified_state Modified state to prune in place.
+     * @param initial_ids Device IDs belonging to the initial topology.
+     * @param allow_pruning True when pruning inactive stream-only devices is permitted for this failure.
+     * @return True if one or more inactive stream-only devices were pruned.
+     */
+    bool tryPruneInactiveStreamOnlyDevices(
+      const WinDisplayDeviceInterface &dd_api,
+      SingleDisplayConfigState::Modified &modified_state,
+      const StringSet &initial_ids,
+      const bool allow_pruning
+    ) {
+      if (!allow_pruning) {
+        return false;
+      }
+
+      if (const auto active_ids {win_utils::flattenTopology(dd_api.getCurrentTopology())}; !dropInactiveStreamOnlyDevices(modified_state, initial_ids, active_ids)) {
+        return false;
+      }
+
+      DD_LOG(warning) << "Some stream-only modified devices are no longer active; skipping remaining settings restoration for them.";
+      return true;
+    }
+
+    /**
+     * @brief Run a modified-settings revert step, pruning inactive stream-only devices and retrying if needed.
+     * @tparam RevertFn Callable taking `bool *query_failed` and returning `SettingsManager::RevertResult`.
+     * @tparam DisarmGuardsFn Callable disarming rollback guards when all modified devices were pruned.
+     * @param dd_api Display device API.
+     * @param modified_state Modified state being reverted.
+     * @param initial_ids Device IDs belonging to the initial topology.
+     * @param revert_fn Step function to execute.
+     * @param disarm_guards Callback invoked if pruning leaves no modified devices to revert.
+     * @return Result of the step or retry.
+     */
+    template<typename RevertFn, typename DisarmGuardsFn>
+    SettingsManager::RevertResult revertStepWithPruning(
+      const WinDisplayDeviceInterface &dd_api,
+      SingleDisplayConfigState::Modified &modified_state,
+      const StringSet &initial_ids,
+      const RevertFn &revert_fn,
+      const DisarmGuardsFn &disarm_guards
+    ) {
+      bool query_failed {false};
+      const auto first_result {revert_fn(&query_failed)};
+      if (first_result == SettingsManager::RevertResult::Ok) {
+        return first_result;
+      }
+
+      if (const bool allow_pruning {query_failed || isStreamOnlyTopology(modified_state.m_topology, initial_ids)}; !tryPruneInactiveStreamOnlyDevices(dd_api, modified_state, initial_ids, allow_pruning)) {
+        // Error already logged
+        return first_result;
+      }
+
+      if (modified_state.m_topology.empty()) {
+        // All modified devices were stream-only and are already inactive; avoid invoking guards on inactive paths.
+        disarm_guards();
+        return SettingsManager::RevertResult::Ok;
+      }
+
+      return revert_fn(nullptr);
+    }
   }  // namespace
 
   SettingsManager::RevertResult SettingsManager::revertSettings() {
@@ -266,28 +598,19 @@ namespace display_device {
       return RevertResult::TopologyIsInvalid;
     }
 
+    const ActiveTopology initial_topology {cached_state->m_initial.m_topology};
     bool system_settings_touched {false};
+    bool switched_to_modified_topology {false};
     boost::scope::scope_exit hdr_blank_always_executed_guard {[this, &system_settings_touched]() {
       if (system_settings_touched) {
         win_utils::blankHdrStates(*m_dd_api, m_workarounds.m_hdr_blank_delay);
       }
     }};
-    boost::scope::scope_exit topology_prep_guard {[this, &current_topology, &system_settings_touched]() {
-      auto topology_to_restore {win_utils::createFullExtendedTopology(*m_dd_api)};
-      if (!m_dd_api->isTopologyValid(topology_to_restore)) {
-        topology_to_restore = current_topology;
-      }
-
-      const bool is_topology_the_same {m_dd_api->isTopologyTheSame(current_topology, topology_to_restore)};
-      system_settings_touched = system_settings_touched || !is_topology_the_same;
-      if (!is_topology_the_same && !m_dd_api->setTopology(topology_to_restore)) {
-        DD_LOG(error) << "failed to revert topology in revertSettings topology guard! Used the following topology:\n"
-                      << toJson(topology_to_restore);
-      }
+    boost::scope::scope_exit topology_prep_guard {[this, &current_topology, &initial_topology, &system_settings_touched, &switched_to_modified_topology]() {
+      restoreTopologyOnRevertFailure(*m_dd_api, current_topology, initial_topology, switched_to_modified_topology, system_settings_touched);
     }};
 
     // We can revert the modified setting independently before playing around with initial topology.
-    bool switched_to_modified_topology {false};
     if (const auto result = revertModifiedSettings(current_topology, system_settings_touched, &switched_to_modified_topology); result != RevertResult::Ok) {
       // Error already logged
       return result;
@@ -310,8 +633,8 @@ namespace display_device {
         return RevertResult::SwitchingTopologyFailed;
       }
 
-      // Original devices that are still unplugged keep their settings until they return.
-      pending_state = keepUnavailableSettings(*cached_state, win_utils::getDeviceIds(m_dd_api->enumAvailableDevices()), m_dd_api->getCurrentTopology());
+      // Original devices that are still unplugged keep their settings (and saved database topology, when enabled) until they return.
+      pending_state = keepUnavailableSettings(*cached_state, win_utils::getDeviceIds(m_dd_api->enumAvailableDevices()), m_dd_api->getCurrentTopology(), m_dd_api->savesToDatabase());
     }
 
     if (!m_persistence_state->persistState(pending_state)) {
@@ -331,7 +654,6 @@ namespace display_device {
   bool SettingsManager::recoverMissingTopology(const ActiveTopology &current_topology) {
     const auto &state {*m_persistence_state->getState()};
     const auto initial {win_utils::flattenTopology(state.m_initial.m_topology)};
-    const auto modified {win_utils::flattenTopology(state.m_modified.m_topology)};
     const auto devices {m_dd_api->enumAvailableDevices()};
     const auto available {win_utils::getDeviceIds(devices)};
     if (available.empty() || std::ranges::all_of(initial, [&available](const auto &id) {
@@ -341,8 +663,7 @@ namespace display_device {
       return false;
     }
 
-    StringSet activated;
-    std::ranges::set_difference(modified, initial, std::inserter(activated, activated.end()));
+    const auto activated {collectActivatedDevices(state)};
     ActiveTopology target;
     StringSet included;
     appendRecoveryGroups(state.m_initial.m_topology, available, activated, target, included);
@@ -381,7 +702,7 @@ namespace display_device {
     return true;
   }
 
-  SettingsManager::RevertResult SettingsManager::revertModifiedHdrStates(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched) {
+  SettingsManager::RevertResult SettingsManager::revertModifiedHdrStates(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched, bool *query_failed) {
     using enum RevertResult;
 
     if (modified_state.m_original_hdr_states.empty()) {
@@ -389,6 +710,14 @@ namespace display_device {
     }
 
     const auto current_states {m_dd_api->getCurrentHdrStates(win_utils::flattenTopology(modified_state.m_topology))};
+    if (current_states.empty()) {
+      if (query_failed) {
+        *query_failed = true;
+      }
+      DD_LOG(error) << "Failed to get current HDR states!";
+      return RevertingHdrStatesFailed;
+    }
+
     if (current_states == modified_state.m_original_hdr_states) {
       return Ok;
     }
@@ -406,7 +735,7 @@ namespace display_device {
     return Ok;
   }
 
-  SettingsManager::RevertResult SettingsManager::revertModifiedDisplayModes(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched) {
+  SettingsManager::RevertResult SettingsManager::revertModifiedDisplayModes(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched, bool *query_failed) {
     using enum RevertResult;
 
     if (modified_state.m_original_modes.empty()) {
@@ -414,6 +743,14 @@ namespace display_device {
     }
 
     const auto current_modes {m_dd_api->getCurrentDisplayModes(win_utils::flattenTopology(modified_state.m_topology))};
+    if (current_modes.empty()) {
+      if (query_failed) {
+        *query_failed = true;
+      }
+      DD_LOG(error) << "Failed to get current display modes!";
+      return RevertingDisplayModesFailed;
+    }
+
     if (current_modes == modified_state.m_original_modes) {
       return Ok;
     }
@@ -473,84 +810,71 @@ namespace display_device {
       return RevertResult::TopologyIsInvalid;
     }
 
-    auto modified_state {cached_state->m_modified};
-    bool keep_record {prepareCarriedDevices(*m_dd_api, *cached_state, modified_state)};
-    bool is_topology_the_same {m_dd_api->isTopologyTheSame(current_topology, modified_state.m_topology)};
+    const auto initial_ids {win_utils::flattenTopology(cached_state->m_initial.m_topology)};
+    ModifiedTopologyState state {cached_state->m_modified};
+    state.m_keep_record = prepareCarriedDevices(*m_dd_api, *cached_state, state.m_modified);
+    const bool is_topology_the_same {m_dd_api->isTopologyTheSame(current_topology, state.m_modified.m_topology)};
     system_settings_touched = !is_topology_the_same;
-    if (!is_topology_the_same && !m_dd_api->setTopology(modified_state.m_topology)) {
-      DD_LOG(error) << "Failed to change topology to:\n"
-                    << toJson(modified_state.m_topology);
-
-      const auto available {win_utils::getDeviceIds(m_dd_api->enumAvailableDevices())};
-      const auto modified_ids {win_utils::flattenTopology(modified_state.m_topology)};
-      if (const bool devices_missing {!available.empty() && std::ranges::any_of(modified_ids, [&available](const auto &id) {
-            return !available.contains(id);
-          })};
-          !devices_missing) {
-        return RevertResult::SwitchingTopologyFailed;
-      }
-      keep_record = true;
-
-      // A display from the modified topology has been unplugged. Revert the settings of the remaining
-      // displays so that the initial topology, or its recovery, can still be applied.
-      modified_state = keepAvailableDevices(modified_state, available);
-      DD_LOG(warning) << "Some modified devices are unavailable, reverting settings for the remaining topology:\n"
-                      << toJson(modified_state.m_topology);
-      if (modified_state.m_topology.empty()) {
-        return RevertResult::Ok;
-      }
-
-      is_topology_the_same = m_dd_api->isTopologyTheSame(current_topology, modified_state.m_topology);
-      if (!is_topology_the_same && !m_dd_api->setTopology(modified_state.m_topology)) {
-        DD_LOG(error) << "Failed to change topology to:\n"
-                      << toJson(modified_state.m_topology);
-        return RevertResult::SwitchingTopologyFailed;
+    state.m_switched_topology = !is_topology_the_same;
+    if (!is_topology_the_same && !m_dd_api->setTopology(state.m_modified.m_topology)) {
+      if (const auto early_result {recoverModifiedTopologySwitchFailure(*m_dd_api, current_topology, initial_ids, state)}; early_result.has_value()) {
+        return *early_result;
       }
     }
     if (switched_topology) {
-      *switched_topology = !is_topology_the_same;
+      *switched_topology = state.m_switched_topology;
     }
 
+    auto &modified_state {state.m_modified};
     DdGuardFn hdr_guard_fn {noopFn};
     boost::scope::scope_exit<DdGuardFn &> hdr_guard {hdr_guard_fn};
-    if (const auto result {revertModifiedHdrStates(modified_state, hdr_guard_fn, system_settings_touched)}; result != RevertResult::Ok) {
-      // Error already logged
-      return result;
-    }
-
     DdGuardFn mode_guard_fn {noopFn};
     boost::scope::scope_exit<DdGuardFn &> mode_guard {mode_guard_fn};
-    if (const auto result {revertModifiedDisplayModes(modified_state, mode_guard_fn, system_settings_touched)}; result != RevertResult::Ok) {
-      // Error already logged
-      return result;
-    }
-
     DdGuardFn primary_guard_fn {noopFn};
     boost::scope::scope_exit<DdGuardFn &> primary_guard {primary_guard_fn};
-    if (const auto result {revertModifiedPrimaryDevice(modified_state, primary_guard_fn, system_settings_touched)}; result != RevertResult::Ok) {
-      // Error already logged
-      return result;
-    }
-
-    if (keep_record) {
-      // Keep the full record so that the unplugged displays can still be reverted if they return.
+    const auto disarm_all_guards {[&hdr_guard, &mode_guard, &primary_guard]() {
       hdr_guard.set_active(false);
       mode_guard.set_active(false);
       primary_guard.set_active(false);
+    }};
+
+    const auto revert_hdr {[this, &modified_state, &hdr_guard_fn, &system_settings_touched](bool *query_failed) {
+      return revertModifiedHdrStates(modified_state, hdr_guard_fn, system_settings_touched, query_failed);
+    }};
+    if (const auto result {revertStepWithPruning(*m_dd_api, modified_state, initial_ids, revert_hdr, disarm_all_guards)}; result != RevertResult::Ok) {
+      return result;
+    }
+
+    const auto revert_modes {[this, &modified_state, &mode_guard_fn, &system_settings_touched](bool *query_failed) {
+      return revertModifiedDisplayModes(modified_state, mode_guard_fn, system_settings_touched, query_failed);
+    }};
+    if (const auto result {revertStepWithPruning(*m_dd_api, modified_state, initial_ids, revert_modes, disarm_all_guards)}; result != RevertResult::Ok) {
+      return result;
+    }
+
+    const auto revert_primary {[this, &modified_state, &primary_guard_fn, &system_settings_touched](bool *) {
+      return revertModifiedPrimaryDevice(modified_state, primary_guard_fn, system_settings_touched);
+    }};
+    if (const auto result {revertStepWithPruning(*m_dd_api, modified_state, initial_ids, revert_primary, disarm_all_guards)}; result != RevertResult::Ok) {
+      return result;
+    }
+
+    if (state.m_keep_record) {
+      // Keep the full record so that the unplugged displays can still be reverted if they return.
+      disarm_all_guards();
       return RevertResult::Ok;
     }
 
     auto cleared_data {*cached_state};
     cleared_data.m_modified = {cleared_data.m_modified.m_topology};
+    cleared_data.m_modified.m_pending_topology_devices = cached_state->m_modified.m_pending_topology_devices;
+    cleared_data.m_modified.m_activated_devices = cached_state->m_modified.m_activated_devices;
     if (!m_persistence_state->persistState(cleared_data)) {
       DD_LOG(error) << "Failed to save reverted settings! Undoing changes to modified topology...";
       return RevertResult::PersistenceSaveFailed;
     }
 
-    // Disable guards
-    hdr_guard.set_active(false);
-    mode_guard.set_active(false);
-    primary_guard.set_active(false);
+    disarm_all_guards();
     return RevertResult::Ok;
   }
 }  // namespace display_device

@@ -30,6 +30,11 @@ namespace display_device {
     [[nodiscard]] bool isApiAccessAvailable() const override;
 
     /**
+     * @copydoc WinDisplayDeviceInterface::savesToDatabase
+     */
+    [[nodiscard]] bool savesToDatabase() const override;
+
+    /**
      * @copydoc WinDisplayDeviceInterface::enumAvailableDevices
      */
     [[nodiscard]] EnumeratedDeviceList enumAvailableDevices() const override;

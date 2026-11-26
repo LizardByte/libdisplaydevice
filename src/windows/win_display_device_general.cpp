@@ -31,6 +31,10 @@ namespace display_device {
     return result == ERROR_SUCCESS;
   }
 
+  bool WinDisplayDevice::savesToDatabase() const {
+    return m_save_to_database;
+  }
+
   EnumeratedDeviceList WinDisplayDevice::enumAvailableDevices() const {
     const auto display_data {m_w_api->queryDisplayConfig(QueryType::All)};
     if (!display_data) {
