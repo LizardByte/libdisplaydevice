@@ -128,18 +128,20 @@ namespace display_device {
      * @param modified_state Modified state data to revert.
      * @param guard_fn Reference to the guard function which will be set to restore the current state if needed.
      * @param system_settings_touched Indicates whether a "write" operation could have been performed on the OS.
+     * @param query_failed [Optional] Flag set to true when querying current HDR states returned an empty map.
      * @returns Result enum indicating success or failure.
      */
-    [[nodiscard]] RevertResult revertModifiedHdrStates(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched);
+    [[nodiscard]] RevertResult revertModifiedHdrStates(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched, bool *query_failed = nullptr);
 
     /**
      * @brief Revert display mode changes tracked in the modified settings state.
      * @param modified_state Modified state data to revert.
      * @param guard_fn Reference to the guard function which will be set to restore the current state if needed.
      * @param system_settings_touched Indicates whether a "write" operation could have been performed on the OS.
+     * @param query_failed [Optional] Flag set to true when querying current display modes returned an empty map.
      * @returns Result enum indicating success or failure.
      */
-    [[nodiscard]] RevertResult revertModifiedDisplayModes(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched);
+    [[nodiscard]] RevertResult revertModifiedDisplayModes(const SingleDisplayConfigState::Modified &modified_state, DdGuardFn &guard_fn, bool &system_settings_touched, bool *query_failed = nullptr);
 
     /**
      * @brief Revert primary device changes tracked in the modified settings state.

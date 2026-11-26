@@ -32,6 +32,14 @@ namespace display_device {
     [[nodiscard]] virtual bool isApiAccessAvailable() const = 0;
 
     /**
+     * @brief Check whether topology and mode changes are saved to Windows' display database.
+     * @returns True if writes update Windows' display database, false if writes are session-only.
+     */
+    [[nodiscard]] virtual bool savesToDatabase() const {
+      return false;
+    }
+
+    /**
      * @brief Enumerate the available (active and inactive) devices.
      * @returns A list of available devices.
      *          Empty list can also be returned if an error has occurred.

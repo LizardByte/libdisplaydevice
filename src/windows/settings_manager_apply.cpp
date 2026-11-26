@@ -221,6 +221,10 @@ namespace display_device {
       release_context = m_dd_api->isTopologyTheSame(new_state.m_initial.m_topology, new_topology) && audio_is_captured;
     }
 
+    if (cached_state) {
+      new_state.m_modified.m_pending_topology_devices = cached_state->m_modified.m_pending_topology_devices;
+      new_state.m_modified.m_activated_devices = cached_state->m_modified.m_activated_devices;
+    }
     new_state.m_modified.m_topology = new_topology;
     return std::make_tuple(new_state, device_to_configure, additional_devices_to_configure);
   }

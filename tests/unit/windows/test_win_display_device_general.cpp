@@ -126,6 +126,12 @@ TEST_F_S_MOCKED(IsApiAccessAvailable, FailedToSetDisplayConfig) {
   EXPECT_FALSE(m_win_dd.isApiAccessAvailable());
 }
 
+TEST_F_S_MOCKED(SavesToDatabase, ReflectsConstructorFlag) {
+  EXPECT_TRUE(m_win_dd.savesToDatabase());
+  const display_device::WinDisplayDevice temporary_win_dd {m_layer, false};
+  EXPECT_FALSE(temporary_win_dd.savesToDatabase());
+}
+
 TEST_F_S(EnumAvailableDevices) {
   // Note: we can't verify live data precisely, so just basic check
   // is performed regarding active vs. inactive devices

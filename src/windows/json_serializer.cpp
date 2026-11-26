@@ -15,7 +15,7 @@ namespace display_device {
   DD_JSON_DEFINE_SERIALIZE_STRUCT(SingleDisplayConfigState::Initial, topology, primary_devices)
 
   /**
-   * @brief Serialize the modified state, including the interim primary device when there is one.
+   * @brief Serialize the modified state, including optional recovery metadata when present.
    * @param nlohmann_json_j JSON output object.
    * @param nlohmann_json_t Modified state to serialize.
    */
@@ -27,10 +27,16 @@ namespace display_device {
     if (!nlohmann_json_t.m_interim_primary_device.empty()) {
       DD_JSON_TO(interim_primary_device)
     }
+    if (!nlohmann_json_t.m_pending_topology_devices.empty()) {
+      DD_JSON_TO(pending_topology_devices)
+    }
+    if (!nlohmann_json_t.m_activated_devices.empty()) {
+      DD_JSON_TO(activated_devices)
+    }
   }
 
   /**
-   * @brief Deserialize the modified state, treating a missing interim primary device as none.
+   * @brief Deserialize the modified state, treating missing optional recovery fields as empty.
    * @param nlohmann_json_j JSON input object.
    * @param nlohmann_json_t Modified state to populate.
    */
@@ -40,6 +46,8 @@ namespace display_device {
     DD_JSON_FROM(original_hdr_states)
     DD_JSON_FROM(original_primary_device)
     nlohmann_json_t.m_interim_primary_device = nlohmann_json_j.value("interim_primary_device", std::string {});
+    nlohmann_json_t.m_pending_topology_devices = nlohmann_json_j.value("pending_topology_devices", StringSet {});
+    nlohmann_json_t.m_activated_devices = nlohmann_json_j.value("activated_devices", StringSet {});
   }
 
   DD_JSON_DEFINE_SERIALIZE_STRUCT(SingleDisplayConfigState, initial, modified)
