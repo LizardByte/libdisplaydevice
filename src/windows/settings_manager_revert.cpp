@@ -477,11 +477,9 @@ namespace display_device {
                     << toJson(state.m_modified.m_topology);
 
       const auto available {win_utils::getDeviceIds(dd_api.enumAvailableDevices())};
-      const auto modified_ids {win_utils::flattenTopology(state.m_modified.m_topology)};
-      const bool devices_missing {!available.empty() && std::ranges::any_of(modified_ids, [&available](const auto &id) {
-        return !available.contains(id);
-      })};
-      if (!devices_missing) {
+      if (const auto modified_ids {win_utils::flattenTopology(state.m_modified.m_topology)}; available.empty() || std::ranges::all_of(modified_ids, [&available](const auto &id) {
+                                                                                               return available.contains(id);
+                                                                                             })) {
         if (!isStreamOnlyTopology(state.m_modified.m_topology, initial_ids)) {
           return SettingsManager::RevertResult::SwitchingTopologyFailed;
         }
@@ -565,8 +563,7 @@ namespace display_device {
         return first_result;
       }
 
-      const bool allow_pruning {query_failed || isStreamOnlyTopology(modified_state.m_topology, initial_ids)};
-      if (!tryPruneInactiveStreamOnlyDevices(dd_api, modified_state, initial_ids, allow_pruning)) {
+      if (const bool allow_pruning {query_failed || isStreamOnlyTopology(modified_state.m_topology, initial_ids)}; !tryPruneInactiveStreamOnlyDevices(dd_api, modified_state, initial_ids, allow_pruning)) {
         // Error already logged
         return first_result;
       }
